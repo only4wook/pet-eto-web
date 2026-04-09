@@ -120,8 +120,13 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
 
-          {/* 이미지 */}
-          <img src={post.image_url} alt="" style={{ width: "100%", display: "block" }} />
+          {/* 이미지 / 동영상 */}
+          {post.image_url?.endsWith(".mp4") ? (
+            <video src={post.image_url} controls playsInline style={{ width: "100%", display: "block" }} />
+          ) : (
+            <img src={post.image_url} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              style={{ width: "100%", display: "block" }} />
+          )}
 
           {/* 좋아요/댓글 */}
           <div style={{ padding: "10px 16px", display: "flex", gap: 16 }}>

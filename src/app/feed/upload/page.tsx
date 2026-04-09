@@ -17,9 +17,7 @@ const SPECIES = [
 
 function compressImage(file: File, maxWidth = 1200): Promise<Blob> {
   return new Promise((resolve) => {
-    // createImageBitmap은 HEIC를 포함한 대부분의 모바일 포맷 지원
     const useCreateImageBitmap = typeof createImageBitmap === "function";
-
     const drawToCanvas = (source: HTMLImageElement | ImageBitmap) => {
       try {
         const sw = "width" in source ? source.width : (source as any).naturalWidth || 1200;
@@ -33,25 +31,17 @@ function compressImage(file: File, maxWidth = 1200): Promise<Blob> {
         canvas.getContext("2d")!.drawImage(source as any, 0, 0, w, h);
         canvas.toBlob(
           (blob) => resolve(blob && blob.size > 0 ? blob : file),
-          "image/jpeg",
-          0.75,
+          "image/jpeg", 0.75,
         );
       } catch { resolve(file); }
     };
-
     if (useCreateImageBitmap) {
-      // createImageBitmap: HEIC/HEIF 등 모바일 포맷 처리 가능
-      createImageBitmap(file)
-        .then(drawToCanvas)
-        .catch(() => {
-          // fallback: Image 엘리먼트 시도
-          loadWithImage(file).then(drawToCanvas).catch(() => resolve(file));
-        });
+      createImageBitmap(file).then(drawToCanvas).catch(() => {
+        loadWithImage(file).then(drawToCanvas).catch(() => resolve(file));
+      });
     } else {
       loadWithImage(file).then(drawToCanvas).catch(() => resolve(file));
     }
-
-    // 15초 타임아웃
     setTimeout(() => resolve(file), 15000);
   });
 }
@@ -65,91 +55,144 @@ function loadWithImage(file: File): Promise<HTMLImageElement> {
   });
 }
 
+// 동영상 첫 프레임 추출 → 썸네일 생성
+function extractVideoThumbnail(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.onloadeddata = () => {
+      video.currentTime = 0.5; // 0.5초 지점
+    };
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.min(video.videoWidth, 1200);
+        canvas.height = Math.round(canvas.width * (video.videoHeight / video.videoWidth));
+        canvas.getContext("2d")!.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => { blob ? resolve(blob) : reject(); },
+          "image/jpeg", 0.8,
+        );
+      } catch { reject(); }
+    };
+    video.onerror = () => reject();
+    video.src = URL.createObjectURL(file);
+    setTimeout(() => reject(), 10000);
+  });
+}
+
+type MediaType = "image" | "video";
+
 export default function FeedUploadPage() {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const albumRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaType, setMediaType] = useState<MediaType>("image");
   const [preview, setPreview] = useState<string | null>(null);
   const [petName, setPetName] = useState("");
   const [species, setSpecies] = useState("cat");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("");
   const [alertData, setAlertData] = useState<AnalysisResult | null>(null);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    // FileReader 방식 (모바일 호환성 향상)
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    const isVideo = file.type.startsWith("video/");
+    setMediaFile(file);
+    setMediaType(isVideo ? "video" : "image");
+    if (isVideo) {
+      setPreview(URL.createObjectURL(file));
+    } else {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async () => {
-    if (!imageFile) { alert("사진을 선택해주세요."); return; }
+    if (!mediaFile) { alert("사진 또는 동영상을 선택해주세요."); return; }
     if (!description.trim()) { alert("설명을 입력해주세요."); return; }
     if (!user || user.id === "demo-user") { alert("로그인 후 이용 가능합니다."); router.push("/auth/login"); return; }
 
     setLoading(true);
 
     try {
-      // 1. 이미지 압축 (1MB 이상이면 리사이즈, 실패 시 원본 사용)
-      // 1. 이미지를 항상 JPEG로 변환 (HEIC/HEIF 등 브라우저 미지원 포맷 해결)
-      const compressed = await compressImage(imageFile);
-      const isConverted = compressed !== imageFile;
-      const fileToUpload = compressed;
-      const contentType = isConverted ? "image/jpeg" : (imageFile.type || "image/jpeg");
+      const ts = Date.now();
+      const rand = Math.random().toString(36).slice(2, 8);
+      let imageUrl = "";
 
-      // 2. Supabase Storage 업로드 (30초 타임아웃)
-      // 항상 .jpg 확장자 (브라우저 호환성)
-      const fileName = `feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      if (mediaType === "video") {
+        // 동영상: 원본 업로드 + 썸네일 추출
+        setLoadingMsg("동영상 업로드 중...");
+        const videoName = `feed-${ts}-${rand}.mp4`;
+        const { error: vErr } = await supabase.storage
+          .from("feed-images").upload(videoName, mediaFile, { contentType: mediaFile.type, upsert: true });
+        if (vErr) { alert("동영상 업로드 실패: " + vErr.message); setLoading(false); return; }
 
-      const uploadPromise = supabase.storage
-        .from("feed-images")
-        .upload(fileName, fileToUpload, { contentType, upsert: true });
+        // 썸네일 추출 & 업로드
+        setLoadingMsg("썸네일 생성 중...");
+        try {
+          const thumb = await extractVideoThumbnail(mediaFile);
+          const thumbName = `thumb-${ts}-${rand}.jpg`;
+          await supabase.storage.from("feed-images").upload(thumbName, thumb, { contentType: "image/jpeg", upsert: true });
+          const { data: thumbUrl } = supabase.storage.from("feed-images").getPublicUrl(thumbName);
+          imageUrl = thumbUrl.publicUrl;
+        } catch {
+          // 썸네일 실패 시 비디오 URL 사용
+          const { data: vUrl } = supabase.storage.from("feed-images").getPublicUrl(videoName);
+          imageUrl = vUrl.publicUrl;
+        }
+      } else {
+        // 이미지: JPEG 변환 후 업로드
+        setLoadingMsg("이미지 처리 중...");
+        const compressed = await compressImage(mediaFile);
+        const isConverted = compressed !== mediaFile;
+        const contentType = isConverted ? "image/jpeg" : (mediaFile.type || "image/jpeg");
+        const fileName = `feed-${ts}-${rand}.jpg`;
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("업로드 시간 초과 (30초). 네트워크를 확인해주세요.")), 30000)
-      );
+        setLoadingMsg("업로드 중...");
+        const uploadPromise = supabase.storage
+          .from("feed-images").upload(fileName, compressed, { contentType, upsert: true });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("업로드 시간 초과 (30초)")), 30000));
+        const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
-      const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
-
-      if (uploadError) {
-        alert("이미지 업로드 실패: " + uploadError.message + "\n\n💡 Supabase Storage 권한을 확인해주세요.");
-        setLoading(false);
-        return;
+        if (uploadError) { alert("이미지 업로드 실패: " + uploadError.message); setLoading(false); return; }
+        const { data: urlData } = supabase.storage.from("feed-images").getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
       }
 
-      const { data: urlData } = supabase.storage.from("feed-images").getPublicUrl(fileName);
-
-      // 3. AI 증상 분석
+      // AI 증상 분석 (텍스트 기반)
+      setLoadingMsg("AI 분석 중...");
       const analysis = analyzeSymptoms(description, species);
 
-      // 4. DB 저장
+      // DB 저장
+      setLoadingMsg("저장 중...");
       const { error: insertError } = await supabase.from("feed_posts").insert({
         author_id: user.id,
-        image_url: urlData.publicUrl,
+        image_url: imageUrl,
         description: description.trim(),
         pet_name: petName.trim(),
         pet_species: species,
         analysis_result: analysis,
       });
 
-      if (insertError) {
-        alert("저장 실패: " + insertError.message);
-        setLoading(false);
-        return;
-      }
+      if (insertError) { alert("저장 실패: " + insertError.message); setLoading(false); return; }
 
-      // 5. 포인트 +10P
+      // 포인트 +10P
       await supabase.from("point_logs").insert({ user_id: user.id, amount: 10, reason: "피드 작성" });
       await supabase.rpc("add_points", { uid: user.id, pts: 10 });
 
       setLoading(false);
+      setLoadingMsg("");
 
-      // 6. 증상 심각하면 알림 표시
       if (analysis.severity === "moderate" || analysis.severity === "urgent") {
         setAlertData(analysis);
       } else {
@@ -157,8 +200,9 @@ export default function FeedUploadPage() {
         router.push("/feed");
       }
     } catch (err: any) {
-      alert("오류: " + (err?.message || "알 수 없는 오류") + "\n\n네트워크 연결을 확인해주세요.");
+      alert("오류: " + (err?.message || "알 수 없는 오류"));
       setLoading(false);
+      setLoadingMsg("");
     }
   };
 
@@ -166,30 +210,80 @@ export default function FeedUploadPage() {
     <>
       <Header />
       <main style={{ maxWidth: 500, margin: "0 auto", padding: "20px 16px", flex: 1, width: "100%" }}>
-        <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8 }}>
+        <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 12 }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid #e0e0e0", fontSize: 16, fontWeight: 700 }}>
-            📸 사진 올리기
+            📸 사진 / 동영상 올리기
           </div>
           <div style={{ padding: 20 }}>
-            {/* 이미지 선택 */}
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*" capture="environment" onChange={handleImageSelect} style={{ display: "none" }} />
-            <div
-              onClick={() => fileRef.current?.click()}
-              style={{
-                border: "2px dashed #ddd", borderRadius: 8, padding: preview ? 0 : 40,
-                textAlign: "center", cursor: "pointer", marginBottom: 16, overflow: "hidden",
-                background: "#FAFAFA",
-              }}
-            >
-              {preview ? (
-                <img src={preview} alt="미리보기" style={{ width: "100%", maxHeight: 400, objectFit: "cover", display: "block" }} />
-              ) : (
-                <>
-                  <div style={{ fontSize: 40 }}>📷</div>
-                  <div style={{ color: "#888", fontSize: 14, marginTop: 8 }}>클릭하여 사진 선택</div>
-                </>
-              )}
-            </div>
+            {/* 3가지 선택 버튼 */}
+            <input ref={albumRef} type="file" accept="image/*,video/*" onChange={handleFileSelect} style={{ display: "none" }} />
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} style={{ display: "none" }} />
+            <input ref={videoRef} type="file" accept="video/*" capture="environment" onChange={handleFileSelect} style={{ display: "none" }} />
+
+            {!preview ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                <button onClick={() => albumRef.current?.click()} style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
+                  border: "2px dashed #FDBA74", borderRadius: 12, background: "#FFF7ED",
+                  cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#92400E",
+                }}>
+                  <span style={{ fontSize: 28 }}>🖼️</span>
+                  <div style={{ textAlign: "left" }}>
+                    <div>앨범에서 찾기</div>
+                    <div style={{ fontSize: 11, fontWeight: 400, color: "#B45309", marginTop: 2 }}>사진 또는 동영상 선택</div>
+                  </div>
+                </button>
+                <button onClick={() => cameraRef.current?.click()} style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
+                  border: "2px dashed #86EFAC", borderRadius: 12, background: "#F0FDF4",
+                  cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#166534",
+                }}>
+                  <span style={{ fontSize: 28 }}>📷</span>
+                  <div style={{ textAlign: "left" }}>
+                    <div>사진 찍어 바로 올리기</div>
+                    <div style={{ fontSize: 11, fontWeight: 400, color: "#15803D", marginTop: 2 }}>카메라로 실시간 촬영</div>
+                  </div>
+                </button>
+                <button onClick={() => videoRef.current?.click()} style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
+                  border: "2px dashed #93C5FD", borderRadius: 12, background: "#EFF6FF",
+                  cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#1E40AF",
+                }}>
+                  <span style={{ fontSize: 28 }}>🎥</span>
+                  <div style={{ textAlign: "left" }}>
+                    <div>동영상 찍어 바로 올리기</div>
+                    <div style={{ fontSize: 11, fontWeight: 400, color: "#1D4ED8", marginTop: 2 }}>증상을 동영상으로 기록</div>
+                  </div>
+                </button>
+              </div>
+            ) : (
+              <div style={{
+                border: "1px solid #e0e0e0", borderRadius: 12, overflow: "hidden",
+                marginBottom: 16, position: "relative",
+              }}>
+                {mediaType === "video" ? (
+                  <video src={preview} controls playsInline style={{ width: "100%", maxHeight: 400, display: "block" }} />
+                ) : (
+                  <img src={preview} alt="미리보기" style={{ width: "100%", maxHeight: 400, objectFit: "cover", display: "block" }} />
+                )}
+                {/* 미디어 타입 배지 */}
+                <span style={{
+                  position: "absolute", top: 8, left: 8,
+                  background: mediaType === "video" ? "#2563EB" : "#FF6B35",
+                  color: "#fff", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 700,
+                }}>
+                  {mediaType === "video" ? "🎥 동영상" : "📷 사진"}
+                </span>
+                {/* 다시 선택 버튼 */}
+                <button onClick={() => { setPreview(null); setMediaFile(null); }} style={{
+                  position: "absolute", top: 8, right: 8,
+                  background: "rgba(0,0,0,0.5)", color: "#fff", border: "none",
+                  borderRadius: 12, padding: "4px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600,
+                }}>
+                  다시 선택
+                </button>
+              </div>
+            )}
 
             {/* 반려동물 정보 */}
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -218,7 +312,7 @@ export default function FeedUploadPage() {
                 설명 <span style={{ color: "#888", fontWeight: 400 }}>(증상이 있다면 자세히 적어주세요)</span>
               </label>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                placeholder="예: 오늘 산책 다녀왔어요! / 구토를 해서 걱정이에요..."
+                placeholder={"예: 오늘 산책 다녀왔어요!\n예: 구토를 해서 걱정이에요...\n예: 뒷다리를 절뚝거려요"}
                 style={{
                   width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: 4,
                   fontSize: 13, minHeight: 120, resize: "vertical", outline: "none", fontFamily: "inherit", lineHeight: 1.6,
@@ -227,25 +321,27 @@ export default function FeedUploadPage() {
 
             {/* AI 분석 안내 */}
             <div style={{
-              background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 6,
-              padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#0369A1",
+              background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 8,
+              padding: "12px 14px", marginBottom: 16, fontSize: 12, color: "#0369A1", lineHeight: 1.6,
             }}>
-              🤖 AI가 설명 내용을 분석하여 반려동물의 건강 상태를 자동으로 체크합니다.
-              증상이 감지되면 주변 동물병원 정보도 함께 안내해드립니다.
+              🤖 <b>AI 자동 건강 분석</b><br />
+              작성하신 설명을 AI가 분석하여 건강 상태를 체크합니다.
+              {mediaType === "video" && " 동영상은 썸네일을 자동 생성하여 피드에 표시합니다."}
+              {" "}증상이 감지되면 주변 동물병원 정보도 함께 안내해드립니다.
             </div>
 
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => router.back()} style={{
-                flex: 1, padding: "12px", border: "1px solid #ddd", borderRadius: 6,
+                flex: 1, padding: "12px", border: "1px solid #ddd", borderRadius: 8,
                 background: "#fff", cursor: "pointer", fontSize: 14,
               }}>취소</button>
               <button onClick={handleSubmit} disabled={loading} style={{
-                flex: 2, padding: "12px", border: "none", borderRadius: 6,
-                background: loading ? "#ccc" : "#FF6B35", color: "#fff",
-                cursor: "pointer", fontSize: 14, fontWeight: 700,
+                flex: 2, padding: "12px", border: "none", borderRadius: 8,
+                background: loading ? "#9CA3AF" : "#FF6B35", color: "#fff",
+                cursor: loading ? "default" : "pointer", fontSize: 14, fontWeight: 700,
               }}>
-                {loading ? "업로드 중..." : "올리기 (+10P)"}
+                {loading ? (loadingMsg || "업로드 중...") : "올리기 (+10P)"}
               </button>
             </div>
           </div>
@@ -253,7 +349,6 @@ export default function FeedUploadPage() {
       </main>
       <Footer />
 
-      {/* 긴급/주의 증상 알림 모달 */}
       {alertData && (
         <SymptomAlert analysis={alertData} onClose={() => { setAlertData(null); router.push("/feed"); }} />
       )}

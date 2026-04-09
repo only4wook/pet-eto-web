@@ -45,13 +45,15 @@ export default function FeedCard({ post }: { post: FeedPost }) {
         )}
       </div>
 
-      {/* 이미지 */}
+      {/* 이미지 / 동영상 */}
       <Link href={`/feed/${post.id}`}>
-        <img
-          src={post.image_url}
-          alt={post.description}
-          style={{ width: "100%", maxHeight: 500, objectFit: "cover", display: "block", cursor: "pointer" }}
-        />
+        {post.image_url?.endsWith(".mp4") ? (
+          <video src={post.image_url} muted playsInline preload="metadata"
+            style={{ width: "100%", maxHeight: 500, objectFit: "cover", display: "block", cursor: "pointer" }} />
+        ) : (
+          <img src={post.image_url} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            style={{ width: "100%", maxHeight: 500, objectFit: "cover", display: "block", cursor: "pointer" }} />
+        )}
       </Link>
 
       {/* 좋아요 / 댓글 */}
