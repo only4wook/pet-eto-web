@@ -32,17 +32,35 @@ export default function Home() {
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
           {/* 메인 콘텐츠 */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* 배너 */}
+            {/* 히어로 배너 + CTA */}
             <div style={{
-              background: "linear-gradient(135deg, #FF6B35, #FF8F65)",
-              borderRadius: 8, padding: "24px 28px", marginBottom: 20, color: "#fff",
+              background: "linear-gradient(135deg, #FF6B35, #E55A2B)",
+              borderRadius: 12, padding: "28px 28px 24px", marginBottom: 20, color: "#fff",
             }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
-                반려동물과 함께하는 모든 순간, P.E.T
+              <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, lineHeight: 1.4 }}>
+                갑자기 아플 때, 급하게 출장갈 때<br />
+                우리 아이를 안전하게 맡기세요
               </h2>
-              <p style={{ fontSize: 13, opacity: 0.9, marginTop: 6 }}>
-                질문하고, 정보를 나누고, 포인트를 모아보세요. 전문가 답변도 받을 수 있어요!
+              <p style={{ fontSize: 13, opacity: 0.9, marginTop: 8, lineHeight: 1.6 }}>
+                P.E.T는 반려동물 긴급 돌봄부터 커뮤니티, 건강 체크까지<br />
+                반려인의 모든 순간을 함께합니다.
               </p>
+              <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+                <a href="https://forms.gle/PLACEHOLDER" target="_blank" rel="noopener noreferrer" id="cta-btn" style={{
+                  background: "#fff", color: "#FF6B35", padding: "10px 24px", borderRadius: 8,
+                  fontSize: 14, fontWeight: 800, textDecoration: "none", display: "inline-block",
+                }}>
+                  🔔 출시 알림 받기
+                </a>
+                <span style={{ fontSize: 11, opacity: 0.8, alignSelf: "center" }}>
+                  무료 · 가장 먼저 혜택을 받아보세요
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 16, marginTop: 14, fontSize: 12, opacity: 0.85 }}>
+                <span>✅ 100% 에스크로 안전결제</span>
+                <span>✅ 수의학 자문 연계</span>
+                <span>✅ 신원인증 펫시터</span>
+              </div>
             </div>
 
             {/* 게시판 헤더 */}
