@@ -99,13 +99,7 @@ export default function Header() {
         </div>
       </nav>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .top-bar-pc { display: none !important; }
-          .logo-sub { display: none !important; }
-          .mobile-user-icon { display: flex !important; }
-        }
-      `}</style>
+      {/* 모바일 반응형은 globals.css에서 처리 */}
     </header>
   );
 }
