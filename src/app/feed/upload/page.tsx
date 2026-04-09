@@ -16,19 +16,33 @@ const SPECIES = [
 ];
 
 function compressImage(file: File, maxWidth = 1200): Promise<Blob> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    // 파일이 너무 작으면 (1MB 이하) 압축 없이 그대로 반환
+    if (file.size < 1024 * 1024) {
+      resolve(file);
+      return;
+    }
     const img = new Image();
     img.onload = () => {
-      const ratio = Math.min(maxWidth / img.width, 1);
-      const w = Math.round(img.width * ratio);
-      const h = Math.round(img.height * ratio);
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.75);
+      try {
+        const ratio = Math.min(maxWidth / img.width, 1);
+        const w = Math.round(img.width * ratio);
+        const h = Math.round(img.height * ratio);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          (blob) => { blob ? resolve(blob) : resolve(file); },
+          "image/jpeg",
+          0.75,
+        );
+      } catch { resolve(file); }
     };
+    img.onerror = () => resolve(file); // 이미지 로드 실패 시 원본 사용
     img.src = URL.createObjectURL(file);
+    // 10초 타임아웃 — 압축 실패 시 원본으로 진행
+    setTimeout(() => resolve(file), 10000);
   });
 }
 
@@ -58,52 +72,61 @@ export default function FeedUploadPage() {
 
     setLoading(true);
 
-    // 1. 이미지 압축 후 업로드 (원본 5~10MB → 압축 200~500KB)
-    const compressed = await compressImage(imageFile);
-    const fileName = `${user.id}/${Date.now()}.jpg`;
-    const { error: uploadError } = await supabase.storage
-      .from("feed-images")
-      .upload(fileName, compressed, { contentType: "image/jpeg" });
+    try {
+      // 1. 이미지 압축 (1MB 이상이면 리사이즈, 실패 시 원본 사용)
+      const compressed = await compressImage(imageFile);
+      const isCompressed = compressed !== imageFile;
+      const fileName = `${user.id}/${Date.now()}.${isCompressed ? "jpg" : imageFile.name.split(".").pop()}`;
+      const contentType = isCompressed ? "image/jpeg" : imageFile.type;
 
-    if (uploadError) {
-      alert("이미지 업로드 실패: " + uploadError.message);
+      // 2. Supabase Storage 업로드
+      const { error: uploadError } = await supabase.storage
+        .from("feed-images")
+        .upload(fileName, compressed, { contentType });
+
+      if (uploadError) {
+        alert("이미지 업로드 실패: " + uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from("feed-images").getPublicUrl(fileName);
+
+      // 3. AI 증상 분석
+      const analysis = analyzeSymptoms(description, species);
+
+      // 4. DB 저장
+      const { error: insertError } = await supabase.from("feed_posts").insert({
+        author_id: user.id,
+        image_url: urlData.publicUrl,
+        description: description.trim(),
+        pet_name: petName.trim(),
+        pet_species: species,
+        analysis_result: analysis,
+      });
+
+      if (insertError) {
+        alert("저장 실패: " + insertError.message);
+        setLoading(false);
+        return;
+      }
+
+      // 5. 포인트 +10P (실패해도 무시)
+      await supabase.from("point_logs").insert({ user_id: user.id, amount: 10, reason: "피드 작성" });
+      await supabase.rpc("add_points", { uid: user.id, pts: 10 });
+
       setLoading(false);
-      return;
-    }
 
-    const { data: urlData } = supabase.storage.from("feed-images").getPublicUrl(fileName);
-
-    // 2. AI 증상 분석
-    const analysis = analyzeSymptoms(description, species);
-
-    // 3. DB 저장
-    const { error: insertError } = await supabase.from("feed_posts").insert({
-      author_id: user.id,
-      image_url: urlData.publicUrl,
-      description: description.trim(),
-      pet_name: petName.trim(),
-      pet_species: species,
-      analysis_result: analysis,
-    });
-
-    if (insertError) {
-      alert("저장 실패: " + insertError.message);
+      // 6. 증상 심각하면 알림 표시
+      if (analysis.severity === "moderate" || analysis.severity === "urgent") {
+        setAlertData(analysis);
+      } else {
+        alert("피드가 등록되었습니다! (+10P)");
+        router.push("/feed");
+      }
+    } catch (err: any) {
+      alert("오류가 발생했습니다: " + (err?.message || "알 수 없는 오류"));
       setLoading(false);
-      return;
-    }
-
-    // 4. 포인트 +10P
-    await supabase.from("point_logs").insert({ user_id: user.id, amount: 10, reason: "피드 작성" });
-    await supabase.rpc("add_points", { uid: user.id, pts: 10 });
-
-    setLoading(false);
-
-    // 5. 증상 심각하면 알림 표시
-    if (analysis.severity === "moderate" || analysis.severity === "urgent") {
-      setAlertData(analysis);
-    } else {
-      alert("피드가 등록되었습니다! (+10P)");
-      router.push("/feed");
     }
   };
 
