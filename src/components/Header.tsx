@@ -84,9 +84,9 @@ export default function Header() {
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px", display: "flex", gap: 0 }}>
           {[
             { label: "전체글", href: "/" },
+            { label: "피드", href: "/feed" },
             { label: "질문", href: "/community?cat=질문" },
             { label: "정보", href: "/community?cat=정보" },
-            { label: "일상", href: "/community?cat=일상" },
             { label: "긴급", href: "/community?cat=긴급" },
             { label: "내 반려동물", href: "/mypage" },
           ].map((item) => (
