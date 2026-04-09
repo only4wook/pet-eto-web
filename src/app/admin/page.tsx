@@ -316,14 +316,37 @@ function ImageManagement() {
     ...DOG_DATA.breeds.map((b) => ({ ...b, species: "dog", speciesLabel: "강아지" })),
   ];
 
+  // 이미지 압축 (최대 800px, JPEG 70%)
+  const compressImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxSize = 800;
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = (h / w) * maxSize; w = maxSize; }
+          else { w = (w / h) * maxSize; h = maxSize; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.7);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) { alert("파일을 선택해주세요."); return; }
     if (!selectedBreed) { alert("품종을 선택해주세요."); return; }
     setUploading(true);
 
-    const fileName = `wiki/${selectedBreed}-${Date.now()}.${file.name.split(".").pop()}`;
-    const { error } = await supabase.storage.from("feed-images").upload(fileName, file, { contentType: file.type });
+    // 이미지 압축 후 업로드
+    const compressed = await compressImage(file);
+    const fileName = `wiki/${selectedBreed}-${Date.now()}.jpg`;
+    const { error } = await supabase.storage.from("feed-images").upload(fileName, compressed, { contentType: "image/jpeg" });
     if (error) { alert("업로드 실패: " + error.message); setUploading(false); return; }
 
     const { data: urlData } = supabase.storage.from("feed-images").getPublicUrl(fileName);
