@@ -23,6 +23,7 @@ body {
   font-size: 13px;
   line-height: 1.5;
   margin: 0;
+  -webkit-text-size-adjust: 100%;
 }
 
 a {
@@ -32,4 +33,20 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  /* 사이드바 숨김 */
+  .sidebar-hide-mobile { display: none !important; }
+
+  /* 게시판 테이블 모바일 최적화 */
+  table th:nth-child(1), table td:nth-child(1) { display: none !important; }
+  table th:nth-child(5), table td:nth-child(5) { display: none !important; }
+  table th:nth-child(6), table td:nth-child(6) { display: none !important; }
+  table th:nth-child(7), table td:nth-child(7) { display: none !important; }
+
+  /* 모바일 네비 스크롤 */
+  .mobile-nav-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .mobile-nav-scroll::-webkit-scrollbar { display: none; }
 }

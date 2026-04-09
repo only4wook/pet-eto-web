@@ -16,23 +16,19 @@ export default function Header() {
 
   return (
     <header style={{ background: "#fff", borderBottom: "2px solid #FF6B35" }}>
-      {/* 상단 바 */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 44 }}>
+      {/* 상단 바 - PC만 */}
+      <div className="top-bar-pc" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 40 }}>
           <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#888" }}>
             <Link href="/mypage" style={{ color: "#888" }}>마이페이지</Link>
-            <Link href="/pet/register" style={{ color: "#888" }}>반려동물 등록</Link>
           </div>
-          <div style={{ display: "flex", gap: 12, fontSize: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, fontSize: 12, alignItems: "center" }}>
             {user ? (
               <>
                 <span style={{ color: "#FF6B35", fontWeight: 700 }}>{user.nickname}</span>
                 <GradeBadge points={user.points} role={(user as any).role} />
-                <span style={{ color: "#888" }}>|</span>
                 <span style={{ color: "#2EC4B6", fontWeight: 600 }}>{user.points}P</span>
-                <span style={{ color: "#888" }}>|</span>
-                <Link href="/mypage" style={{ color: "#888" }}>내정보</Link>
-                <span style={{ color: "#888" }}>|</span>
+                <span style={{ color: "#ddd" }}>|</span>
                 <button onClick={handleLogout} style={{
                   background: "none", border: "none", color: "#888",
                   cursor: "pointer", fontSize: 12, padding: 0,
@@ -49,62 +45,67 @@ export default function Header() {
       </div>
 
       {/* 로고 + 검색 */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 16px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
-          <Link href="/" style={{ textDecoration: "none" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-              <span style={{ fontSize: 28, fontWeight: 900, color: "#FF6B35" }}>P.E.T</span>
-              <span style={{ fontSize: 12, color: "#888" }}>펫에토</span>
-            </div>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "10px 16px 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
+            <span style={{ fontSize: 24, fontWeight: 900, color: "#FF6B35" }}>P.E.T</span>
+            <span className="logo-sub" style={{ fontSize: 11, color: "#888", marginLeft: 4 }}>펫에토</span>
           </Link>
-          <form style={{ flex: 1, maxWidth: 400, display: "flex" }} onSubmit={(e) => e.preventDefault()}>
-            <input
-              type="text"
-              placeholder="검색어를 입력하세요"
-              style={{
-                flex: 1, border: "1px solid #ddd", borderRight: "none",
-                padding: "7px 12px", fontSize: 13, borderRadius: "4px 0 0 4px", outline: "none",
-              }}
-            />
-            <button
-              type="submit"
-              style={{
-                background: "#FF6B35", color: "#fff", border: "none",
-                padding: "7px 16px", fontSize: 13, cursor: "pointer", borderRadius: "0 4px 4px 0",
-              }}
-            >
-              검색
-            </button>
+          <form style={{ flex: 1, display: "flex", maxWidth: 400 }} onSubmit={(e) => e.preventDefault()}>
+            <input type="text" placeholder="검색어를 입력하세요" style={{
+              flex: 1, border: "1px solid #ddd", borderRight: "none",
+              padding: "7px 10px", fontSize: 13, borderRadius: "4px 0 0 4px", outline: "none",
+              minWidth: 0,
+            }} />
+            <button type="submit" style={{
+              background: "#FF6B35", color: "#fff", border: "none",
+              padding: "7px 14px", fontSize: 13, cursor: "pointer", borderRadius: "0 4px 4px 0",
+              flexShrink: 0,
+            }}>검색</button>
           </form>
+          {/* 모바일 유저 아이콘 */}
+          <Link href={user ? "/mypage" : "/auth/login"} className="mobile-user-icon" style={{
+            display: "none", width: 32, height: 32, borderRadius: "50%",
+            background: user ? "#FF6B35" : "#ddd", alignItems: "center", justifyContent: "center",
+            color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none", flexShrink: 0,
+          }}>
+            {user ? user.nickname.charAt(0) : "?"}
+          </Link>
         </div>
       </div>
 
       {/* 네비게이션 */}
       <nav style={{ background: "#FF6B35" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px", display: "flex", gap: 0 }}>
+        <div className="mobile-nav-scroll" style={{
+          maxWidth: 1100, margin: "0 auto", padding: "0 8px",
+          display: "flex", gap: 0, whiteSpace: "nowrap",
+        }}>
           {[
             { label: "전체글", href: "/" },
-            { label: "피드", href: "/feed" },
+            { label: "📸피드", href: "/feed" },
             { label: "질문", href: "/community?cat=질문" },
             { label: "정보", href: "/community?cat=정보" },
+            { label: "일상", href: "/community?cat=일상" },
             { label: "긴급", href: "/community?cat=긴급" },
-            { label: "내 반려동물", href: "/mypage" },
+            { label: "마이", href: "/mypage" },
           ].map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              style={{
-                color: "#fff", padding: "10px 18px", fontSize: 13,
-                fontWeight: 600, textDecoration: "none", display: "block",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.1)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
+            <Link key={item.label} href={item.href} style={{
+              color: "#fff", padding: "10px 14px", fontSize: 13,
+              fontWeight: 600, textDecoration: "none", display: "block", flexShrink: 0,
+            }}>
               {item.label}
             </Link>
           ))}
         </div>
       </nav>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .top-bar-pc { display: none !important; }
+          .logo-sub { display: none !important; }
+          .mobile-user-icon { display: flex !important; }
+        }
+      `}</style>
     </header>
   );
 }

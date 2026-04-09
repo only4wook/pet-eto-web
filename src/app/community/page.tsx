@@ -103,14 +103,7 @@ function CommunityContent() {
       </main>
       <Footer />
 
-      <style>{`
-        @media (max-width: 768px) {
-          table th:nth-child(1), table td:nth-child(1),
-          table th:nth-child(5), table td:nth-child(5),
-          table th:nth-child(6), table td:nth-child(6),
-          table th:nth-child(7), table td:nth-child(7) { display: none !important; }
-        }
-      `}</style>
+      {/* 모바일 반응형은 globals.css에서 처리 */}
     </>
   );
 }
