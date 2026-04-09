@@ -1,5 +1,6 @@
 "use client";
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
@@ -14,11 +15,31 @@ import type { FeedPost, FeedComment } from "../../../types";
 
 export default function FeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const user = useAppStore((s) => s.user);
   const [post, setPost] = useState<FeedPost | null>(null);
   const [comments, setComments] = useState<FeedComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [showVets, setShowVets] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    setDeleting(true);
+    // Storage 이미지 삭제 (실패해도 진행)
+    if (post?.image_url) {
+      const path = post.image_url.split("/feed-images/")[1];
+      if (path) await supabase.storage.from("feed-images").remove([path]);
+    }
+    // DB 삭제 (댓글 먼저, 그 다음 글)
+    await supabase.from("feed_comments").delete().eq("feed_post_id", id);
+    await supabase.from("feed_likes").delete().eq("feed_post_id", id);
+    const { error } = await supabase.from("feed_posts").delete().eq("id", id);
+    setDeleting(false);
+    if (error) { alert("삭제 실패: " + error.message); return; }
+    alert("삭제되었습니다.");
+    router.push("/feed");
+  };
 
   useEffect(() => {
     // 데모 데이터에서 먼저 찾기
@@ -88,6 +109,15 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                 {post.pet_name && `${post.pet_name} · `}{formatDate(post.created_at)}
               </div>
             </div>
+            {/* 본인 글 삭제 버튼 */}
+            {user && post.author_id === user.id && !id.startsWith("df") && (
+              <button onClick={handleDelete} disabled={deleting} style={{
+                background: "none", border: "1px solid #E5E7EB", borderRadius: 6,
+                padding: "4px 10px", fontSize: 12, color: "#9CA3AF", cursor: "pointer",
+              }}>
+                {deleting ? "삭제 중..." : "삭제"}
+              </button>
+            )}
           </div>
 
           {/* 이미지 */}

@@ -1,9 +1,11 @@
 "use client";
 import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { useAppStore } from "../../../lib/store";
+import { supabase } from "../../../lib/supabase";
 import { formatDate, getCategoryColor } from "../../../lib/utils";
 
 const DEMO_COMMENTS = [
@@ -15,10 +17,29 @@ const DEMO_COMMENTS = [
 
 export default function PostDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const posts = useAppStore((s) => s.posts);
+  const user = useAppStore((s) => s.user);
   const post = posts.find((p) => p.id === id);
   const [comment, setComment] = useState("");
   const [liked, setLiked] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const isDbPost = id.length > 10 && !id.startsWith("p");
+  const isOwner = user && post?.author_id === user.id;
+
+  const handleDelete = async () => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    setDeleting(true);
+    if (isDbPost) {
+      await supabase.from("comments").delete().eq("post_id", id);
+      await supabase.from("likes").delete().eq("target_id", id);
+      const { error } = await supabase.from("posts").delete().eq("id", id);
+      if (error) { alert("삭제 실패: " + error.message); setDeleting(false); return; }
+    }
+    alert("삭제되었습니다.");
+    router.push("/");
+  };
 
   if (!post) {
     return (
@@ -60,12 +81,20 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
             </h1>
             <div style={{
               display: "flex", gap: 16, marginTop: 10, fontSize: 12, color: "#888",
-              flexWrap: "wrap",
+              flexWrap: "wrap", alignItems: "center",
             }}>
               <span><b style={{ color: "#333" }}>{post.author?.nickname}</b></span>
               <span>{formatDate(post.created_at)}</span>
               <span>조회 {post.view_count}</span>
               <span>추천 {post.like_count}</span>
+              {isOwner && (
+                <button onClick={handleDelete} disabled={deleting} style={{
+                  marginLeft: "auto", background: "none", border: "1px solid #E5E7EB",
+                  borderRadius: 6, padding: "3px 10px", fontSize: 12, color: "#9CA3AF", cursor: "pointer",
+                }}>
+                  {deleting ? "삭제 중..." : "🗑 삭제"}
+                </button>
+              )}
             </div>
           </div>
 
