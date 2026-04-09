@@ -62,7 +62,10 @@ export default function FeedUploadPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setImageFile(file);
-    setPreview(URL.createObjectURL(file));
+    // FileReader 방식 (모바일 호환성 향상)
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async () => {
@@ -74,18 +77,36 @@ export default function FeedUploadPage() {
 
     try {
       // 1. 이미지 압축 (1MB 이상이면 리사이즈, 실패 시 원본 사용)
-      const compressed = await compressImage(imageFile);
-      const isCompressed = compressed !== imageFile;
-      const fileName = `${user.id}/${Date.now()}.${isCompressed ? "jpg" : imageFile.name.split(".").pop()}`;
-      const contentType = isCompressed ? "image/jpeg" : imageFile.type;
+      let fileToUpload: Blob = imageFile;
+      let contentType = imageFile.type || "image/jpeg";
+      let ext = imageFile.name.split(".").pop() || "jpg";
+      try {
+        const compressed = await compressImage(imageFile);
+        if (compressed !== imageFile) {
+          fileToUpload = compressed;
+          contentType = "image/jpeg";
+          ext = "jpg";
+        }
+      } catch {
+        // 압축 실패 시 원본 사용
+      }
 
-      // 2. Supabase Storage 업로드
-      const { error: uploadError } = await supabase.storage
+      // 2. Supabase Storage 업로드 (30초 타임아웃)
+      // 폴더 없이 플랫 구조 (RLS 호환성)
+      const fileName = `feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+      const uploadPromise = supabase.storage
         .from("feed-images")
-        .upload(fileName, compressed, { contentType });
+        .upload(fileName, fileToUpload, { contentType, upsert: true });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("업로드 시간 초과 (30초). 네트워크를 확인해주세요.")), 30000)
+      );
+
+      const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
       if (uploadError) {
-        alert("이미지 업로드 실패: " + uploadError.message);
+        alert("이미지 업로드 실패: " + uploadError.message + "\n\n💡 Supabase Storage 권한을 확인해주세요.");
         setLoading(false);
         return;
       }
@@ -111,7 +132,7 @@ export default function FeedUploadPage() {
         return;
       }
 
-      // 5. 포인트 +10P (실패해도 무시)
+      // 5. 포인트 +10P
       await supabase.from("point_logs").insert({ user_id: user.id, amount: 10, reason: "피드 작성" });
       await supabase.rpc("add_points", { uid: user.id, pts: 10 });
 
@@ -125,7 +146,7 @@ export default function FeedUploadPage() {
         router.push("/feed");
       }
     } catch (err: any) {
-      alert("오류가 발생했습니다: " + (err?.message || "알 수 없는 오류"));
+      alert("오류: " + (err?.message || "알 수 없는 오류") + "\n\n네트워크 연결을 확인해주세요.");
       setLoading(false);
     }
   };
