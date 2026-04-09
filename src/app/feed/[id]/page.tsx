@@ -104,30 +104,56 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
             <b>{post.author?.nickname}</b> {post.description}
           </div>
 
-          {/* AI 분석 결과 */}
-          {analysis && analysis.severity !== "normal" && sevColor && (
-            <div style={{ margin: "0 16px 16px", borderRadius: 8, overflow: "hidden", border: `1px solid ${sevColor.bg}30` }}>
-              <div style={{ background: sevColor.bg, color: "#fff", padding: "10px 14px", fontSize: 14, fontWeight: 700 }}>
-                {analysis.severity === "urgent" ? "🚨 긴급 증상 분석 결과" : "⚠️ 주의 증상 분석 결과"}
+          {/* AI 분석 결과 — 모든 등급 표시 */}
+          {analysis && (
+            <div style={{ margin: "0 16px 16px", borderRadius: 8, overflow: "hidden", border: `1px solid ${
+              analysis.severity === "normal" ? "#A7F3D0" : (sevColor?.bg || "#ddd") + "30"
+            }` }}>
+              <div style={{
+                background: analysis.severity === "normal" ? "#059669" : (sevColor?.bg || "#888"),
+                color: "#fff", padding: "10px 14px", fontSize: 14, fontWeight: 700,
+              }}>
+                {analysis.severity === "normal" ? "✅ AI 분석: 정상입니다"
+                  : analysis.severity === "urgent" ? "🚨 긴급 증상 분석 결과"
+                  : analysis.severity === "moderate" ? "⚠️ 주의 증상 분석 결과"
+                  : "💡 관찰 필요 증상 분석 결과"}
               </div>
               <div style={{ padding: 14 }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-                  {analysis.symptoms.map((s, i) => (
-                    <span key={i} style={{
-                      background: sevColor.bg + "15", color: sevColor.bg,
-                      padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600,
-                    }}>{s}</span>
-                  ))}
-                </div>
-                <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#444" }}>{analysis.summary}</p>
-                <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.7, color: "#666", fontStyle: "italic" }}>{analysis.recommendation}</p>
-                <button onClick={() => setShowVets(!showVets)} style={{
-                  marginTop: 12, width: "100%", padding: "10px", background: sevColor.bg, color: "#fff",
-                  border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                }}>
-                  {showVets ? "병원 목록 닫기" : "🏥 주변 동물병원 찾기"}
-                </button>
-                {showVets && <div style={{ marginTop: 12 }}><VetClinicList is24hOnly={analysis.severity === "urgent"} /></div>}
+                {analysis.severity === "normal" ? (
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#059669" }}>
+                    특별한 이상 증상이 감지되지 않았습니다. 건강한 상태로 보입니다. 정기적인 건강검진을 권장합니다.
+                  </p>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                      {analysis.symptoms.map((s, i) => (
+                        <span key={i} style={{
+                          background: (sevColor?.bg || "#888") + "15", color: sevColor?.bg || "#888",
+                          padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600,
+                        }}>{s}</span>
+                      ))}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#444" }}>{analysis.summary}</p>
+                    <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.7, color: "#666", fontStyle: "italic" }}>{analysis.recommendation}</p>
+                  </>
+                )}
+                {/* 주변 동물병원 — 주의/긴급은 자동 표시, 정상/관찰은 버튼 클릭 */}
+                {(analysis.severity === "urgent" || analysis.severity === "moderate") ? (
+                  <div style={{ marginTop: 12 }}>
+                    <VetClinicList is24hOnly={analysis.severity === "urgent"} />
+                  </div>
+                ) : (
+                  <>
+                    <button onClick={() => setShowVets(!showVets)} style={{
+                      marginTop: 12, width: "100%", padding: "10px",
+                      background: analysis.severity === "normal" ? "#059669" : "#0369A1",
+                      color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    }}>
+                      {showVets ? "병원 목록 닫기" : "🏥 주변 동물병원 찾기"}
+                    </button>
+                    {showVets && <div style={{ marginTop: 12 }}><VetClinicList /></div>}
+                  </>
+                )}
                 <div style={{ fontSize: 11, color: "#aaa", marginTop: 10 }}>※ AI 자동 분석이며, 의학적 진단이 아닙니다.</div>
               </div>
             </div>

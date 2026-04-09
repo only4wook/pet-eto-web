@@ -33,13 +33,14 @@ export default function FeedCard({ post }: { post: FeedPost }) {
             {formatDate(post.created_at)}
           </div>
         </div>
-        {/* AI 분석 배지 */}
-        {analysis && analysis.severity !== "normal" && sevColor && (
+        {/* AI 분석 배지 — 정상도 표시 */}
+        {analysis && (
           <div style={{
-            background: sevColor.bg, color: sevColor.color,
+            background: analysis.severity === "normal" ? "#ECFDF5" : (sevColor?.bg || "#F3F4F6"),
+            color: analysis.severity === "normal" ? "#059669" : (sevColor?.color || "#666"),
             padding: "3px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
           }}>
-            AI {getSeverityLabel(analysis.severity)}
+            {analysis.severity === "normal" ? "✅ 정상" : `AI ${getSeverityLabel(analysis.severity)}`}
           </div>
         )}
       </div>
@@ -73,23 +74,47 @@ export default function FeedCard({ post }: { post: FeedPost }) {
         </p>
       </div>
 
-      {/* AI 분석 결과 미리보기 (주의/긴급만) */}
-      {analysis && (analysis.severity === "moderate" || analysis.severity === "urgent") && sevColor && (
+      {/* AI 분석 결과 미리보기 */}
+      {analysis && (
         <Link href={`/feed/${post.id}`} style={{ textDecoration: "none" }}>
           <div style={{
             margin: "0 16px 12px", padding: "10px 12px", borderRadius: 6,
-            background: analysis.severity === "urgent" ? "#FEF2F2" : "#FFFBEB",
-            border: `1px solid ${analysis.severity === "urgent" ? "#FECACA" : "#FDE68A"}`,
+            background: analysis.severity === "normal" ? "#ECFDF5"
+              : analysis.severity === "urgent" ? "#FEF2F2"
+              : analysis.severity === "moderate" ? "#FFFBEB"
+              : "#F0F9FF",
+            border: `1px solid ${
+              analysis.severity === "normal" ? "#A7F3D0"
+              : analysis.severity === "urgent" ? "#FECACA"
+              : analysis.severity === "moderate" ? "#FDE68A"
+              : "#BAE6FD"
+            }`,
           }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: sevColor.bg, marginBottom: 4 }}>
-              {analysis.severity === "urgent" ? "🚨 긴급 증상 감지" : "⚠️ 주의 증상 감지"}
+            <div style={{
+              fontSize: 12, fontWeight: 700, marginBottom: 4,
+              color: analysis.severity === "normal" ? "#059669"
+                : analysis.severity === "urgent" ? "#DC2626"
+                : analysis.severity === "moderate" ? "#D97706"
+                : "#0369A1",
+            }}>
+              {analysis.severity === "normal" ? "✅ AI 분석: 정상입니다"
+                : analysis.severity === "urgent" ? "🚨 긴급 증상 감지"
+                : analysis.severity === "moderate" ? "⚠️ 주의 증상 감지"
+                : "💡 관찰 필요 증상 감지"}
             </div>
             <div style={{ fontSize: 12, color: "#666", lineHeight: 1.5 }}>
-              {analysis.summary.slice(0, 80)}...
+              {analysis.severity === "normal"
+                ? "특별한 이상 증상이 감지되지 않았습니다. 건강한 상태로 보입니다."
+                : (analysis.summary?.slice(0, 80) || "") + "..."}
             </div>
-            <div style={{ fontSize: 11, color: sevColor.bg, marginTop: 4, fontWeight: 600 }}>
-              자세히 보기 →
-            </div>
+            {analysis.severity !== "normal" && (
+              <div style={{
+                fontSize: 11, marginTop: 4, fontWeight: 600,
+                color: analysis.severity === "urgent" ? "#DC2626" : "#D97706",
+              }}>
+                자세히 보기 →
+              </div>
+            )}
           </div>
         </Link>
       )}

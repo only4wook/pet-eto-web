@@ -16,33 +16,52 @@ const SPECIES = [
 ];
 
 function compressImage(file: File, maxWidth = 1200): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    // 파일이 너무 작으면 (1MB 이하) 압축 없이 그대로 반환
-    if (file.size < 1024 * 1024) {
-      resolve(file);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
+  return new Promise((resolve) => {
+    // createImageBitmap은 HEIC를 포함한 대부분의 모바일 포맷 지원
+    const useCreateImageBitmap = typeof createImageBitmap === "function";
+
+    const drawToCanvas = (source: HTMLImageElement | ImageBitmap) => {
       try {
-        const ratio = Math.min(maxWidth / img.width, 1);
-        const w = Math.round(img.width * ratio);
-        const h = Math.round(img.height * ratio);
+        const sw = "width" in source ? source.width : (source as any).naturalWidth || 1200;
+        const sh = "height" in source ? source.height : (source as any).naturalHeight || 1200;
+        const ratio = Math.min(maxWidth / sw, 1);
+        const w = Math.round(sw * ratio);
+        const h = Math.round(sh * ratio);
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
-        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        canvas.getContext("2d")!.drawImage(source as any, 0, 0, w, h);
         canvas.toBlob(
-          (blob) => { blob ? resolve(blob) : resolve(file); },
+          (blob) => resolve(blob && blob.size > 0 ? blob : file),
           "image/jpeg",
           0.75,
         );
       } catch { resolve(file); }
     };
-    img.onerror = () => resolve(file); // 이미지 로드 실패 시 원본 사용
+
+    if (useCreateImageBitmap) {
+      // createImageBitmap: HEIC/HEIF 등 모바일 포맷 처리 가능
+      createImageBitmap(file)
+        .then(drawToCanvas)
+        .catch(() => {
+          // fallback: Image 엘리먼트 시도
+          loadWithImage(file).then(drawToCanvas).catch(() => resolve(file));
+        });
+    } else {
+      loadWithImage(file).then(drawToCanvas).catch(() => resolve(file));
+    }
+
+    // 15초 타임아웃
+    setTimeout(() => resolve(file), 15000);
+  });
+}
+
+function loadWithImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject();
     img.src = URL.createObjectURL(file);
-    // 10초 타임아웃 — 압축 실패 시 원본으로 진행
-    setTimeout(() => resolve(file), 10000);
   });
 }
 
@@ -77,23 +96,15 @@ export default function FeedUploadPage() {
 
     try {
       // 1. 이미지 압축 (1MB 이상이면 리사이즈, 실패 시 원본 사용)
-      let fileToUpload: Blob = imageFile;
-      let contentType = imageFile.type || "image/jpeg";
-      let ext = imageFile.name.split(".").pop() || "jpg";
-      try {
-        const compressed = await compressImage(imageFile);
-        if (compressed !== imageFile) {
-          fileToUpload = compressed;
-          contentType = "image/jpeg";
-          ext = "jpg";
-        }
-      } catch {
-        // 압축 실패 시 원본 사용
-      }
+      // 1. 이미지를 항상 JPEG로 변환 (HEIC/HEIF 등 브라우저 미지원 포맷 해결)
+      const compressed = await compressImage(imageFile);
+      const isConverted = compressed !== imageFile;
+      const fileToUpload = compressed;
+      const contentType = isConverted ? "image/jpeg" : (imageFile.type || "image/jpeg");
 
       // 2. Supabase Storage 업로드 (30초 타임아웃)
-      // 폴더 없이 플랫 구조 (RLS 호환성)
-      const fileName = `feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      // 항상 .jpg 확장자 (브라우저 호환성)
+      const fileName = `feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
 
       const uploadPromise = supabase.storage
         .from("feed-images")
@@ -161,7 +172,7 @@ export default function FeedUploadPage() {
           </div>
           <div style={{ padding: 20 }}>
             {/* 이미지 선택 */}
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: "none" }} />
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*" capture="environment" onChange={handleImageSelect} style={{ display: "none" }} />
             <div
               onClick={() => fileRef.current?.click()}
               style={{
