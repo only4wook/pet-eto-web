@@ -15,6 +15,23 @@ const SPECIES = [
   { value: "other", label: "🐾 기타" },
 ];
 
+function compressImage(file: File, maxWidth = 1200): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(maxWidth / img.width, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.75);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export default function FeedUploadPage() {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
@@ -41,11 +58,12 @@ export default function FeedUploadPage() {
 
     setLoading(true);
 
-    // 1. 이미지 업로드
-    const fileName = `${user.id}/${Date.now()}-${imageFile.name}`;
+    // 1. 이미지 압축 후 업로드 (원본 5~10MB → 압축 200~500KB)
+    const compressed = await compressImage(imageFile);
+    const fileName = `${user.id}/${Date.now()}.jpg`;
     const { error: uploadError } = await supabase.storage
       .from("feed-images")
-      .upload(fileName, imageFile, { contentType: imageFile.type });
+      .upload(fileName, compressed, { contentType: "image/jpeg" });
 
     if (uploadError) {
       alert("이미지 업로드 실패: " + uploadError.message);
