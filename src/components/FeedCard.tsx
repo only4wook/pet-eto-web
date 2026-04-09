@@ -50,10 +50,21 @@ export default function FeedCard({ post }: { post: FeedPost }) {
         {post.image_url?.endsWith(".mp4") ? (
           <video src={post.image_url} muted playsInline preload="metadata"
             style={{ width: "100%", maxHeight: 500, objectFit: "cover", display: "block", cursor: "pointer" }} />
-        ) : (
-          <img src={post.image_url} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        ) : post.image_url ? (
+          <img src={post.image_url} alt=""
+            onError={(e) => {
+              const el = e.target as HTMLImageElement;
+              el.style.display = "none";
+              el.parentElement?.querySelector(".feed-img-fallback")?.setAttribute("style", "display:flex");
+            }}
             style={{ width: "100%", maxHeight: 500, objectFit: "cover", display: "block", cursor: "pointer" }} />
-        )}
+        ) : null}
+        <div className="feed-img-fallback" style={{
+          display: "none", width: "100%", height: 200, background: "#F9FAFB",
+          alignItems: "center", justifyContent: "center", color: "#9CA3AF", fontSize: 13,
+        }}>
+          📷 이미지를 표시할 수 없습니다
+        </div>
       </Link>
 
       {/* 좋아요 / 댓글 */}

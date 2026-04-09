@@ -159,16 +159,14 @@ export default function FeedUploadPage() {
           imageUrl = vUrl.publicUrl;
         }
       } else {
-        // 이미지: JPEG 변환 후 업로드
+        // 이미지: JPEG 변환 후 업로드 (항상 image/jpeg로 강제)
         setLoadingMsg("이미지 처리 중...");
         const compressed = await compressImage(mediaFile);
-        const isConverted = compressed !== mediaFile;
-        const contentType = isConverted ? "image/jpeg" : (mediaFile.type || "image/jpeg");
         const fileName = `feed-${ts}-${rand}.jpg`;
 
         setLoadingMsg("업로드 중...");
         const uploadPromise = storageClient.storage
-          .from("feed-images").upload(fileName, compressed, { contentType, upsert: true });
+          .from("feed-images").upload(fileName, compressed, { contentType: "image/jpeg", upsert: true });
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("업로드 시간 초과 (30초)")), 30000));
         const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
