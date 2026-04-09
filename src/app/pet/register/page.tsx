@@ -9,7 +9,6 @@ import { useAppStore } from "../../../lib/store";
 const SPECIES = [
   { value: "cat", label: "고양이" },
   { value: "dog", label: "강아지" },
-  { value: "bird", label: "새" },
   { value: "fish", label: "물고기" },
   { value: "reptile", label: "파충류" },
   { value: "other", label: "기타" },

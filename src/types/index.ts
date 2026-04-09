@@ -11,7 +11,7 @@ export interface Pet {
   id: string;
   owner_id: string;
   name: string;
-  species: "dog" | "cat" | "bird" | "fish" | "reptile" | "other";
+  species: "dog" | "cat" | "fish" | "reptile" | "other";
   breed: string;
   birth_date: string | null;
   gender: "male" | "female" | "unknown";

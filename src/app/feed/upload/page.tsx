@@ -12,7 +12,6 @@ import type { AnalysisResult } from "../../../types";
 const SPECIES = [
   { value: "cat", label: "🐱 고양이" },
   { value: "dog", label: "🐶 강아지" },
-  { value: "bird", label: "🐦 새" },
   { value: "other", label: "🐾 기타" },
 ];
 
