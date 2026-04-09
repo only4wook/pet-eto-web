@@ -327,8 +327,18 @@ function ImageManagement() {
     if (error) { alert("업로드 실패: " + error.message); setUploading(false); return; }
 
     const { data: urlData } = supabase.storage.from("feed-images").getPublicUrl(fileName);
-    setUploadedUrl(urlData.publicUrl);
+    const publicUrl = urlData.publicUrl;
+
+    // DB에 이미지 URL 저장 (upsert: 있으면 업데이트, 없으면 삽입)
+    await supabase.from("breed_images").upsert({
+      id: selectedBreed,
+      image_url: publicUrl,
+      updated_at: new Date().toISOString(),
+    });
+
+    setUploadedUrl(publicUrl);
     setUploading(false);
+    alert("업로드 완료! 위키 페이지에 자동 반영됩니다.");
   };
 
   return (

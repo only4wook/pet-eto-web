@@ -4,10 +4,12 @@ import Link from "next/link";
 import Header from "../../../../components/Header";
 import Footer from "../../../../components/Footer";
 import { CAT_DATA } from "../../../../lib/wikiData";
+import { useBreedImages } from "../../../../lib/useBreedImages";
 
 export default function CatBreedPage({ params }: { params: Promise<{ breed: string }> }) {
   const { breed: breedId } = use(params);
   const breed = CAT_DATA.breeds.find((b) => b.id === breedId);
+  const { getImage } = useBreedImages();
 
   if (!breed) {
     return (<><Header /><main style={{ maxWidth: 900, margin: "0 auto", padding: 40, textAlign: "center" }}>
@@ -23,7 +25,7 @@ export default function CatBreedPage({ params }: { params: Promise<{ breed: stri
         <Link href="/wiki/cat" style={{ fontSize: 12, color: "#888" }}>← 고양이 위키</Link>
 
         <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e0e0e0", marginTop: 12, overflow: "hidden" }}>
-          <img src={breed.image} alt={breed.name} style={{ width: "100%", maxHeight: 350, objectFit: "cover" }} />
+          <img src={getImage(breed.id, breed.image)} alt={breed.name} style={{ width: "100%", maxHeight: 350, objectFit: "cover" }} />
 
           <div style={{ padding: 24 }}>
             <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>🐱 {breed.name}</h1>

@@ -3,9 +3,11 @@ import Link from "next/link";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { DOG_DATA } from "../../../lib/wikiData";
+import { useBreedImages } from "../../../lib/useBreedImages";
 
 export default function DogWikiPage() {
   const data = DOG_DATA;
+  const { getImage } = useBreedImages();
   return (
     <>
       <Header />
@@ -40,7 +42,7 @@ export default function DogWikiPage() {
               {data.breeds.map((breed) => (
                 <Link key={breed.id} href={`/wiki/dog/${breed.id}`} style={{ textDecoration: "none" }}>
                   <div style={{ border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
-                    <img src={breed.image} alt={breed.name} style={{ width: "100%", height: 140, objectFit: "cover" }} />
+                    <img src={getImage(breed.id, breed.image)} alt={breed.name} style={{ width: "100%", height: 140, objectFit: "cover" }} />
                     <div style={{ padding: 12 }}>
                       <div style={{ fontWeight: 700, fontSize: 14, color: "#333" }}>{breed.name}</div>
                       <div style={{ fontSize: 11, color: "#888" }}>{breed.nameEn} · {breed.origin}</div>
