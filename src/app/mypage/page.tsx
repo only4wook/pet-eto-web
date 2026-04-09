@@ -175,6 +175,14 @@ export default function MyPage() {
               수의사, 의사, 약사, 업체 관계자분은 전문가 인증을 통해 전문가 배지를 받을 수 있습니다.
               인증 후 전문가 답변 작성 시 추가 포인트(+50P)가 지급됩니다.
             </p>
+            {/* 카카오톡 문의 버튼 */}
+            <a href="https://pf.kakao.com/_peteto" target="_blank" rel="noopener noreferrer" style={{
+              display: "inline-flex", alignItems: "center", gap: 8, marginTop: 12,
+              background: "#FEE500", color: "#3C1E1E", padding: "10px 20px",
+              borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
+            }}>
+              💬 관리자에게 카카오톡 문의하기
+            </a>
 
             {showExpertForm && (
               <div style={{ marginTop: 16, padding: 16, background: "#FAFAFA", borderRadius: 8 }}>

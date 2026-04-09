@@ -7,7 +7,7 @@ import { CAT_DATA, DOG_DATA } from "../../lib/wikiData";
 import { getGrade } from "../../lib/grades";
 import type { User } from "../../types";
 
-type Tab = "users" | "images";
+type Tab = "users" | "posts" | "images";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -50,6 +50,7 @@ export default function AdminPage() {
         <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "2px solid #333" }}>
           {[
             { key: "users" as Tab, label: "유저 관리" },
+            { key: "posts" as Tab, label: "글 관리" },
             { key: "images" as Tab, label: "위키 이미지" },
           ].map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
@@ -62,6 +63,7 @@ export default function AdminPage() {
         </div>
 
         {tab === "users" && <UserManagement />}
+        {tab === "posts" && <PostManagement />}
         {tab === "images" && <ImageManagement />}
       </main>
       <Footer />
@@ -298,6 +300,165 @@ function UserManagement() {
               borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13,
             }}>닫기</button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ 글 관리 탭 ============
+function PostManagement() {
+  type PostTab = "community" | "feed";
+  const [postTab, setPostTab] = useState<PostTab>("community");
+  const [posts, setPosts] = useState<any[]>([]);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [catFilter, setCatFilter] = useState("전체");
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    const [{ data: p }, { data: f }] = await Promise.all([
+      supabase.from("posts").select("*, author:users(id, nickname)").order("created_at", { ascending: false }).limit(100),
+      supabase.from("feed_posts").select("*, author:users(id, nickname)").order("created_at", { ascending: false }).limit(100),
+    ]);
+    if (p) setPosts(p);
+    if (f) setFeedPosts(f);
+    setLoading(false);
+  };
+
+  const deletePost = async (id: string) => {
+    if (!confirm("정말 삭제하시겠습니까? 복구할 수 없습니다.")) return;
+    await supabase.from("comments").delete().eq("post_id", id);
+    await supabase.from("likes").delete().eq("target_id", id);
+    const { error } = await supabase.from("posts").delete().eq("id", id);
+    if (error) alert("삭제 실패: " + error.message);
+    else { alert("삭제 완료"); fetchAll(); }
+  };
+
+  const deleteFeed = async (id: string, imageUrl: string) => {
+    if (!confirm("정말 삭제하시겠습니까? 복구할 수 없습니다.")) return;
+    // Storage 이미지 삭제
+    if (imageUrl) {
+      const path = imageUrl.split("/feed-images/")[1];
+      if (path) await supabase.storage.from("feed-images").remove([path]);
+    }
+    await supabase.from("feed_comments").delete().eq("feed_post_id", id);
+    await supabase.from("feed_likes").delete().eq("feed_post_id", id);
+    const { error } = await supabase.from("feed_posts").delete().eq("id", id);
+    if (error) alert("삭제 실패: " + error.message);
+    else { alert("삭제 완료"); fetchAll(); }
+  };
+
+  const categories = ["전체", "질문", "정보", "일상", "긴급"];
+  const filteredPosts = catFilter === "전체" ? posts : posts.filter((p) => p.category === catFilter);
+  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#888" }}>로딩 중...</div>;
+
+  return (
+    <div>
+      {/* 서브 탭 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button onClick={() => setPostTab("community")} style={{
+          padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+          background: postTab === "community" ? "#1F2937" : "#F3F4F6",
+          color: postTab === "community" ? "#fff" : "#6B7280", border: "none",
+        }}>📝 커뮤니티 ({posts.length})</button>
+        <button onClick={() => setPostTab("feed")} style={{
+          padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+          background: postTab === "feed" ? "#1F2937" : "#F3F4F6",
+          color: postTab === "feed" ? "#fff" : "#6B7280", border: "none",
+        }}>📸 피드 ({feedPosts.length})</button>
+        <button onClick={fetchAll} style={{
+          marginLeft: "auto", padding: "8px 16px", background: "#333", color: "#fff",
+          border: "none", borderRadius: 8, fontSize: 12, cursor: "pointer",
+        }}>새로고침</button>
+      </div>
+
+      {postTab === "community" && (
+        <>
+          {/* 카테고리 필터 */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+            {categories.map((cat) => (
+              <button key={cat} onClick={() => setCatFilter(cat)} style={{
+                padding: "4px 14px", borderRadius: 16, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: catFilter === cat ? "#FF6B35" : "#F3F4F6",
+                color: catFilter === cat ? "#fff" : "#6B7280", border: "none",
+              }}>{cat}</button>
+            ))}
+          </div>
+          <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "#F9FAFB" }}>
+                  <th style={th}>카테고리</th>
+                  <th style={{ ...th, textAlign: "left" }}>제목</th>
+                  <th style={th}>작성자</th>
+                  <th style={th}>날짜</th>
+                  <th style={th}>조회</th>
+                  <th style={th}>관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPosts.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #F3F4F6" }}>
+                    <td style={td}><span style={{
+                      fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 8,
+                      background: p.category === "긴급" ? "#FEE2E2" : p.category === "질문" ? "#EFF6FF" : "#F3F4F6",
+                      color: p.category === "긴급" ? "#DC2626" : p.category === "질문" ? "#2563EB" : "#6B7280",
+                    }}>{p.category}</span></td>
+                    <td style={{ ...td, textAlign: "left", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</td>
+                    <td style={td}>{p.author?.nickname || "?"}</td>
+                    <td style={{ ...td, fontSize: 11, color: "#9CA3AF" }}>{formatDate(p.created_at)}</td>
+                    <td style={td}>{p.view_count}</td>
+                    <td style={td}>
+                      <button onClick={() => deletePost(p.id)} style={btnStyle("#EF4444")}>삭제</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredPosts.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>등록된 글이 없습니다.</div>}
+          </div>
+        </>
+      )}
+
+      {postTab === "feed" && (
+        <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#F9FAFB" }}>
+                <th style={th}>미리보기</th>
+                <th style={{ ...th, textAlign: "left" }}>설명</th>
+                <th style={th}>작성자</th>
+                <th style={th}>날짜</th>
+                <th style={th}>관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              {feedPosts.map((f) => (
+                <tr key={f.id} style={{ borderBottom: "1px solid #F3F4F6" }}>
+                  <td style={td}>
+                    {f.image_url?.endsWith(".mp4")
+                      ? <span style={{ fontSize: 11, color: "#2563EB" }}>🎥 동영상</span>
+                      : <img src={f.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
+                  </td>
+                  <td style={{ ...td, textAlign: "left", maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
+                    {f.description?.slice(0, 50)}
+                  </td>
+                  <td style={td}>{f.author?.nickname || "?"}</td>
+                  <td style={{ ...td, fontSize: 11, color: "#9CA3AF" }}>{formatDate(f.created_at)}</td>
+                  <td style={td}>
+                    <button onClick={() => deleteFeed(f.id, f.image_url)} style={btnStyle("#EF4444")}>삭제</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {feedPosts.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#aaa", fontSize: 13 }}>등록된 피드가 없습니다.</div>}
         </div>
       )}
     </div>
