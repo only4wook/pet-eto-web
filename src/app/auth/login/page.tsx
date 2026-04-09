@@ -28,13 +28,28 @@ export default function LoginPage() {
     if (authError) { setError("이메일 또는 비밀번호가 올바르지 않습니다."); setLoading(false); return; }
 
     if (data.user) {
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from("users").select("*").eq("id", data.user.id).single();
-      if (profile) setUser(profile);
+
+      // 프로필이 없으면 자동 생성
+      if (!profile) {
+        const newProfile = {
+          id: data.user.id,
+          email: data.user.email || email.trim(),
+          nickname: email.split("@")[0],
+          points: 100,
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+        };
+        await supabase.from("users").insert(newProfile);
+        profile = newProfile;
+      }
+
+      setUser(profile);
     }
 
     setLoading(false);
-    router.push("/");
+    window.location.href = "/";
   };
 
   return (

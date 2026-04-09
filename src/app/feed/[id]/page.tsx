@@ -7,6 +7,7 @@ import GradeBadge from "../../../components/GradeBadge";
 import VetClinicList from "../../../components/VetClinicList";
 import { supabase } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
+import { DEMO_FEED } from "../../../lib/demoFeed";
 import { formatDate } from "../../../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../../../lib/symptomAnalyzer";
 import type { FeedPost, FeedComment } from "../../../types";
@@ -20,6 +21,14 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
   const [showVets, setShowVets] = useState(false);
 
   useEffect(() => {
+    // 데모 데이터에서 먼저 찾기
+    const demo = DEMO_FEED.find((p) => p.id === id);
+    if (demo) {
+      setPost(demo);
+      return;
+    }
+
+    // DB에서 찾기
     supabase.from("feed_posts")
       .select("*, author:users(id, nickname, avatar_url, points, role)")
       .eq("id", id).single()
@@ -39,7 +48,6 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
     await supabase.from("point_logs").insert({ user_id: user.id, amount: 5, reason: "피드 댓글" });
     await supabase.rpc("add_points", { uid: user.id, pts: 5 });
     setNewComment("");
-    // 댓글 다시 로드
     const { data } = await supabase.from("feed_comments")
       .select("*, author:users(id, nickname, avatar_url, points)")
       .eq("feed_post_id", id).order("created_at", { ascending: true });
@@ -48,7 +56,10 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   if (!post) {
-    return (<><Header /><main style={{ maxWidth: 500, margin: "0 auto", padding: 40, textAlign: "center", color: "#888" }}>로딩 중...</main><Footer /></>);
+    return (<><Header /><main style={{ maxWidth: 500, margin: "0 auto", padding: 40, textAlign: "center" }}>
+      <p style={{ color: "#888" }}>게시글을 찾을 수 없습니다.</p>
+      <Link href="/feed" style={{ color: "#FF6B35" }}>피드로 돌아가기</Link>
+    </main><Footer /></>);
   }
 
   const analysis = post.analysis_result;
@@ -132,6 +143,9 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                 <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>{formatDate(c.created_at)}</div>
               </div>
             ))}
+            {id.startsWith("df") && comments.length === 0 && (
+              <div style={{ color: "#aaa", fontSize: 12, padding: "8px 0" }}>데모 게시글에는 댓글이 표시되지 않습니다.</div>
+            )}
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <input value={newComment} onChange={(e) => setNewComment(e.target.value)}
                 placeholder="댓글 달기... (+5P)" onKeyDown={(e) => e.key === "Enter" && handleComment()}
