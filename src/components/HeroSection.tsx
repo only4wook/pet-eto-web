@@ -124,22 +124,22 @@ export default function HeroSection() {
             }}>
               🐶
             </div>
-            {/* 플로팅 카드 - 케어러 연결 */}
+            {/* 플로팅 카드 - 베타 준비 */}
             <div style={{
               position: "absolute", top: -12, left: -16,
               background: "#fff", borderRadius: 14, boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               padding: "10px 16px", fontSize: 13, fontWeight: 600, color: "#374151",
               display: "flex", alignItems: "center", gap: 8,
             }}>
-              <span style={{ color: "#22C55E", fontSize: 16 }}>●</span> 케어러 연결 완료
+              <span style={{ color: "#F59E0B", fontSize: 16 }}>●</span> 베타 서비스 준비 중
             </div>
-            {/* 플로팅 카드 - 평점 */}
+            {/* 플로팅 카드 - 한양대 */}
             <div style={{
               position: "absolute", bottom: -12, right: -16,
               background: "#fff", borderRadius: 14, boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
               padding: "10px 16px", fontSize: 13, fontWeight: 600, color: "#374151",
             }}>
-              ⭐ 4.9 · 후기 1,240개
+              🎓 한양대 창업팀
             </div>
           </div>
         </div>

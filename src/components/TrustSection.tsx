@@ -1,16 +1,16 @@
 export default function TrustSection() {
   const stats = [
-    { value: "100%", label: "에스크로 안전결제", icon: "🛡️" },
-    { value: "4.9점", label: "평균 만족도", icon: "⭐" },
-    { value: "자문단", label: "수의사 연계", icon: "👨‍⚕️" },
-    { value: "15분", label: "평균 매칭 시간", icon: "⚡" },
+    { value: "3단계", label: "파트너 신원검증", icon: "🛡️" },
+    { value: "1급", label: "반려동물관리사 대표", icon: "🎓" },
+    { value: "한양대", label: "창업동아리 출신", icon: "🏫" },
+    { value: "카톡", label: "실시간 1:1 매칭", icon: "💬" },
   ];
 
   const steps = [
-    { step: "01", title: "요청 등록", desc: "날짜·지역·반려동물 정보 입력", icon: "📝" },
-    { step: "02", title: "케어러 매칭", desc: "신원인증 완료된 케어러 연결", icon: "🔗" },
-    { step: "03", title: "케어 진행", desc: "실시간 사진 보고 + 수의사 대기", icon: "📸" },
-    { step: "04", title: "안전 정산", desc: "에스크로로 케어 완료 후 결제", icon: "🛡️" },
+    { step: "01", title: "카톡 상담", desc: "반려동물 정보와 상황을 알려주세요", icon: "💬" },
+    { step: "02", title: "맞춤 매칭", desc: "검증된 파트너를 직접 연결해드려요", icon: "🔗" },
+    { step: "03", title: "케어 진행", desc: "실시간 사진·영상으로 상황 공유", icon: "📸" },
+    { step: "04", title: "안심 정산", desc: "케어 완료 확인 후 결제", icon: "✅" },
   ];
 
   return (
