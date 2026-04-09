@@ -54,6 +54,24 @@ export default function DogWikiPage() {
                 </Link>
               ))}
             </div>
+
+            {/* 견종 추가 요청 */}
+            <div style={{
+              marginTop: 24, background: "#F0FFFE", border: "1px dashed #2EC4B6",
+              borderRadius: 8, padding: 20, textAlign: "center",
+            }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>🐶</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#333" }}>찾으시는 견종이 없나요?</div>
+              <p style={{ fontSize: 13, color: "#888", margin: "6px 0 12px" }}>
+                등록을 원하는 견종이 있다면 요청해주세요. 검토 후 추가해드립니다!
+              </p>
+              <a href="https://forms.gle/e5cY46BRkambEjE19" target="_blank" rel="noopener noreferrer" style={{
+                display: "inline-block", background: "#2EC4B6", color: "#fff",
+                padding: "8px 20px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none",
+              }}>
+                견종 추가 요청하기
+              </a>
+            </div>
           </div>
         </div>
       </main>
