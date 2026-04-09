@@ -58,7 +58,7 @@ const DEMO_FEED: FeedPost[] = [
 ];
 
 export default function FeedPage() {
-  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [posts, setPosts] = useState<FeedPost[]>(DEMO_FEED);
 
   useEffect(() => {
     supabase
@@ -67,8 +67,10 @@ export default function FeedPage() {
       .order("created_at", { ascending: false })
       .limit(20)
       .then(({ data }) => {
-        if (data && data.length > 0) setPosts(data);
-        else setPosts(DEMO_FEED);
+        if (data && data.length > 0) {
+          // DB글 + 데모 합치기
+          setPosts([...data, ...DEMO_FEED]);
+        }
       });
   }, []);
 
