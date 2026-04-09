@@ -80,9 +80,9 @@ export default function Header() {
           {[
             { label: "전체글", href: "/" },
             { label: "📸피드", href: "/feed" },
+            { label: "📖위키", href: "/wiki" },
             { label: "질문", href: "/community?cat=질문" },
             { label: "정보", href: "/community?cat=정보" },
-            { label: "일상", href: "/community?cat=일상" },
             { label: "긴급", href: "/community?cat=긴급" },
             { label: "마이", href: "/mypage" },
           ].map((item) => (
