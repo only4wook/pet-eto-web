@@ -34,23 +34,14 @@ function CommunityContent() {
     <>
       <Header />
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px", flex: 1, width: "100%" }}>
-        {/* 카테고리 탭 */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "2px solid #333" }}>
-          {["전체", "질문", "정보", "일상", "긴급"].map((c) => (
-            <Link key={c} href={c === "전체" ? "/community" : `/community?cat=${c}`}
-              style={{
-                padding: "10px 20px", fontSize: 14, fontWeight: 600, textDecoration: "none",
-                color: cat === c ? "#fff" : "#333",
-                background: cat === c ? "#FF6B35" : "transparent",
-                borderRadius: "4px 4px 0 0",
-              }}>
-              {c}
-            </Link>
-          ))}
-          <div style={{ flex: 1 }} />
+        {/* 현재 카테고리 표시 + 글쓰기 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: "2px solid #333", paddingBottom: 10 }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
+            {cat === "전체" ? "전체 게시글" : `${cat} 게시글`}
+          </h3>
           <Link href="/community/write" style={{
             padding: "8px 16px", background: "#FF6B35", color: "#fff", borderRadius: 4,
-            fontSize: 13, fontWeight: 600, textDecoration: "none", alignSelf: "center",
+            fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}>글쓰기</Link>
         </div>
 
