@@ -176,7 +176,7 @@ export default function MyPage() {
               인증 후 전문가 답변 작성 시 추가 포인트(+50P)가 지급됩니다.
             </p>
             {/* 카카오톡 문의 버튼 */}
-            <a href="https://pf.kakao.com/_peteto" target="_blank" rel="noopener noreferrer" style={{
+            <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
               display: "inline-flex", alignItems: "center", gap: 8, marginTop: 12,
               background: "#FEE500", color: "#3C1E1E", padding: "10px 20px",
               borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",

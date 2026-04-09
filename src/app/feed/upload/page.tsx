@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import SymptomAlert from "../../../components/SymptomAlert";
-import { supabase } from "../../../lib/supabase";
+import { supabase, storageClient } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 import { analyzeSymptoms } from "../../../lib/symptomAnalyzer";
 import type { AnalysisResult } from "../../../types";
@@ -101,7 +101,7 @@ export default function FeedUploadPage() {
   const [loadingMsg, setLoadingMsg] = useState("");
   const [alertData, setAlertData] = useState<AnalysisResult | null>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const isVideo = file.type.startsWith("video/");
@@ -110,9 +110,18 @@ export default function FeedUploadPage() {
     if (isVideo) {
       setPreview(URL.createObjectURL(file));
     } else {
-      const reader = new FileReader();
-      reader.onload = (ev) => setPreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
+      // 이미지 미리보기: HEIC 등 특수 포맷도 canvas로 변환 후 표시
+      try {
+        const blob = await compressImage(file);
+        const reader = new FileReader();
+        reader.onload = (ev) => setPreview(ev.target?.result as string);
+        reader.readAsDataURL(blob);
+      } catch {
+        // fallback: 원본 시도
+        const reader = new FileReader();
+        reader.onload = (ev) => setPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -132,7 +141,7 @@ export default function FeedUploadPage() {
         // 동영상: 원본 업로드 + 썸네일 추출
         setLoadingMsg("동영상 업로드 중...");
         const videoName = `feed-${ts}-${rand}.mp4`;
-        const { error: vErr } = await supabase.storage
+        const { error: vErr } = await storageClient.storage
           .from("feed-images").upload(videoName, mediaFile, { contentType: mediaFile.type, upsert: true });
         if (vErr) { alert("동영상 업로드 실패: " + vErr.message); setLoading(false); return; }
 
@@ -141,12 +150,12 @@ export default function FeedUploadPage() {
         try {
           const thumb = await extractVideoThumbnail(mediaFile);
           const thumbName = `thumb-${ts}-${rand}.jpg`;
-          await supabase.storage.from("feed-images").upload(thumbName, thumb, { contentType: "image/jpeg", upsert: true });
-          const { data: thumbUrl } = supabase.storage.from("feed-images").getPublicUrl(thumbName);
+          await storageClient.storage.from("feed-images").upload(thumbName, thumb, { contentType: "image/jpeg", upsert: true });
+          const { data: thumbUrl } = storageClient.storage.from("feed-images").getPublicUrl(thumbName);
           imageUrl = thumbUrl.publicUrl;
         } catch {
           // 썸네일 실패 시 비디오 URL 사용
-          const { data: vUrl } = supabase.storage.from("feed-images").getPublicUrl(videoName);
+          const { data: vUrl } = storageClient.storage.from("feed-images").getPublicUrl(videoName);
           imageUrl = vUrl.publicUrl;
         }
       } else {
@@ -158,14 +167,14 @@ export default function FeedUploadPage() {
         const fileName = `feed-${ts}-${rand}.jpg`;
 
         setLoadingMsg("업로드 중...");
-        const uploadPromise = supabase.storage
+        const uploadPromise = storageClient.storage
           .from("feed-images").upload(fileName, compressed, { contentType, upsert: true });
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("업로드 시간 초과 (30초)")), 30000));
         const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
         if (uploadError) { alert("이미지 업로드 실패: " + uploadError.message); setLoading(false); return; }
-        const { data: urlData } = supabase.storage.from("feed-images").getPublicUrl(fileName);
+        const { data: urlData } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
       }
 

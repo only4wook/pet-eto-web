@@ -2,7 +2,7 @@
 
 // 카카오톡 채널 연동 플로팅 버튼
 // 채널 URL을 변경하려면 KAKAO_CHANNEL_URL만 수정하세요
-const KAKAO_CHANNEL_URL = "https://pf.kakao.com/_peteto";
+const KAKAO_CHANNEL_URL = "https://pf.kakao.com/_giedX/chat";
 // ↑ 카카오톡 채널 개설 후 실제 URL로 교체 필요
 // 개설 방법: https://business.kakao.com → 카카오톡 채널 → 채널 만들기
 
