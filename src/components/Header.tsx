@@ -30,10 +30,9 @@ export default function Header() {
                 <GradeBadge points={user.points} role={(user as any).role} />
                 <span style={{ color: "#2EC4B6", fontWeight: 600 }}>{user.points}P</span>
                 <span style={{ color: "#ddd" }}>|</span>
-                <button onClick={handleLogout} style={{
-                  background: "none", border: "none", color: "#888",
-                  cursor: "pointer", fontSize: 12, padding: 0,
-                }}>로그아웃</button>
+                <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} style={{
+                  color: "#888", fontSize: 12, cursor: "pointer", textDecoration: "none",
+                }}>로그아웃</a>
               </>
             ) : (
               <>
