@@ -5,9 +5,11 @@ import Footer from "../../../components/Footer";
 import { CAT_DATA } from "../../../lib/wikiData";
 import { useBreedImages } from "../../../lib/useBreedImages";
 
+export const dynamic = "force-dynamic";
+
 export default function CatWikiPage() {
   const data = CAT_DATA;
-  const { getImage } = useBreedImages();
+  const { getImage, loaded } = useBreedImages();
   return (
     <>
       <Header />

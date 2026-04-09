@@ -2,10 +2,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 
-// DB에서 관리자가 업로드한 이미지를 가져오는 훅
-// DB에 이미지가 있으면 DB 이미지 사용, 없으면 기본(Pixabay) 이미지 사용
 export function useBreedImages() {
   const [dbImages, setDbImages] = useState<Record<string, string>>({});
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     supabase
@@ -19,13 +18,16 @@ export function useBreedImages() {
           });
           setDbImages(map);
         }
+        setLoaded(true);
       });
   }, []);
 
-  // breedId로 이미지 URL 가져오기 (DB 우선, 없으면 fallback)
+  // DB 이미지가 있으면 DB 사용, 없으면 fallback
+  // loaded가 false이면 fallback을 그대로 반환 (깜빡임 방지)
   const getImage = (breedId: string, fallback: string) => {
+    if (!loaded) return fallback;
     return dbImages[breedId] || fallback;
   };
 
-  return { getImage, dbImages };
+  return { getImage, loaded };
 }
