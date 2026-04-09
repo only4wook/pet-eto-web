@@ -16,14 +16,14 @@ export default function Home() {
   useEffect(() => {
     supabase
       .from("posts")
-      .select("*, author:users(id, nickname, avatar_url)")
+      .select("*, author:users(id, nickname, avatar_url, points, role)")
       .order("created_at", { ascending: false })
       .limit(30)
       .then(({ data }) => { if (data && data.length > 0) setDbPosts(data); });
   }, []);
 
-  // DB에 글이 있으면 DB 데이터 사용, 없으면 데모 데이터 표시
-  const posts = dbPosts.length > 0 ? dbPosts : demoPosts;
+  // DB 글(새 글) + 데모 데이터 합치기. DB글이 위에 표시됨
+  const posts = [...dbPosts, ...demoPosts];
 
   return (
     <>

@@ -14,7 +14,7 @@ function CommunityContent() {
   const searchParams = useSearchParams();
   const cat = searchParams.get("cat") || "전체";
   const { posts: demoPosts } = useAppStore();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [dbPosts, setDbPosts] = useState<Post[]>([]);
 
   useEffect(() => {
     supabase
@@ -23,12 +23,12 @@ function CommunityContent() {
       .order("created_at", { ascending: false })
       .limit(30)
       .then(({ data }) => {
-        if (data && data.length > 0) setPosts(data);
-        else setPosts(demoPosts);
+        if (data && data.length > 0) setDbPosts(data);
       });
   }, []);
 
-  const filtered = cat === "전체" ? posts : posts.filter((p) => p.category === cat);
+  const allPosts = [...dbPosts, ...demoPosts];
+  const filtered = cat === "전체" ? allPosts : allPosts.filter((p) => p.category === cat);
 
   return (
     <>
