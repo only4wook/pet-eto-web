@@ -69,7 +69,7 @@ export default function CatWikiPage() {
               <p style={{ fontSize: 13, color: "#888", margin: "6px 0 12px" }}>
                 등록을 원하는 묘종이 있다면 요청해주세요. 검토 후 추가해드립니다!
               </p>
-              <a href="https://forms.gle/e5cY46BRkambEjE19" target="_blank" rel="noopener noreferrer" style={{
+              <a href="https://forms.gle/ekF9CxYZkoEbAvgC9" target="_blank" rel="noopener noreferrer" style={{
                 display: "inline-block", background: "#FF6B35", color: "#fff",
                 padding: "8px 20px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none",
               }}>
