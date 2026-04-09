@@ -77,6 +77,7 @@ function UserManagement() {
   const [pointModal, setPointModal] = useState<{ user: User; action: "give" | "take" } | null>(null);
   const [pointAmount, setPointAmount] = useState("");
   const [pointReason, setPointReason] = useState("");
+  const [roleModal, setRoleModal] = useState<User | null>(null);
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -123,15 +124,10 @@ function UserManagement() {
     fetchUsers();
   };
 
-  const handleSetRole = async (user: User) => {
-    const role = prompt(
-      `${user.nickname}님의 역할을 변경합니다.\n입력: user, expert_vet, expert_doctor, expert_pharma, expert_biz, suspended`,
-      (user as any).role || "user"
-    );
-    if (!role) return;
-
+  const handleSetRole = async (user: User, role: string) => {
     await supabase.from("users").update({ role }).eq("id", user.id);
-    alert(`${user.nickname}님의 역할이 "${role}"로 변경되었습니다.`);
+    alert(`${user.nickname}님의 역할이 변경되었습니다.`);
+    setRoleModal(null);
     fetchUsers();
   };
 
@@ -213,7 +209,7 @@ function UserManagement() {
                       ) : (
                         <button onClick={() => handleSuspend(user)} style={btnStyle("#EF4444")}>정지</button>
                       )}
-                      <button onClick={() => handleSetRole(user)} style={btnStyle("#8B5CF6")}>역할</button>
+                      <button onClick={() => setRoleModal(user)} style={btnStyle("#8B5CF6")}>역할</button>
                     </div>
                   </td>
                 </tr>
@@ -253,6 +249,54 @@ function UserManagement() {
                 {pointModal.action === "give" ? "지급하기" : "차감하기"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 역할 변경 모달 */}
+      {roleModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setRoleModal(null); }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 400, width: "90%" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
+              역할 변경 - {roleModal.nickname}
+            </h3>
+            <div style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>
+              현재: <b>{(roleModal as any).role || "user"}</b>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { role: "user", label: "일반 유저", icon: "👤", color: "#666", bg: "#f0f0f0" },
+                { role: "expert_vet", label: "수의사", icon: "🩺", color: "#fff", bg: "#2EC4B6" },
+                { role: "expert_doctor", label: "의사", icon: "⚕️", color: "#fff", bg: "#3B82F6" },
+                { role: "expert_pharma", label: "약사", icon: "💊", color: "#fff", bg: "#8B5CF6" },
+                { role: "expert_biz", label: "업체", icon: "🏢", color: "#fff", bg: "#F59E0B" },
+                { role: "suspended", label: "활동정지", icon: "🚫", color: "#fff", bg: "#EF4444" },
+              ].map((r) => {
+                const isCurrentRole = ((roleModal as any).role || "user") === r.role;
+                return (
+                  <button key={r.role} onClick={() => handleSetRole(roleModal, r.role)} style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "12px 16px",
+                    border: isCurrentRole ? `2px solid ${r.bg}` : "1px solid #e0e0e0",
+                    borderRadius: 8, background: isCurrentRole ? r.bg + "15" : "#fff",
+                    cursor: "pointer", textAlign: "left",
+                  }}>
+                    <span style={{ fontSize: 20 }}>{r.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{r.label}</div>
+                      <div style={{ fontSize: 11, color: "#888" }}>{r.role}</div>
+                    </div>
+                    {isCurrentRole && (
+                      <span style={{ background: r.bg, color: r.color, padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>현재</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={() => setRoleModal(null)} style={{
+              width: "100%", marginTop: 12, padding: "10px", border: "1px solid #ddd",
+              borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13,
+            }}>닫기</button>
           </div>
         </div>
       )}
