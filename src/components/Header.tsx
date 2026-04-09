@@ -16,9 +16,9 @@ export default function Header() {
 
   return (
     <header style={{ background: "#fff", borderBottom: "2px solid #FF6B35" }}>
-      {/* 상단 바 - PC만 */}
-      <div className="top-bar-pc" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 40 }}>
+      {/* PC 상단 바 */}
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px" }}>
+        <div className="pc-only" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 40 }}>
           <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#888" }}>
             <Link href="/mypage" style={{ color: "#888" }}>마이페이지</Link>
           </div>
@@ -45,29 +45,26 @@ export default function Header() {
       </div>
 
       {/* 로고 + 검색 */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "10px 16px 10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "8px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-            <span style={{ fontSize: 24, fontWeight: 900, color: "#FF6B35" }}>P.E.T</span>
-            <span className="logo-sub" style={{ fontSize: 11, color: "#888", marginLeft: 4 }}>펫에토</span>
+            <span style={{ fontSize: 22, fontWeight: 900, color: "#FF6B35" }}>P.E.T</span>
           </Link>
-          <form style={{ flex: 1, display: "flex", maxWidth: 400 }} onSubmit={(e) => e.preventDefault()}>
-            <input type="text" placeholder="검색어를 입력하세요" style={{
+          <form style={{ flex: 1, display: "flex", minWidth: 0 }} onSubmit={(e) => e.preventDefault()}>
+            <input type="text" placeholder="검색" style={{
               flex: 1, border: "1px solid #ddd", borderRight: "none",
-              padding: "7px 10px", fontSize: 13, borderRadius: "4px 0 0 4px", outline: "none",
-              minWidth: 0,
+              padding: "7px 10px", fontSize: 13, borderRadius: "4px 0 0 4px", outline: "none", minWidth: 0,
             }} />
             <button type="submit" style={{
               background: "#FF6B35", color: "#fff", border: "none",
-              padding: "7px 14px", fontSize: 13, cursor: "pointer", borderRadius: "0 4px 4px 0",
-              flexShrink: 0,
+              padding: "7px 12px", fontSize: 13, cursor: "pointer", borderRadius: "0 4px 4px 0", flexShrink: 0,
             }}>검색</button>
           </form>
-          {/* 모바일 유저 아이콘 */}
-          <Link href={user ? "/mypage" : "/auth/login"} className="mobile-user-icon" style={{
-            display: "none", width: 32, height: 32, borderRadius: "50%",
-            background: user ? "#FF6B35" : "#ddd", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none", flexShrink: 0,
+          {/* 모바일 로그인/프로필 버튼 */}
+          <Link href={user ? "/mypage" : "/auth/login"} className="mobile-only" style={{
+            width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+            background: user ? "#FF6B35" : "#ddd", display: "none", alignItems: "center", justifyContent: "center",
+            color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none",
           }}>
             {user ? user.nickname.charAt(0) : "?"}
           </Link>
@@ -75,8 +72,8 @@ export default function Header() {
       </div>
 
       {/* 네비게이션 */}
-      <nav style={{ background: "#FF6B35" }}>
-        <div className="mobile-nav-scroll" style={{
+      <nav style={{ background: "#FF6B35", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{
           maxWidth: 1100, margin: "0 auto", padding: "0 8px",
           display: "flex", gap: 0, whiteSpace: "nowrap",
         }}>
@@ -98,8 +95,6 @@ export default function Header() {
           ))}
         </div>
       </nav>
-
-      {/* 모바일 반응형은 globals.css에서 처리 */}
     </header>
   );
 }
