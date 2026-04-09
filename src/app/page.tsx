@@ -46,7 +46,7 @@ export default function Home() {
                 반려인의 모든 순간을 함께합니다.
               </p>
               <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-                <a href="https://forms.gle/PLACEHOLDER" target="_blank" rel="noopener noreferrer" id="cta-btn" style={{
+                <a href="https://forms.gle/e5cY46BRkambEjE19" target="_blank" rel="noopener noreferrer" id="cta-btn" style={{
                   background: "#fff", color: "#FF6B35", padding: "10px 24px", borderRadius: 8,
                   fontSize: 14, fontWeight: 800, textDecoration: "none", display: "inline-block",
                 }}>
