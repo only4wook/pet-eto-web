@@ -330,25 +330,30 @@ function PostManagement() {
 
   const deletePost = async (id: string) => {
     if (!confirm("정말 삭제하시겠습니까? 복구할 수 없습니다.")) return;
-    await supabase.from("comments").delete().eq("post_id", id);
-    await supabase.from("likes").delete().eq("target_id", id);
-    const { error } = await supabase.from("posts").delete().eq("id", id);
-    if (error) alert("삭제 실패: " + error.message);
-    else { alert("삭제 완료"); fetchAll(); }
+    try {
+      const res = await fetch("/api/admin-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: "peteto2026", table: "posts", id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert("삭제 실패: " + (data.error || "알 수 없는 오류")); return; }
+      alert("삭제 완료"); fetchAll();
+    } catch (err: any) { alert("삭제 실패: " + err.message); }
   };
 
   const deleteFeed = async (id: string, imageUrl: string) => {
     if (!confirm("정말 삭제하시겠습니까? 복구할 수 없습니다.")) return;
-    // Storage 이미지 삭제
-    if (imageUrl) {
-      const path = imageUrl.split("/feed-images/")[1];
-      if (path) await supabase.storage.from("feed-images").remove([path]);
-    }
-    await supabase.from("feed_comments").delete().eq("feed_post_id", id);
-    await supabase.from("feed_likes").delete().eq("feed_post_id", id);
-    const { error } = await supabase.from("feed_posts").delete().eq("id", id);
-    if (error) alert("삭제 실패: " + error.message);
-    else { alert("삭제 완료"); fetchAll(); }
+    try {
+      const res = await fetch("/api/admin-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: "peteto2026", table: "feed_posts", id, imageUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert("삭제 실패: " + (data.error || "알 수 없는 오류")); return; }
+      alert("삭제 완료"); fetchAll();
+    } catch (err: any) { alert("삭제 실패: " + err.message); }
   };
 
   const categories = ["전체", "질문", "정보", "일상", "긴급"];
