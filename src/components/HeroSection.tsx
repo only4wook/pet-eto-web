@@ -67,6 +67,24 @@ function generateAIResponse(query: string): string {
     return formatSymptomResponse(symptomGuide, query);
   }
 
+  // 0.3 토 색깔 질문 (구토 가이드로 연결)
+  if ((q.includes("초록") || q.includes("노란") || q.includes("갈색") || q.includes("하얀") || q.includes("빨간") || q.includes("분홍")) && (q.includes("토") || q.includes("구토"))) {
+    const colorGuide: Record<string, string> = {
+      "초록": "초록색 토 = 담즙 + 풀/캣그라스/사료 색소\n빈속에 토하면서 사료나 풀 성분이 섞인 경우. 가끔이면 정상이지만 반복되면 위장염 의심.",
+      "노란": "노란색 토 = 담즙 구토\n공복이 길면 담즙(쓸개즙)이 올라옴. 식사 간격을 줄여보세요. (소량씩 자주 급여)",
+      "갈색": "갈색 토 = 사료 역류 또는 위출혈\n먹은 직후면 사료 역류(과식). 시간이 지났는데 갈색이면 위출혈 가능 → 병원!",
+      "하얀": "하얀 거품 토 = 위산 과다/공복\n빈속일 때 위산이 올라오는 경우. 가끔이면 정상. 반복되면 위염 의심.",
+      "빨간": "🚨 빨간/분홍 토 = 혈액! 즉시 병원!\n위궤양, 이물질에 의한 상처, 중독 등. 응급 상황입니다.",
+      "분홍": "🚨 분홍색 토 = 소량의 혈액 혼합. 즉시 병원!\n위나 식도 출혈 가능성.",
+    };
+    let matched = "";
+    for (const [color, info] of Object.entries(colorGuide)) {
+      if (q.includes(color)) { matched = info; break; }
+    }
+    const animal = q.includes("고양이") ? "고양이" : q.includes("강아지") ? "강아지" : "반려동물";
+    return `🔍 ${animal} 토 색깔 분석\n\n${matched}\n\n📋 토 색깔별 정리:\n• 노란색 = 담즙 (공복)\n• 초록색 = 담즙+풀/사료\n• 갈색 = 사료 역류\n• 하얀 거품 = 위산 과다\n• 🚨 빨간/분홍 = 혈액 → 즉시 병원!\n\n🏠 대처: 12시간 금식 후 소량 물부터\n🚨 하루 3회 이상 반복 → 병원 방문`;
+  }
+
   // 0.5 음식 안전 가이드
   const food = findFood(q);
   if (food) {
