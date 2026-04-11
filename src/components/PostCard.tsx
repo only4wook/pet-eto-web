@@ -8,6 +8,8 @@ const CATEGORY_STYLE: Record<string, { bg: string; text: string; border: string 
   정보: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
   일상: { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" },
   긴급: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
+  후기: { bg: "#FFF7ED", text: "#C2410C", border: "#FDBA74" },
+  문의: { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },
 };
 
 export default function PostCard({ post, index }: { post: Post; index: number }) {

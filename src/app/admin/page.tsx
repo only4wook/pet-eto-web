@@ -7,7 +7,7 @@ import { CAT_DATA, DOG_DATA } from "../../lib/wikiData";
 import { getGrade } from "../../lib/grades";
 import type { User } from "../../types";
 
-type Tab = "users" | "posts" | "images";
+type Tab = "users" | "posts" | "analytics" | "images";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -51,6 +51,7 @@ export default function AdminPage() {
           {[
             { key: "users" as Tab, label: "유저 관리" },
             { key: "posts" as Tab, label: "글 관리" },
+            { key: "analytics" as Tab, label: "📊 사업 분석" },
             { key: "images" as Tab, label: "위키 이미지" },
           ].map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
@@ -64,6 +65,7 @@ export default function AdminPage() {
 
         {tab === "users" && <UserManagement />}
         {tab === "posts" && <PostManagement />}
+        {tab === "analytics" && <AnalyticsDashboard />}
         {tab === "images" && <ImageManagement />}
       </main>
       <Footer />
@@ -306,6 +308,101 @@ function UserManagement() {
   );
 }
 
+// ============ 사업 분석 탭 ============
+function AnalyticsDashboard() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      const [
+        { count: userCount },
+        { count: postCount },
+        { count: feedCount },
+        { count: reviewCount },
+        { count: petCount },
+        { data: recentUsers },
+        { data: recentPosts },
+      ] = await Promise.all([
+        supabase.from("users").select("*", { count: "exact", head: true }),
+        supabase.from("posts").select("*", { count: "exact", head: true }),
+        supabase.from("feed_posts").select("*", { count: "exact", head: true }),
+        supabase.from("posts").select("*", { count: "exact", head: true }).eq("category", "후기"),
+        supabase.from("pets").select("*", { count: "exact", head: true }),
+        supabase.from("users").select("nickname,created_at").order("created_at", { ascending: false }).limit(5),
+        supabase.from("posts").select("title,category,created_at").order("created_at", { ascending: false }).limit(5),
+      ]);
+      setStats({ userCount, postCount, feedCount, reviewCount, petCount, recentUsers, recentPosts });
+      setLoading(false);
+    }
+    fetchStats();
+  }, []);
+
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#888" }}>분석 데이터 로딩 중...</div>;
+
+  return (
+    <div>
+      {/* 핵심 지표 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12, marginBottom: 24 }}>
+        {[
+          { label: "총 회원", value: stats.userCount || 0, icon: "👥", color: "#2563EB" },
+          { label: "커뮤니티 글", value: stats.postCount || 0, icon: "📝", color: "#059669" },
+          { label: "피드 게시물", value: stats.feedCount || 0, icon: "📸", color: "#D97706" },
+          { label: "후기 글", value: stats.reviewCount || 0, icon: "⭐", color: "#DC2626" },
+          { label: "등록 반려동물", value: stats.petCount || 0, icon: "🐾", color: "#7C3AED" },
+        ].map((s, i) => (
+          <div key={i} style={{
+            background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12,
+            padding: "20px 16px", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 24, marginBottom: 4 }}>{s.icon}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: 12, color: "#6B7280" }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 사업 현황 분석 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }} className="trust-grid">
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 12px", color: "#1F2937" }}>👥 최근 가입 회원</h3>
+          {(stats.recentUsers || []).map((u: any, i: number) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #F3F4F6", fontSize: 13 }}>
+              <span style={{ fontWeight: 600 }}>{u.nickname}</span>
+              <span style={{ color: "#9CA3AF", fontSize: 11 }}>{new Date(u.created_at).toLocaleDateString("ko-KR")}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 12px", color: "#1F2937" }}>📝 최근 게시글</h3>
+          {(stats.recentPosts || []).map((p: any, i: number) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #F3F4F6", fontSize: 13 }}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#FF6B35", marginRight: 4 }}>[{p.category}]</span>
+                {p.title}
+              </span>
+              <span style={{ color: "#9CA3AF", fontSize: 11, flexShrink: 0 }}>{new Date(p.created_at).toLocaleDateString("ko-KR")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 조언/개선사항 */}
+      <div style={{ background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 12, padding: 20 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 12px", color: "#C2410C" }}>💡 AI 사업 분석 조언</h3>
+        <div style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.8 }}>
+          {(stats.userCount || 0) < 10 && <p style={{ margin: "0 0 8px" }}>👥 회원 수가 10명 미만이에요. SNS 홍보, 커뮤니티 활동으로 초기 유저를 확보하세요.</p>}
+          {(stats.reviewCount || 0) < 3 && <p style={{ margin: "0 0 8px" }}>⭐ 후기가 부족해요. 첫 후기 작성자에게 추가 포인트를 제공하는 이벤트를 고려하세요.</p>}
+          {(stats.feedCount || 0) < 5 && <p style={{ margin: "0 0 8px" }}>📸 피드 게시물이 적어요. 직접 반려동물 사진을 올려 활성화를 시작하세요.</p>}
+          {(stats.petCount || 0) < (stats.userCount || 1) && <p style={{ margin: "0 0 8px" }}>🐾 반려동물 등록률이 낮아요. 등록 시 보너스 포인트 이벤트를 진행해보세요.</p>}
+          <p style={{ margin: "0 0 8px" }}>📊 Vercel Analytics에서 방문자 데이터를 확인하세요: vercel.com → 프로젝트 → Analytics</p>
+          <p style={{ margin: 0 }}>💬 카카오톡 채널 문의 내용을 분석하면 실제 고객 니즈를 파악할 수 있어요.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ============ 글 관리 탭 ============
 function PostManagement() {
   type PostTab = "community" | "feed";
@@ -356,7 +453,7 @@ function PostManagement() {
     } catch (err: any) { alert("삭제 실패: " + err.message); }
   };
 
-  const categories = ["전체", "질문", "정보", "일상", "긴급"];
+  const categories = ["전체", "질문", "정보", "일상", "긴급", "후기", "문의"];
   const filteredPosts = catFilter === "전체" ? posts : posts.filter((p) => p.category === catFilter);
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
 

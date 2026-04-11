@@ -6,7 +6,7 @@ import Footer from "../../../components/Footer";
 import { supabase } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 
-const CATEGORIES = ["질문", "정보", "일상", "긴급"];
+const CATEGORIES = ["질문", "정보", "일상", "긴급", "후기", "문의"];
 
 export default function WritePage() {
   const router = useRouter();
@@ -45,11 +45,12 @@ export default function WritePage() {
       return;
     }
 
-    // 포인트 +10
-    await supabase.from("point_logs").insert({ user_id: user.id, amount: 10, reason: "게시글 작성" });
-    await supabase.rpc("add_points", { uid: user.id, pts: 10 });
+    // 포인트 (후기 +20P, 일반 +10P)
+    const pts = category === "후기" ? 20 : 10;
+    await supabase.from("point_logs").insert({ user_id: user.id, amount: pts, reason: category === "후기" ? "후기 작성" : "게시글 작성" });
+    await supabase.rpc("add_points", { uid: user.id, pts });
 
-    alert("게시글이 등록되었습니다! (+10P)");
+    alert(`게시글이 등록되었습니다! (+${pts}P)${category === "후기" ? "\n⭐ 후기 작성 보너스 포인트!" : ""}`);
     setLoading(false);
     router.push("/");
   };

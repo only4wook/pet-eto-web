@@ -84,6 +84,8 @@ export default function Header() {
             { label: "질문", href: "/community?cat=질문" },
             { label: "정보", href: "/community?cat=정보" },
             { label: "긴급", href: "/community?cat=긴급" },
+            { label: "⭐후기", href: "/community?cat=후기" },
+            { label: "💬문의", href: "/community?cat=문의" },
             { label: "마이", href: "/mypage" },
           ].map((item) => (
             <Link key={item.label} href={item.href} style={{
