@@ -93,10 +93,7 @@ export default function LoginPage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button onClick={async () => {
-              await supabase.auth.signInWithOAuth({
-                provider: "google",
-                options: { redirectTo: window.location.origin },
-              });
+              await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
             }} style={{
               width: "100%", padding: "11px", border: "1px solid #E5E7EB", borderRadius: 8,
               background: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600,
@@ -106,10 +103,7 @@ export default function LoginPage() {
               Google로 로그인
             </button>
             <button onClick={async () => {
-              await supabase.auth.signInWithOAuth({
-                provider: "kakao",
-                options: { redirectTo: window.location.origin },
-              });
+              await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.origin } });
             }} style={{
               width: "100%", padding: "11px", border: "none", borderRadius: 8,
               background: "#FEE500", cursor: "pointer", fontSize: 14, fontWeight: 600,
@@ -117,6 +111,18 @@ export default function LoginPage() {
             }}>
               <svg width="18" height="18" viewBox="0 0 256 256"><path d="M128 36C70.6 36 24 72.2 24 116.8c0 29 19.5 54.4 48.8 68.8-2.1 7.9-7.7 28.5-8.8 33-.5 2 .7 2 1.5 1.4 1-.7 39.4-26.8 43.2-29.5 6.3.9 12.8 1.3 19.3 1.3 57.4 0 104-36.2 104-80.8S185.4 36 128 36z" fill="#3C1E1E"/></svg>
               카카오로 로그인
+            </button>
+            <button onClick={() => {
+              // 네이버는 Supabase 미지원 → 직접 OAuth URL로 이동
+              // Supabase Custom OIDC 또는 네이버 개발자센터 설정 필요
+              alert("네이버 로그인은 준비 중이에요!\n네이버 개발자센터에서 앱 등록 후 활성화됩니다.\n\n현재는 이메일 가입 또는 구글/카카오를 이용해주세요.");
+            }} style={{
+              width: "100%", padding: "11px", border: "none", borderRadius: 8,
+              background: "#03C75A", cursor: "pointer", fontSize: 14, fontWeight: 600,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10, color: "#fff",
+            }}>
+              <span style={{ fontWeight: 900, fontSize: 16 }}>N</span>
+              네이버로 로그인
             </button>
           </div>
 
