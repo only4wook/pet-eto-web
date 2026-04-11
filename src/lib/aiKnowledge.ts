@@ -22,6 +22,38 @@ export function detectAnimal(q: string): "cat" | "dog" | "unknown" {
 }
 
 export const SYMPTOM_GUIDES: SymptomGuide[] = [
+  // === 이물질 삼킴 (최우선 — 응급 가능) ===
+  {
+    keywords: ["삼켰","삼킴","삼킨","삼켜","먹어버","먹어 버","먹었어","씹었","씹어 먹","삼킬","이물질","이물","실을 먹","실 삼","바늘","철사","고무줄","비닐","장난감 삼","뼈 삼","뼈를 삼","플라스틱","스티로폼","솜","스폰지","양말","고무","단추","동전","건전지"],
+    title: "이물질 삼킴 (응급!)",
+    catCauses: [
+      "🚨 실/끈/고무줄: 고양이에서 가장 위험! 장에 걸려 장폐색·장천공 유발",
+      "머리끈/고무줄: 고양이가 좋아하는 장난감이지만 삼키면 매우 위험",
+      "비닐/포장지: 바스락 소리 때문에 놀다가 삼킴",
+      "바늘/실: 재봉실을 물고 놀다가 바늘째 삼키는 사고",
+    ],
+    dogCauses: [
+      "양말/속옷: 강아지가 가장 많이 삼키는 이물질 1위",
+      "장난감 조각: 인형 솜, 공 조각 등",
+      "뼈 조각: 익힌 닭뼈가 장을 찌를 수 있음",
+      "돌멩이/나무: 산책 중 주워 먹음",
+    ],
+    commonCauses: [
+      "철사/금속: 내장 손상 및 천공 위험 → 즉시 응급!",
+      "건전지: 화학 화상 유발 → 즉시 응급!",
+      "작은 플라스틱: 크기에 따라 자연 배출 가능하나 확인 필요",
+    ],
+    homecare: [
+      "🚨 절대 억지로 토하게 하지 마세요! (날카로운 것은 식도 손상)",
+      "🚨 철사·바늘·건전지 → 즉시 24시 동물병원!",
+      "먹은 것과 비슷한 물건이 있다면 병원에 가져가세요",
+      "삼킨 시간, 물건 크기를 메모해주세요",
+      "X-ray로 위치 확인 가능 (금속류는 잘 보임)",
+      "실이 입 밖으로 나와있어도 절대 잡아당기지 마세요! (장 손상)",
+    ],
+    warning: "🚨 즉시 병원: 날카로운 물건(철사, 바늘, 뼈), 건전지, 실/끈(장폐색), 구토 반복, 배를 만지면 아파함",
+    hospital: "이물질은 X-ray·초음파로 위치를 확인하고, 내시경이나 수술로 제거합니다. 빠를수록 비용도 적게 들어요.",
+  },
   {
     keywords: ["구토","토하","토해","토했","게워","역류","올려","꺼억","게우","으웩","헛구역","헛구","토한"],
     title: "구토/토하기",
@@ -629,27 +661,35 @@ export const SYMPTOM_GUIDES: SymptomGuide[] = [
   },
 ];
 
-// 질문에서 증상 가이드 찾기
+// 질문에서 증상 가이드 찾기 (가장 많이 매칭되는 가이드 우선)
 export function findSymptomGuide(query: string): SymptomGuide | null {
   const q = query.toLowerCase();
+
+  // 각 가이드별 매칭 점수 계산
+  let bestGuide: SymptomGuide | null = null;
+  let bestScore = 0;
+
   for (const guide of SYMPTOM_GUIDES) {
+    let score = 0;
     for (const kw of guide.keywords) {
-      if (q.includes(kw)) return guide;
+      if (q.includes(kw)) {
+        // 긴 키워드일수록 높은 점수 (정확도)
+        score += kw.length;
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestGuide = guide;
     }
   }
 
-  // 유사도 fallback: 2글자 이상 부분 매칭
+  if (bestGuide) return bestGuide;
+
+  // 유사도 fallback: 3글자 이상 키워드의 앞부분 매칭
   for (const guide of SYMPTOM_GUIDES) {
     for (const kw of guide.keywords) {
-      if (kw.length >= 2) {
-        // 키워드의 첫 2글자가 질문에 포함되면 매칭
-        const prefix = kw.slice(0, 2);
-        if (q.includes(prefix) && guide.keywords.some((k) => {
-          // 추가 확인: 관련 단어가 문맥에 있는지
-          return q.includes(k.slice(0, Math.min(k.length, 3)));
-        })) {
-          return guide;
-        }
+      if (kw.length >= 3 && q.includes(kw.slice(0, 3))) {
+        return guide;
       }
     }
   }
