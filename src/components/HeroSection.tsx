@@ -5,27 +5,52 @@ import { analyzeSymptoms } from "../lib/symptomAnalyzer";
 import { searchVetByArea } from "../lib/vetSearch";
 import { findSymptomGuide, formatSymptomResponse } from "../lib/aiKnowledge";
 
-// 지역 키워드 추출 (동물 이름과 혼동 방지)
-const AREA_MAP: { keyword: string; area: string }[] = [
-  { keyword: "파주", area: "파주" },
-  { keyword: "일산", area: "일산" },
-  { keyword: "고양시", area: "고양" },  // "고양이"와 구분! "고양시"만 매칭
-  { keyword: "서울", area: "서울" },
-  { keyword: "강남", area: "강남" },
-  { keyword: "마포", area: "마포" },
-  { keyword: "홍대", area: "홍대" },
-  { keyword: "성동", area: "성동" },
-  { keyword: "왕십리", area: "왕십리" },
-  { keyword: "한양대", area: "성동" },
-  { keyword: "수원", area: "수원" },
-  { keyword: "용인", area: "용인" },
-  { keyword: "인천", area: "인천" },
-  { keyword: "분당", area: "분당" },
-  { keyword: "성남", area: "성남" },
-];
-
+// 지역 키워드 추출 (세부 지역 우선 매칭, 동물 이름 혼동 방지)
 function findArea(q: string): string | null {
-  for (const a of AREA_MAP) { if (q.includes(a.keyword)) return a.area; }
+  // 세부 지역(구/동)을 먼저 매칭 — 더 구체적인 것이 우선
+  const detailAreas = [
+    "강서구","화곡","마곡","발산","등촌","가양","염창",
+    "강남구","역삼","삼성","논현","청담","압구정","신사","도곡","대치",
+    "서초구","서초","방배","반포","잠원",
+    "마포구","합정","상수","망원","연남","서교","홍대",
+    "성동구","왕십리","행당","성수","한양대","옥수","금호",
+    "송파구","잠실","가락","문정","방이",
+    "강동구","천호","길동","둔촌","명일",
+    "관악구","신림","봉천","낙성대",
+    "영등포구","영등포","여의도","당산",
+    "노원구","노원","상계","중계",
+    "종로구","종로","광화문","혜화",
+    "중구","을지로","명동","충무로",
+    "용산구","용산","이태원","한남",
+    "동대문구","회기","청량리","전농",
+    "서대문구","신촌","이대",
+    "구로구","구로","디지털단지",
+    "금천구","가산","독산",
+    "양천구","목동",
+    "동작구","사당","노량진",
+    "성북구","성북","길음","돈암",
+    "광진구","건대","자양","구의",
+    "강북구","수유","미아",
+    "도봉구","도봉","방학",
+    "중랑구","면목","상봉",
+    "은평구","응암","불광","연신내",
+    // 경기
+    "파주","운정","금촌","문산",
+    "일산","백석","마두","주엽","대화","킨텍스",
+    "고양시",  // "고양이"와 구분
+    "수원","영통","권선","팔달",
+    "용인","수지","죽전","기흥",
+    "성남","분당","정자","야탑",
+    "인천","구월","부평","송도",
+    "부천","안양","평촌","의정부","남양주","하남","김포",
+  ];
+
+  for (const area of detailAreas) {
+    if (q.includes(area)) return area;
+  }
+
+  // 광역 "서울" 매칭은 마지막 (세부 지역이 없을 때만)
+  if (q.includes("서울")) return "서울";
   return null;
 }
 
@@ -68,20 +93,21 @@ function generateAIResponse(query: string): string {
           resp += `• ${c.name} ${c.is24h ? "🔴24시" : ""}\n  ${c.address}\n  📞 ${c.phone}\n\n`;
         });
       } else {
-        resp += `아직 ${area} 지역 데이터가 부족해요.\n카카오톡으로 문의하시면 직접 찾아드릴게요!`;
+        resp += `아직 ${area} 지역에 등록된 병원이 없어요.\n\n💬 카카오톡으로 문의하시면 직접 찾아드릴게요!\n또는 피드에 글을 올리면 GPS로 가까운 병원을 자동 안내해드려요.`;
       }
       return resp;
     }
 
-    // 지역 + 기타 질문
+    // 지역 + 기타 질문 (중성화/치료 외의 지역 질문)
     if (clinics.length > 0) {
-      let resp = `📍 ${area} 지역 관련 정보\n\n`;
-      resp += `가까운 동물병원:\n`;
-      clinics.slice(0, 2).forEach((c) => {
-        resp += `• ${c.name} (📞 ${c.phone})\n`;
+      let resp = `📍 ${area} 지역 동물병원\n\n`;
+      clinics.slice(0, 3).forEach((c) => {
+        resp += `• ${c.name} ${c.is24h ? "🔴24시" : ""}\n  📞 ${c.phone}\n`;
       });
-      resp += `\n궁금한 점이 있으면 더 자세히 물어봐주세요!`;
+      resp += `\n더 궁금한 점이 있으면 물어봐주세요!`;
       return resp;
+    } else {
+      return `아직 ${area} 지역에 등록된 병원 데이터가 없어요.\n\n💬 카카오톡으로 문의하시면 직접 찾아드릴게요!\n\n다른 질문도 환영해요:\n• 증상 분석: "고양이가 토해요"\n• 비용 안내: "중성화 비용"\n• 품종 정보: "말티즈 특징"`;
     }
   }
 

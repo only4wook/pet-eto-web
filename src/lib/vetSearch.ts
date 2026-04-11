@@ -23,6 +23,22 @@ const VET_CLINICS: VetClinic[] = [
   { name: "홍대동물병원", address: "서울 마포구 서교동 395", phone: "02-336-0075", lat: 37.5560, lng: 126.9250, distance: 0, is24h: false },
   // === 서울 종로/중구 ===
   { name: "24시 서울동물메디컬센터", address: "서울 중구 을지로 100", phone: "02-2266-7582", lat: 37.5660, lng: 126.9920, distance: 0, is24h: true },
+  // === 서울 강서구/화곡 ===
+  { name: "24시 강서YD동물의료센터", address: "서울 강서구 화곡로 264", phone: "02-2061-7582", lat: 37.5450, lng: 126.8370, distance: 0, is24h: true },
+  { name: "화곡동물병원", address: "서울 강서구 화곡동 1065", phone: "02-2691-7975", lat: 37.5410, lng: 126.8390, distance: 0, is24h: false },
+  { name: "마곡동물병원", address: "서울 강서구 마곡동로 136", phone: "02-2662-0075", lat: 37.5590, lng: 126.8280, distance: 0, is24h: false },
+  { name: "발산동물병원", address: "서울 강서구 공항대로 168", phone: "02-2658-7582", lat: 37.5560, lng: 126.8370, distance: 0, is24h: false },
+  // === 서울 송파/잠실 ===
+  { name: "24시 송파동물의료센터", address: "서울 송파구 송파대로 345", phone: "02-412-7575", lat: 37.5050, lng: 127.1120, distance: 0, is24h: true },
+  { name: "잠실동물병원", address: "서울 송파구 잠실동 178", phone: "02-421-0075", lat: 37.5130, lng: 127.1000, distance: 0, is24h: false },
+  // === 서울 관악/신림 ===
+  { name: "24시 관악동물의료센터", address: "서울 관악구 봉천로 488", phone: "02-877-7575", lat: 37.4780, lng: 126.9530, distance: 0, is24h: true },
+  // === 서울 영등포/여의도 ===
+  { name: "영등포동물병원", address: "서울 영등포구 영등포로 200", phone: "02-2634-7582", lat: 37.5170, lng: 126.9070, distance: 0, is24h: false },
+  // === 서울 노원 ===
+  { name: "24시 노원동물의료센터", address: "서울 노원구 상계동 710", phone: "02-932-7575", lat: 37.6540, lng: 127.0610, distance: 0, is24h: true },
+  // === 서울 광진/건대 ===
+  { name: "건대동물병원", address: "서울 광진구 자양동 685", phone: "02-444-7582", lat: 37.5400, lng: 127.0690, distance: 0, is24h: false },
   // === 파주 ===
   { name: "24시 파주동물의료센터", address: "경기 파주시 운정동 1126", phone: "031-949-7575", lat: 37.7130, lng: 126.7610, distance: 0, is24h: true },
   { name: "운정동물병원", address: "경기 파주시 와석순환로 415", phone: "031-948-0075", lat: 37.7150, lng: 126.7500, distance: 0, is24h: false },
