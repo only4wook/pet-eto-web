@@ -62,7 +62,7 @@ function generateAIResponse(query: string): string {
   // 0. 증상 상세 가이드 (최우선 — 증상 질문은 지역보다 먼저)
   const symptomGuide = findSymptomGuide(q);
   if (symptomGuide) {
-    return formatSymptomResponse(symptomGuide, q);
+    return formatSymptomResponse(symptomGuide, query); // 원본 query로 동물 감지
   }
 
   // 1. 지역 + 병원/중성화/치료 질문
