@@ -41,10 +41,11 @@
   .mobile-only { display: flex !important; }
 
   /* 히어로 반응형 */
-  .hero-flex { flex-direction: column !important; text-align: center; padding: 28px 20px !important; }
+  .hero-flex { flex-direction: column !important; padding: 20px 16px !important; }
   .hero-image-area { display: none !important; }
-  .hero-title { font-size: 22px !important; }
+  .hero-title { font-size: 20px !important; }
   .hero-form { flex-direction: column !important; max-width: 100% !important; }
+  .hero-ai-area { min-height: 300px !important; }
 
   /* 신뢰 섹션 반응형 */
   .trust-grid { grid-template-columns: repeat(2, 1fr) !important; }
