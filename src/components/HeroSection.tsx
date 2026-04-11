@@ -3,7 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import { CAT_DATA, DOG_DATA } from "../lib/wikiData";
 import { analyzeSymptoms } from "../lib/symptomAnalyzer";
 import { searchVetByArea } from "../lib/vetSearch";
-import { findSymptomGuide, formatSymptomResponse } from "../lib/aiKnowledge";
+import { findSymptomGuide, formatSymptomResponse, detectAnimal } from "../lib/aiKnowledge";
+import { findFood, formatFoodResponse } from "../lib/aiFoodSafety";
+import { BREED_DISEASE_DATA } from "../lib/wikiDiseaseData";
 
 // 지역 키워드 추출 (세부 지역 우선 매칭, 동물 이름 혼동 방지)
 function findArea(q: string): string | null {
@@ -59,10 +61,23 @@ function generateAIResponse(query: string): string {
   const q = query.toLowerCase().replace(/\s+/g, " ");
   const allBreeds = [...CAT_DATA.breeds, ...DOG_DATA.breeds];
 
-  // 0. 증상 상세 가이드 (최우선 — 증상 질문은 지역보다 먼저)
+  // 0. 증상 상세 가이드 (최우선)
   const symptomGuide = findSymptomGuide(q);
   if (symptomGuide) {
-    return formatSymptomResponse(symptomGuide, query); // 원본 query로 동물 감지
+    return formatSymptomResponse(symptomGuide, query);
+  }
+
+  // 0.5 음식 안전 가이드
+  const food = findFood(q);
+  if (food) {
+    return formatFoodResponse(food, query);
+  }
+
+  // 0.7 먹음/먹었 + 키워드 없는 음식 → 일반 안내
+  if (q.includes("먹었") || q.includes("먹음") || q.includes("삼켰") || q.includes("삼킴") || q.includes("먹어도") || q.includes("줘도 돼") || q.includes("먹여도") || q.includes("급여")) {
+    const animal = detectAnimal(query);
+    const animalLabel = animal === "cat" ? "고양이" : animal === "dog" ? "강아지" : "반려동물";
+    return `🍽️ ${animalLabel} 음식 안전 가이드\n\n🚨 절대 금지 식품:\n• 초콜릿, 포도/건포도, 양파/마늘/파\n• 자일리톨(무설탕 껌), 카페인, 알코올\n• 아보카도, 마카다미아\n\n⚠️ 주의 (소량만):\n• 우유/유제품, 참치캔, 뼈, 날계란\n\n✅ 안전한 간식:\n• 삶은 닭가슴살, 고구마, 당근\n• 블루베리, 수박(씨 제거), 사과(씨 제거)\n\n💡 구체적인 음식 이름을 말해주시면 안전 여부를 알려드려요!\n예: "고양이가 참치 먹어도 돼?"`;
   }
 
   // 1. 지역 + 병원/중성화/치료 질문
@@ -118,8 +133,38 @@ function generateAIResponse(query: string): string {
   if (matched) {
     let resp = `📖 ${matched.name} (${matched.nameEn})\n\n`;
     resp += `🌍 원산지: ${matched.origin}\n⚖️ 체중: ${matched.weight}\n⏳ 수명: ${matched.lifespan}\n🐾 성격: ${matched.personality.join(", ")}\n\n`;
-    resp += `${matched.description.slice(0, 200)}...\n\n`;
-    resp += `👉 위키에서 질병·비용·관리법까지 확인하세요!`;
+
+    // 질문 맥락에 따라 다른 정보 표시
+    if (q.includes("건강") || q.includes("질병") || q.includes("아프") || q.includes("병")) {
+      resp += `🏥 건강 정보:\n${matched.health.slice(0, 250)}...\n\n`;
+      const diseaseInfo = BREED_DISEASE_DATA[matched.id];
+      if (diseaseInfo) {
+        resp += `💰 주요 질병 예상 비용:\n`;
+        diseaseInfo.diseases.slice(0, 3).forEach((d) => {
+          resp += `• ${d.name}: ${Math.round(d.costRange.min/10000)}~${Math.round(d.costRange.max/10000)}만원\n`;
+        });
+        resp += `\n📋 연간 검진비: ${diseaseInfo.annualCheckupCost}`;
+      }
+    } else if (q.includes("관리") || q.includes("키우") || q.includes("돌봄") || q.includes("케어")) {
+      resp += `🛁 관리법:\n${matched.care.slice(0, 300)}`;
+    } else if (q.includes("비용") || q.includes("얼마") || q.includes("돈") || q.includes("가격")) {
+      const diseaseInfo = BREED_DISEASE_DATA[matched.id];
+      if (diseaseInfo) {
+        resp += `💰 ${matched.name} 예상 의료비:\n\n`;
+        diseaseInfo.diseases.forEach((d) => {
+          resp += `• ${d.name}: ${Math.round(d.costRange.min/10000)}~${Math.round(d.costRange.max/10000)}만원 (${d.costNote || ""})\n`;
+        });
+        resp += `\n📋 연간 검진비: ${diseaseInfo.annualCheckupCost}\n🛡️ ${diseaseInfo.insuranceRecommended ? "펫보험 권장!" : "펫보험 선택"}`;
+      }
+    } else if (q.includes("역사") || q.includes("유래") || q.includes("기원")) {
+      resp += `📜 역사:\n${matched.history.slice(0, 300)}`;
+    } else {
+      // 기본: 개요
+      resp += `${matched.description.slice(0, 200)}...\n\n`;
+      resp += `💡 더 궁금하시면:\n• "${matched.name} 건강" — 질병·비용 정보\n• "${matched.name} 관리" — 관리법\n• "${matched.name} 비용" — 의료비`;
+    }
+
+    resp += `\n\n👉 위키에서 전체 정보 확인하기!`;
     return resp;
   }
 
@@ -152,8 +197,28 @@ function generateAIResponse(query: string): string {
   if (q.includes("안녕") || q.includes("반가") || q.includes("하이") || q.includes("hello")) return "안녕하세요! 🐾 P.E.T AI입니다!\n\n무엇이든 물어보세요:\n• 품종 정보 (예: 말티즈 특징)\n• 증상 분석 (예: 구토를 해요)\n• 치료비 (예: 슬개골 수술 얼마)\n• 병원 찾기 (예: 서울 24시 병원)\n• 관리 팁 (예: 산책 시간)\n• 중성화 (예: 파주 중성화 비용)";
   if (q.includes("고마") || q.includes("감사") || q.includes("땡큐")) return "감사합니다! 🐾\n\n더 궁금한 게 있으면 언제든 물어보세요!\n\n💬 카카오톡으로도 1:1 상담 가능해요!";
 
-  // 5. 기본 응답 (도움말)
-  return "🐾 이런 질문들을 해보세요!\n\n📖 품종: \"말티즈 특징\", \"코숏 성격\"\n🔍 증상: \"구토를 해요\", \"다리를 절어요\"\n💰 비용: \"중성화 비용\", \"슬개골 수술비\"\n🏥 병원: \"파주 동물병원\", \"서울 24시\"\n💉 건강: \"예방접종 스케줄\", \"펫보험\"\n🐾 관리: \"산책 시간\", \"사료 추천\"\n🏠 입양: \"처음 키우기 가이드\"";
+  // 5. 위키 데이터 전체 텍스트 검색 (최후 수단)
+  const searchTerms = q.split(/\s+/).filter((w) => w.length >= 2);
+  for (const breed of allBreeds) {
+    const allText = `${breed.description} ${breed.characteristics} ${breed.health} ${breed.care}`.toLowerCase();
+    const matchCount = searchTerms.filter((t) => allText.includes(t)).length;
+    if (matchCount >= 2) {
+      // 여러 단어가 매칭되면 관련 정보 추출
+      const relevantField = searchTerms.some((t) => breed.health.toLowerCase().includes(t)) ? breed.health
+        : searchTerms.some((t) => breed.care.toLowerCase().includes(t)) ? breed.care
+        : breed.description;
+      return `🔍 관련 정보를 찾았어요!\n\n📖 ${breed.name}에서 관련 내용:\n${relevantField.slice(0, 250)}...\n\n👉 위키에서 전체 내용을 확인하세요!`;
+    }
+  }
+
+  // 6. 기본 응답 (도움말) — 더 친근하게
+  const animal = detectAnimal(query);
+  if (animal !== "unknown") {
+    const label = animal === "cat" ? "고양이" : "강아지";
+    return `${label}에 대해 궁금하시군요! 🐾\n\n이렇게 물어봐주시면 더 잘 도와드릴 수 있어요:\n\n🔍 "우리 ${label}가 토해요"\n🍽️ "${label}가 초콜릿 먹었어"\n💰 "${label} 중성화 비용"\n🏥 "서울 24시 동물병원"\n📖 "말티즈 특징"\n\n구체적인 증상이나 상황을 알려주세요!`;
+  }
+
+  return "안녕하세요! P.E.T AI입니다 🐾\n\n이런 것들을 물어보세요:\n\n🔍 증상: \"고양이가 토해요\", \"강아지가 다리를 절어요\"\n🍽️ 음식: \"강아지가 초콜릿 먹었어\", \"참치 줘도 돼?\"\n📖 품종: \"말티즈 특징\", \"코숏 건강\"\n💰 비용: \"슬개골 수술비\", \"중성화 비용\"\n🏥 병원: \"강남 동물병원\", \"파주 24시\"\n💉 건강: \"예방접종\", \"펫보험\"\n🐾 관리: \"산책 시간\", \"사료 추천\"\n🏠 입양: \"처음 키우기 가이드\"";
 }
 
 type ChatMsg = { role: "user" | "ai"; text: string };
