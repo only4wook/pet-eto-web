@@ -50,8 +50,12 @@ export default function Header() {
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
             <span style={{ fontSize: 22, fontWeight: 900, color: "#FF6B35" }}>P.E.T</span>
           </Link>
-          <form style={{ flex: 1, display: "flex", minWidth: 0 }} onSubmit={(e) => e.preventDefault()}>
-            <input type="text" placeholder="검색" style={{
+          <form style={{ flex: 1, display: "flex", minWidth: 0 }} onSubmit={(e) => {
+            e.preventDefault();
+            const q = (e.currentTarget.querySelector("input") as HTMLInputElement)?.value?.trim();
+            if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`;
+          }}>
+            <input type="text" name="q" placeholder="게시글, 위키, 증상 검색..." style={{
               flex: 1, border: "1px solid #ddd", borderRight: "none",
               padding: "7px 10px", fontSize: 13, borderRadius: "4px 0 0 4px", outline: "none", minWidth: 0,
             }} />

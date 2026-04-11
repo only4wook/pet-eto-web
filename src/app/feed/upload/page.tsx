@@ -110,14 +110,18 @@ export default function FeedUploadPage() {
     if (isVideo) {
       setPreview(URL.createObjectURL(file));
     } else {
-      // 이미지 미리보기: HEIC 등 특수 포맷도 canvas로 변환 후 표시
+      // HEIC 감지 시 안내
+      const isHeic = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic");
+      if (isHeic) {
+        alert("HEIC 형식 사진이 감지되었어요.\n갤러리에서 JPEG/PNG로 변환 후 올려주시거나,\n카메라로 직접 촬영해주세요.\n\n📱 설정 → 카메라 → 포맷 → '호환성 우선'으로 변경하면 JPEG로 촬영됩니다.");
+      }
+      // canvas로 변환 시도
       try {
         const blob = await compressImage(file);
         const reader = new FileReader();
         reader.onload = (ev) => setPreview(ev.target?.result as string);
         reader.readAsDataURL(blob);
       } catch {
-        // fallback: 원본 시도
         const reader = new FileReader();
         reader.onload = (ev) => setPreview(ev.target?.result as string);
         reader.readAsDataURL(file);
