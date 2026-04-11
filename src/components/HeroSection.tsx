@@ -166,11 +166,14 @@ export default function HeroSection() {
     { role: "ai", text: "안녕하세요! P.E.T AI입니다 🐾\n품종 정보, 증상 분석, 치료비 등 무엇이든 물어보세요!" },
   ]);
   const [thinking, setThinking] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // 채팅 컨테이너 내부만 스크롤 (페이지 전체 스크롤 방지)
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  }, [messages, thinking]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -306,10 +309,10 @@ export default function HeroSection() {
           </div>
 
           {/* 채팅 영역 */}
-          <div style={{
+          <div ref={chatBoxRef} style={{
             flex: 1, padding: "12px 16px", overflowY: "auto",
             display: "flex", flexDirection: "column", gap: 10,
-            minHeight: 200, maxHeight: 260,
+            minHeight: 200, maxHeight: 300,
           }}>
             {messages.map((msg, i) => (
               <div key={i} style={{
@@ -337,7 +340,6 @@ export default function HeroSection() {
                 분석 중...
               </div>
             )}
-            <div ref={chatEndRef} />
           </div>
 
           {/* 빠른 질문 버튼 */}
