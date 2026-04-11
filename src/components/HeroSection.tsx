@@ -2,13 +2,30 @@
 import { useState, useRef, useEffect } from "react";
 import { CAT_DATA, DOG_DATA } from "../lib/wikiData";
 import { analyzeSymptoms } from "../lib/symptomAnalyzer";
-import { searchVetByArea, getNearbyVetClinics } from "../lib/vetSearch";
+import { searchVetByArea } from "../lib/vetSearch";
+import { findSymptomGuide, formatSymptomResponse } from "../lib/aiKnowledge";
 
-// 지역 키워드 추출
-const AREAS = ["파주","고양","일산","서울","강남","마포","홍대","성동","왕십리","한양대","수원","용인","인천","분당","성남","종로","중구","서초","강서","송파","잠실","노원","관악"];
+// 지역 키워드 추출 (동물 이름과 혼동 방지)
+const AREA_MAP: { keyword: string; area: string }[] = [
+  { keyword: "파주", area: "파주" },
+  { keyword: "일산", area: "일산" },
+  { keyword: "고양시", area: "고양" },  // "고양이"와 구분! "고양시"만 매칭
+  { keyword: "서울", area: "서울" },
+  { keyword: "강남", area: "강남" },
+  { keyword: "마포", area: "마포" },
+  { keyword: "홍대", area: "홍대" },
+  { keyword: "성동", area: "성동" },
+  { keyword: "왕십리", area: "왕십리" },
+  { keyword: "한양대", area: "성동" },
+  { keyword: "수원", area: "수원" },
+  { keyword: "용인", area: "용인" },
+  { keyword: "인천", area: "인천" },
+  { keyword: "분당", area: "분당" },
+  { keyword: "성남", area: "성남" },
+];
 
 function findArea(q: string): string | null {
-  for (const a of AREAS) { if (q.includes(a)) return a; }
+  for (const a of AREA_MAP) { if (q.includes(a.keyword)) return a.area; }
   return null;
 }
 
@@ -16,6 +33,12 @@ function findArea(q: string): string | null {
 function generateAIResponse(query: string): string {
   const q = query.toLowerCase().replace(/\s+/g, " ");
   const allBreeds = [...CAT_DATA.breeds, ...DOG_DATA.breeds];
+
+  // 0. 증상 상세 가이드 (최우선 — 증상 질문은 지역보다 먼저)
+  const symptomGuide = findSymptomGuide(q);
+  if (symptomGuide) {
+    return formatSymptomResponse(symptomGuide, q);
+  }
 
   // 1. 지역 + 병원/중성화/치료 질문
   const area = findArea(q);
