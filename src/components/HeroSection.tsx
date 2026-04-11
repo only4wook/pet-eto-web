@@ -6,6 +6,8 @@ import { searchVetByArea } from "../lib/vetSearch";
 import { findSymptomGuide, formatSymptomResponse, detectAnimal } from "../lib/aiKnowledge";
 import { findFood, formatFoodResponse } from "../lib/aiFoodSafety";
 import { BREED_DISEASE_DATA } from "../lib/wikiDiseaseData";
+import { useAppStore } from "../lib/store";
+import { supabase } from "../lib/supabase";
 
 // 지역 키워드 추출 (세부 지역 우선 매칭, 동물 이름 혼동 방지)
 function findArea(q: string): string | null {
@@ -254,19 +256,42 @@ function generateAIResponse(query: string): string {
 }
 
 type ChatMsg = { role: "user" | "ai"; text: string };
+type PetInfo = { id: string; name: string; species: string; breed: string };
 
 export default function HeroSection() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [userPets, setUserPets] = useState<PetInfo[]>([]);
+  const user = useAppStore((s) => s.user);
+
+  // 로그인 유저의 등록 반려동물 조회
+  useEffect(() => {
+    if (user && user.id !== "demo-user") {
+      supabase.from("pets").select("id, name, species, breed")
+        .eq("owner_id", user.id)
+        .then(({ data }) => { if (data) setUserPets(data); });
+    }
+  }, [user]);
+
+  const petGreeting = userPets.length > 0
+    ? `안녕하세요! P.E.T AI입니다 🐾\n등록된 반려동물: ${userPets.map((p) => `${p.name}(${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species} · ${p.breed})`).join(", ")}\n\n무엇이든 물어보세요!`
+    : "안녕하세요! P.E.T AI입니다 🐾\n품종 정보, 증상 분석, 치료비 등 무엇이든 물어보세요!";
+
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: "ai", text: "안녕하세요! P.E.T AI입니다 🐾\n품종 정보, 증상 분석, 치료비 등 무엇이든 물어보세요!" },
+    { role: "ai", text: petGreeting },
   ]);
   const [thinking, setThinking] = useState(false);
   const chatBoxRef = useRef<HTMLDivElement>(null);
 
+  // 반려동물 로드 후 인사말 업데이트
   useEffect(() => {
-    // 채팅 컨테이너 내부만 스크롤 (페이지 전체 스크롤 방지)
+    if (userPets.length > 0 && messages.length === 1) {
+      setMessages([{ role: "ai", text: petGreeting }]);
+    }
+  }, [userPets]);
+
+  useEffect(() => {
     if (chatBoxRef.current) {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
     }
@@ -286,9 +311,15 @@ export default function HeroSection() {
     setChatInput("");
     setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
     setThinking(true);
-    // 짧은 딜레이로 AI 느낌
     setTimeout(() => {
-      const reply = generateAIResponse(userMsg);
+      let reply = generateAIResponse(userMsg);
+      // 등록 반려동물 맥락 추가
+      if (userPets.length > 0) {
+        const petContext = userPets.map((p) =>
+          `${p.name}(${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}·${p.breed})`
+        ).join(", ");
+        reply += `\n\n🐾 등록된 반려동물: ${petContext}`;
+      }
       setMessages((prev) => [...prev, { role: "ai", text: reply }]);
       setThinking(false);
     }, 600);

@@ -1,14 +1,26 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import GradeBadge from "../../components/GradeBadge";
 import { useAppStore } from "../../lib/store";
+import { supabase } from "../../lib/supabase";
 import { getGrade, getNextGrade, GRADE_REQUIREMENTS, POINT_RULES, ROLE_TABLE } from "../../lib/grades";
+import type { Pet } from "../../types";
 
 export default function MyPage() {
   const user = useAppStore((s) => s.user);
   const [showExpertForm, setShowExpertForm] = useState(false);
+  const [myPets, setMyPets] = useState<Pet[]>([]);
+
+  useEffect(() => {
+    if (user && user.id !== "demo-user") {
+      supabase.from("pets").select("*").eq("owner_id", user.id)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => { if (data) setMyPets(data); });
+    }
+  }, [user]);
 
   const points = user?.points ?? 0;
   const grade = getGrade(points);
@@ -142,6 +154,65 @@ export default function MyPage() {
                 </span>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* 내 반려동물 */}
+        <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 4, marginBottom: 16 }}>
+          <div style={{
+            padding: "12px 20px", borderBottom: "1px solid #e0e0e0",
+            fontSize: 14, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
+          }}>
+            <span>🐾 내 반려동물</span>
+            <Link href="/pet/register" style={{
+              background: "#FF6B35", color: "#fff", border: "none", borderRadius: 4,
+              padding: "4px 12px", fontSize: 12, fontWeight: 600, textDecoration: "none",
+            }}>+ 추가 등록</Link>
+          </div>
+          <div style={{ padding: "12px 20px" }}>
+            {myPets.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 0", color: "#888" }}>
+                <p style={{ fontSize: 14, margin: "0 0 8px" }}>등록된 반려동물이 없어요</p>
+                <Link href="/pet/register" style={{
+                  color: "#FF6B35", fontSize: 13, fontWeight: 600,
+                }}>반려동물 등록하기 →</Link>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {myPets.map((pet) => (
+                  <div key={pet.id} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "12px 14px", background: "#FAFAFA", borderRadius: 8, border: "1px solid #F0F0F0",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 24 }}>
+                        {pet.species === "cat" ? "🐱" : pet.species === "dog" ? "🐶" : "🐾"}
+                      </span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: "#1F2937" }}>{pet.name}</div>
+                        <div style={{ fontSize: 12, color: "#6B7280" }}>
+                          {pet.breed}
+                          {pet.gender !== "unknown" && ` · ${pet.gender === "male" ? "♂ 남아" : "♀ 여아"}`}
+                          {pet.weight && ` · ${pet.weight}kg`}
+                          {pet.birth_date && ` · ${pet.birth_date}`}
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={async () => {
+                      if (!confirm(`${pet.name}을(를) 삭제하시겠습니까?`)) return;
+                      await supabase.from("pets").delete().eq("id", pet.id);
+                      setMyPets((prev) => prev.filter((p) => p.id !== pet.id));
+                    }} style={{
+                      background: "none", border: "1px solid #E5E7EB", borderRadius: 6,
+                      padding: "4px 10px", fontSize: 11, color: "#9CA3AF", cursor: "pointer",
+                    }}>삭제</button>
+                  </div>
+                ))}
+                <p style={{ fontSize: 11, color: "#9CA3AF", margin: "4px 0 0", textAlign: "center" }}>
+                  여러 마리를 키우신다면 '+ 추가 등록'으로 모두 등록해주세요!
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

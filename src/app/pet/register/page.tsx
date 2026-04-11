@@ -43,7 +43,7 @@ export default function PetRegisterPage() {
 
     if (error) { alert("등록 실패: " + error.message); setLoading(false); return; }
 
-    alert(`${name}이(가) 등록되었습니다!`);
+    alert(`${name}이(가) 등록되었습니다! 🐾\n\n여러 마리를 키우신다면 추가 등록도 가능해요.`);
     setLoading(false);
     router.push("/mypage");
   };
