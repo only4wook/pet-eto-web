@@ -2,40 +2,109 @@
 import { useState, useRef, useEffect } from "react";
 import { CAT_DATA, DOG_DATA } from "../lib/wikiData";
 import { analyzeSymptoms } from "../lib/symptomAnalyzer";
+import { searchVetByArea, getNearbyVetClinics } from "../lib/vetSearch";
 
-// 위키 데이터에서 검색
-function searchWiki(query: string): string {
-  const q = query.toLowerCase();
+// 지역 키워드 추출
+const AREAS = ["파주","고양","일산","서울","강남","마포","홍대","성동","왕십리","한양대","수원","용인","인천","분당","성남","종로","중구","서초","강서","송파","잠실","노원","관악"];
+
+function findArea(q: string): string | null {
+  for (const a of AREAS) { if (q.includes(a)) return a; }
+  return null;
+}
+
+// AI 응답 생성
+function generateAIResponse(query: string): string {
+  const q = query.toLowerCase().replace(/\s+/g, " ");
   const allBreeds = [...CAT_DATA.breeds, ...DOG_DATA.breeds];
 
-  // 품종 이름 매칭
+  // 1. 지역 + 병원/중성화/치료 질문
+  const area = findArea(q);
+  if (area) {
+    const clinics = searchVetByArea(area);
+
+    if (q.includes("중성화")) {
+      const price = q.includes("고양이") ? "15~30만원" : "20~40만원";
+      const animal = q.includes("고양이") ? "고양이" : "강아지";
+      let resp = `💉 ${area} 지역 ${animal} 중성화 안내\n\n예상 비용: ${price}\n(병원마다 다르며, 몸무게·성별에 따라 달라요)\n\n`;
+      if (clinics.length > 0) {
+        resp += `📍 ${area} 근처 동물병원:\n`;
+        clinics.slice(0, 3).forEach((c) => {
+          resp += `• ${c.name} ${c.is24h ? "(24시)" : ""}\n  ${c.address}\n  📞 ${c.phone}\n`;
+        });
+        resp += `\n💡 전화해서 중성화 비용을 미리 문의하세요!`;
+      } else {
+        resp += `아직 ${area} 지역 병원 데이터가 부족해요.\n카카오톡으로 문의하시면 직접 찾아드릴게요!`;
+      }
+      return resp;
+    }
+
+    if (q.includes("병원") || q.includes("동물병원") || q.includes("근처") || q.includes("가까운")) {
+      let resp = `🏥 ${area} 지역 동물병원\n\n`;
+      if (clinics.length > 0) {
+        clinics.slice(0, 4).forEach((c) => {
+          resp += `• ${c.name} ${c.is24h ? "🔴24시" : ""}\n  ${c.address}\n  📞 ${c.phone}\n\n`;
+        });
+      } else {
+        resp += `아직 ${area} 지역 데이터가 부족해요.\n카카오톡으로 문의하시면 직접 찾아드릴게요!`;
+      }
+      return resp;
+    }
+
+    // 지역 + 기타 질문
+    if (clinics.length > 0) {
+      let resp = `📍 ${area} 지역 관련 정보\n\n`;
+      resp += `가까운 동물병원:\n`;
+      clinics.slice(0, 2).forEach((c) => {
+        resp += `• ${c.name} (📞 ${c.phone})\n`;
+      });
+      resp += `\n궁금한 점이 있으면 더 자세히 물어봐주세요!`;
+      return resp;
+    }
+  }
+
+  // 2. 품종 이름 매칭
   const matched = allBreeds.find(
-    (b) => q.includes(b.name) || q.includes(b.nameEn.toLowerCase()) || q.includes(b.id)
+    (b) => q.includes(b.name.toLowerCase()) || q.includes(b.nameEn.toLowerCase()) || q.includes(b.id)
   );
   if (matched) {
-    return `📖 **${matched.name}** (${matched.nameEn})\n\n` +
-      `원산지: ${matched.origin} | 체중: ${matched.weight} | 수명: ${matched.lifespan}\n\n` +
-      `${matched.description.slice(0, 150)}...\n\n` +
-      `👉 자세한 정보는 위키에서 확인하세요!`;
+    let resp = `📖 ${matched.name} (${matched.nameEn})\n\n`;
+    resp += `🌍 원산지: ${matched.origin}\n⚖️ 체중: ${matched.weight}\n⏳ 수명: ${matched.lifespan}\n🐾 성격: ${matched.personality.join(", ")}\n\n`;
+    resp += `${matched.description.slice(0, 200)}...\n\n`;
+    resp += `👉 위키에서 질병·비용·관리법까지 확인하세요!`;
+    return resp;
   }
 
-  // 증상 키워드 분석
-  const analysis = analyzeSymptoms(query, "dog");
+  // 3. 증상 분석
+  const analysis = analyzeSymptoms(query, q.includes("고양이") ? "cat" : "dog");
   if (analysis.severity !== "normal") {
-    return `🔍 **AI 증상 분석 결과**\n\n` +
-      `심각도: ${analysis.severity === "urgent" ? "🚨 긴급" : analysis.severity === "moderate" ? "⚠️ 주의" : "💡 관찰"}\n` +
-      `감지된 증상: ${analysis.symptoms.join(", ")}\n\n` +
+    return `🔍 AI 증상 분석 결과\n\n` +
+      `${analysis.severity === "urgent" ? "🚨 긴급" : analysis.severity === "moderate" ? "⚠️ 주의" : "💡 관찰"} 등급\n` +
+      `감지 증상: ${analysis.symptoms.join(", ")}\n\n` +
       `${analysis.summary}\n\n` +
-      `💡 ${analysis.recommendation}`;
+      `💡 ${analysis.recommendation}\n\n` +
+      `👉 피드에 사진과 함께 올리면 주변 병원도 안내해드려요!`;
   }
 
-  // 일반 키워드 매칭
-  if (q.includes("사료") || q.includes("밥")) return "🍽️ 반려동물 사료는 나이, 체중, 건강 상태에 맞게 선택하세요.\n\n강아지: 퍼피→어덜트→시니어 단계별 사료\n고양이: 습식+건식 병행 권장\n\n👉 펫-위키에서 품종별 관리법을 확인해보세요!";
-  if (q.includes("병원") || q.includes("동물병원")) return "🏥 주변 동물병원을 찾으시나요?\n\n피드에 증상을 올리시면 AI가 분석하고 GPS 기반으로 가까운 동물병원을 자동 안내해드립니다.\n\n👉 '피드 > 사진 올리기'에서 이용해보세요!";
-  if (q.includes("예방접종") || q.includes("접종")) return "💉 예방접종 스케줄\n\n강아지: DHPPL 5종 + 코로나 + 켄넬코프 + 광견병 (6~16주)\n고양이: FVRCP 3종 + 광견병 (6~16주)\n\n👉 위키 품종 페이지에서 상세 스케줄을 확인하세요!";
-  if (q.includes("비용") || q.includes("치료비") || q.includes("얼마")) return "💰 반려동물 의료비가 궁금하시군요!\n\n품종별 주요 질병과 예상 치료비를 위키에 정리해뒀어요.\n슬개골 탈구: 100~350만원\n디스크 수술: 200~600만원\n스케일링: 20~80만원\n\n👉 위키에서 품종별 상세 비용을 확인하세요!";
+  // 4. 주제별 매칭 (확장)
+  if (q.includes("중성화") || q.includes("수술")) {
+    const animal = q.includes("고양이") ? "고양이" : "강아지";
+    const price = animal === "고양이" ? "15~30만원" : "20~40만원";
+    return `✂️ ${animal} 중성화 수술 안내\n\n💰 예상 비용: ${price}\n⏰ 적정 시기: 생후 5~8개월\n⏱️ 수술 시간: 30분~1시간\n🏥 입원: 당일~1일\n\n장점: 질병 예방, 행동 교정, 스트레스 감소\n\n💡 지역명을 포함해서 물어보시면 가까운 병원도 안내해드려요!\n예: "파주에서 고양이 중성화"`;
+  }
+  if (q.includes("사료") || q.includes("밥") || q.includes("간식") || q.includes("먹이")) return "🍽️ 사료 선택 가이드\n\n🐶 강아지: 퍼피(~12개월)→어덜트(1~7세)→시니어(7세~)\n🐱 고양이: 습식+건식 병행 권장, 수분 섭취 중요\n\n💰 월 사료비:\n• 소형견/고양이: 3~8만원\n• 중형견: 5~12만원\n• 대형견: 8~20만원\n\n💡 품종별 추천 사료는 위키에서 확인하세요!";
+  if (q.includes("병원") || q.includes("동물병원")) return "🏥 동물병원 찾기\n\n지역명을 포함해서 물어봐주세요!\n\n예시:\n• 서울 근처 동물병원\n• 파주 24시 병원\n• 강남 동물병원\n\n또는 피드에 증상을 올리면 GPS 기반으로 자동 안내해드려요!";
+  if (q.includes("예방접종") || q.includes("접종") || q.includes("백신")) return "💉 예방접종 스케줄\n\n🐶 강아지:\n• 6~8주: 1차 DHPPL+코로나\n• 10~12주: 2차 DHPPL+코로나\n• 14~16주: 3차 DHPPL+켄넬코프+광견병\n• 매년: 추가접종+심장사상충 검사\n💰 회당 3~5만원\n\n🐱 고양이:\n• 6~8주: 1차 FVRCP\n• 10~12주: 2차 FVRCP\n• 14~16주: 3차 FVRCP+광견병\n• 매년: 추가접종\n💰 회당 3~5만원";
+  if (q.includes("비용") || q.includes("치료비") || q.includes("얼마") || q.includes("가격")) return "💰 반려동물 주요 의료비\n\n🔧 수술:\n• 슬개골 탈구: 100~350만원\n• 디스크: 200~600만원\n• 중성화: 15~40만원\n\n🏥 정기 관리:\n• 스케일링: 20~80만원\n• 건강검진: 10~30만원\n• 예방접종: 회당 3~5만원\n\n📋 월 관리비:\n• 소형견/고양이: 8~20만원\n• 대형견: 15~40만원\n\n👉 품종별 고질병·비용은 위키에서 확인!";
+  if (q.includes("입양") || q.includes("처음") || q.includes("초보") || q.includes("키우") || q.includes("분양")) return "🐾 반려동물 처음 키우기 가이드\n\n1️⃣ 건강검진 (입양 후 1~3일)\n2️⃣ 동물등록 (30일 이내, 의무)\n3️⃣ 예방접종 시작\n4️⃣ 중성화 수술 (5~8개월)\n5️⃣ 필수 용품 준비\n\n💰 초기 비용: 약 30~80만원\n📋 월 관리비: 8~30만원\n\n👉 위키 품종 페이지에서 상세 체크리스트를 확인하세요!";
+  if (q.includes("보험") || q.includes("펫보험")) return "🛡️ 펫보험 안내\n\n가입 적기: 생후 8주~8세\n월 보험료: 2~8만원 (품종/나이별 차이)\n\n보장 항목:\n• 수술비, 입원비, 통원 치료비\n• 배상책임 (타인 물린 경우)\n\n💡 슬개골·디스크 등 고비용 수술이 흔한 소형견은 가입 권장!\n\n주요 보험사: KB손보, 삼성화재, 현대해상, 메리츠";
+  if (q.includes("산책") || q.includes("운동")) return "🚶 산책 가이드\n\n🐶 강아지 (하루 기준):\n• 소형견: 20~30분\n• 중형견: 40~60분\n• 대형견: 1~2시간\n• 초대형/목양견: 2시간+\n\n⏰ 추천 시간: 아침 7~8시, 저녁 6~7시\n🌡️ 여름: 아스팔트 화상 주의 (30도↑ 시 자제)\n❄️ 겨울: 소형견 보온 필수\n\n🐱 고양이: 실내 놀이 15~20분/일로 충분";
+  if (q.includes("슬개골")) return "🦵 슬개골 탈구 안내\n\n소형견 최다 질환 (말티즈, 푸들, 포메 등)\n\n등급:\n• 1등급: 관찰 (수술 불필요)\n• 2등급: 경과 관찰\n• 3등급: 수술 권장\n• 4등급: 수술 필수\n\n💰 수술비: 한쪽 50~200만원, 양쪽 100~350만원\n🏥 입원: 3~5일\n⏱️ 회복: 6~8주\n\n예방: 체중 관리, 미끄러운 바닥 방지, 높은 곳 점프 금지";
+  if (q.includes("디스크") || q.includes("추간판")) return "🦴 디스크(IVDD) 안내\n\n닥스훈트, 코기, 시츄 등 허리 긴 견종 주의\n\n💰 수술비: 200~600만원\n🏥 입원: 5~14일\n⏱️ 재활: 2~6개월\n\n예방:\n• 비만 방지 (최대 위험요인)\n• 계단 대신 경사로\n• 안을 때 허리 받치기\n• 높은 곳 점프 금지";
+  if (q.includes("안녕") || q.includes("반가") || q.includes("하이") || q.includes("hello")) return "안녕하세요! 🐾 P.E.T AI입니다!\n\n무엇이든 물어보세요:\n• 품종 정보 (예: 말티즈 특징)\n• 증상 분석 (예: 구토를 해요)\n• 치료비 (예: 슬개골 수술 얼마)\n• 병원 찾기 (예: 서울 24시 병원)\n• 관리 팁 (예: 산책 시간)\n• 중성화 (예: 파주 중성화 비용)";
+  if (q.includes("고마") || q.includes("감사") || q.includes("땡큐")) return "감사합니다! 🐾\n\n더 궁금한 게 있으면 언제든 물어보세요!\n\n💬 카카오톡으로도 1:1 상담 가능해요!";
 
-  return "🐾 P.E.T AI에게 물어보세요!\n\n예시:\n• 말티즈 특징이 뭐야?\n• 강아지가 구토를 해요\n• 예방접종 스케줄\n• 치료비가 궁금해요\n\n품종 이름이나 증상을 입력하면 분석해드려요!";
+  // 5. 기본 응답 (도움말)
+  return "🐾 이런 질문들을 해보세요!\n\n📖 품종: \"말티즈 특징\", \"코숏 성격\"\n🔍 증상: \"구토를 해요\", \"다리를 절어요\"\n💰 비용: \"중성화 비용\", \"슬개골 수술비\"\n🏥 병원: \"파주 동물병원\", \"서울 24시\"\n💉 건강: \"예방접종 스케줄\", \"펫보험\"\n🐾 관리: \"산책 시간\", \"사료 추천\"\n🏠 입양: \"처음 키우기 가이드\"";
 }
 
 type ChatMsg = { role: "user" | "ai"; text: string };
@@ -70,7 +139,7 @@ export default function HeroSection() {
     setThinking(true);
     // 짧은 딜레이로 AI 느낌
     setTimeout(() => {
-      const reply = searchWiki(userMsg);
+      const reply = generateAIResponse(userMsg);
       setMessages((prev) => [...prev, { role: "ai", text: reply }]);
       setThinking(false);
     }, 600);
@@ -227,7 +296,7 @@ export default function HeroSection() {
             padding: "8px 16px", display: "flex", gap: 6,
             overflowX: "auto", borderTop: "1px solid #374151",
           }}>
-            {["말티즈 특징", "구토 증상", "치료비 궁금", "예방접종"].map((q) => (
+            {["말티즈 특징", "구토 증상", "중성화 비용", "서울 24시 병원", "처음 키우기"].map((q) => (
               <button key={q} onClick={() => { setChatInput(q); }}
                 style={{
                   flexShrink: 0, background: "#374151", color: "#D1D5DB",
