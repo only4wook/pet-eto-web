@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIP, isAdmin } from "../../../lib/security";
 
 // anon key 강제 (RLS 우회는 SECURITY DEFINER 함수로)
 const sb = createClient(
@@ -11,14 +12,18 @@ const sb = createClient(
   },
 );
 
-const ADMIN_PASSWORD = "peteto2026";
-
 export async function POST(req: NextRequest) {
   try {
+    // Rate Limiting
+    const ip = getClientIP(req);
+    if (!checkRateLimit(ip, 10, 60000)) {
+      return NextResponse.json({ error: "요청이 너무 많습니다. 1분 후 다시 시도해주세요." }, { status: 429 });
+    }
+
     const body = await req.json();
     const { password, table, id, imageUrl } = body;
 
-    if (password !== ADMIN_PASSWORD) {
+    if (!isAdmin(password)) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
 

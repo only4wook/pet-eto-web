@@ -15,7 +15,7 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("users");
 
   const handleLogin = () => {
-    if (password === "peteto2026") setAuthed(true);
+    if (password === (process.env.NEXT_PUBLIC_ADMIN_PW || "peteto2026")) setAuthed(true);
     else alert("비밀번호가 올바르지 않습니다.");
   };
 
