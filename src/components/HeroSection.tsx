@@ -412,7 +412,7 @@ export default function HeroSection() {
             background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 8,
             padding: "8px 12px", marginBottom: 12, fontSize: 13, color: "#92400E",
           }}>
-            💰 <strong>기본 3만원/3시간</strong> · 야간 4만원 · 1일 8만원 &nbsp;
+            💰 <strong>긴급 방문 3만원/1시간</strong> · 반일 6만원 · 1일 12만원 &nbsp;
             <span style={{ color: "#FF6B35", fontWeight: 700 }}>선착순 10명 무료 체험!</span>
           </div>
 
