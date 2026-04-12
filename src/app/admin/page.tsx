@@ -7,7 +7,7 @@ import { CAT_DATA, DOG_DATA } from "../../lib/wikiData";
 import { getGrade } from "../../lib/grades";
 import type { User } from "../../types";
 
-type Tab = "users" | "posts" | "analytics" | "images";
+type Tab = "users" | "posts" | "pages" | "analytics" | "images";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -51,6 +51,7 @@ export default function AdminPage() {
           {[
             { key: "users" as Tab, label: "유저 관리" },
             { key: "posts" as Tab, label: "글 관리" },
+            { key: "pages" as Tab, label: "📄 페이지 편집" },
             { key: "analytics" as Tab, label: "📊 사업 분석" },
             { key: "images" as Tab, label: "위키 이미지" },
           ].map((t) => (
@@ -65,6 +66,7 @@ export default function AdminPage() {
 
         {tab === "users" && <UserManagement />}
         {tab === "posts" && <PostManagement />}
+        {tab === "pages" && <PageEditor />}
         {tab === "analytics" && <AnalyticsDashboard />}
         {tab === "images" && <ImageManagement />}
       </main>
@@ -302,6 +304,120 @@ function UserManagement() {
               borderRadius: 6, background: "#fff", cursor: "pointer", fontSize: 13,
             }}>닫기</button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ 페이지 편집 탭 ============
+function PageEditor() {
+  const pages = [
+    { key: "about", label: "팀 소개", url: "/about" },
+    { key: "terms", label: "이용약관", url: "/terms" },
+    { key: "privacy", label: "개인정보처리방침", url: "/privacy" },
+    { key: "guide", label: "이용 가이드", url: "/guide" },
+    { key: "partner", label: "파트너 신청", url: "/partner" },
+  ];
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savedContent, setSavedContent] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // DB에서 페이지 내용 로드
+    supabase.from("posts").select("title,content")
+      .eq("category", "문의").like("title", "[페이지편집]%")
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<string, string> = {};
+          data.forEach((d: any) => {
+            const key = d.title.replace("[페이지편집] ", "");
+            map[key] = d.content;
+          });
+          setSavedContent(map);
+        }
+      });
+  }, []);
+
+  const loadPage = (key: string) => {
+    setSelectedPage(key);
+    setContent(savedContent[key] || "");
+  };
+
+  const savePage = async () => {
+    if (!selectedPage) return;
+    setSaving(true);
+    // posts 테이블에 페이지 편집 내용 저장 (upsert 방식)
+    const title = `[페이지편집] ${selectedPage}`;
+    const existing = await supabase.from("posts").select("id").eq("title", title).maybeSingle();
+    if (existing.data) {
+      await supabase.from("posts").update({ content }).eq("id", existing.data.id);
+    } else {
+      await supabase.from("posts").insert({
+        category: "문의", title, content,
+        tags: ["admin", "page-edit"],
+      });
+    }
+    setSavedContent((prev) => ({ ...prev, [selectedPage]: content }));
+    setSaving(false);
+    alert("저장 완료! 페이지에 반영하려면 코드 수정이 필요합니다.\n\n저장된 내용은 관리자가 확인할 수 있습니다.");
+  };
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
+        {pages.map((p) => (
+          <button key={p.key} onClick={() => loadPage(p.key)} style={{
+            padding: "14px", borderRadius: 12, cursor: "pointer", textAlign: "center",
+            border: selectedPage === p.key ? "2px solid #FF6B35" : "1px solid #E5E7EB",
+            background: selectedPage === p.key ? "#FFF7ED" : "#fff",
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#1F2937" }}>{p.label}</div>
+            <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>{p.url}</div>
+            <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#FF6B35" }} onClick={(e) => e.stopPropagation()}>
+              미리보기 →
+            </a>
+          </button>
+        ))}
+      </div>
+
+      {selectedPage && (
+        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 20 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 12px", color: "#1F2937" }}>
+            📝 {pages.find((p) => p.key === selectedPage)?.label} 편집
+          </h3>
+          <p style={{ fontSize: 12, color: "#9CA3AF", margin: "0 0 12px" }}>
+            여기에 수정할 내용을 작성하세요. 저장하면 DB에 기록되며, 실제 반영은 개발자가 코드에 적용합니다.
+          </p>
+          <textarea value={content} onChange={(e) => setContent(e.target.value)}
+            placeholder="수정할 내용을 자유롭게 작성하세요..."
+            style={{
+              width: "100%", minHeight: 300, padding: 16, border: "1px solid #E5E7EB",
+              borderRadius: 8, fontSize: 14, fontFamily: "inherit", lineHeight: 1.8,
+              resize: "vertical", outline: "none",
+            }} />
+          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+            <button onClick={savePage} disabled={saving} style={{
+              padding: "10px 24px", background: saving ? "#9CA3AF" : "#FF6B35",
+              color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
+            }}>
+              {saving ? "저장 중..." : "💾 저장"}
+            </button>
+            <a href={pages.find((p) => p.key === selectedPage)?.url} target="_blank" rel="noopener noreferrer" style={{
+              padding: "10px 24px", background: "#F3F4F6", color: "#374151",
+              border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none",
+              display: "inline-flex", alignItems: "center",
+            }}>
+              🔗 현재 페이지 보기
+            </a>
+          </div>
+        </div>
+      )}
+
+      {!selectedPage && (
+        <div style={{ textAlign: "center", padding: "40px 0", color: "#9CA3AF" }}>
+          위에서 편집할 페이지를 선택하세요
         </div>
       )}
     </div>
