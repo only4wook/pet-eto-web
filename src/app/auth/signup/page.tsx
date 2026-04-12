@@ -171,7 +171,7 @@ export default function SignupPage() {
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={async () => {
-              await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+              await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: "https://pet-eto.vercel.app" } });
             }} style={{
               flex: 1, padding: "10px", border: "1px solid #E5E7EB", borderRadius: 8,
               background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600,
@@ -181,7 +181,7 @@ export default function SignupPage() {
               Google
             </button>
             <button onClick={async () => {
-              await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.origin, scopes: "profile_nickname profile_image" } });
+              await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: "https://pet-eto.vercel.app", scopes: "profile_nickname profile_image" } });
             }} style={{
               flex: 1, padding: "10px", border: "none", borderRadius: 8,
               background: "#FEE500", cursor: "pointer", fontSize: 13, fontWeight: 600,

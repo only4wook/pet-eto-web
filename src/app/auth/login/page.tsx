@@ -93,7 +93,7 @@ export default function LoginPage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button onClick={async () => {
-              await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+              await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: "https://pet-eto.vercel.app" } });
             }} style={{
               width: "100%", padding: "11px", border: "1px solid #E5E7EB", borderRadius: 8,
               background: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600,
@@ -103,7 +103,7 @@ export default function LoginPage() {
               Google로 로그인
             </button>
             <button onClick={async () => {
-              const { error } = await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.origin, scopes: "profile_nickname profile_image" } });
+              const { error } = await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: "https://pet-eto.vercel.app", scopes: "profile_nickname profile_image" } });
               if (error) alert("카카오 로그인 설정 중입니다. 구글 또는 이메일로 로그인해주세요.");
             }} style={{
               width: "100%", padding: "11px", border: "none", borderRadius: 8,
