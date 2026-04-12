@@ -60,7 +60,8 @@ export async function appendToSheet(record: TransactionRecord): Promise<{ ok: bo
       record.memo,
     ];
 
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/거래내역!A:S:append?valueInputOption=USER_ENTERED`;
+    // 시트 이름 없이 첫 번째 시트에 추가 (시트 이름 호환성)
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:S:append?valueInputOption=USER_ENTERED`;
 
     const res = await fetch(url, {
       method: "POST",
