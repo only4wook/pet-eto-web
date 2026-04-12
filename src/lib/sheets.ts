@@ -67,9 +67,9 @@ export async function appendToSheet(record: TransactionRecord): Promise<{ ok: bo
       method: "POST",
       headers: {
         Authorization: `Bearer ${jwt}`,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json; charset=utf-8",
       },
-      body: JSON.stringify({ values: [values] }),
+      body: JSON.stringify({ values: [values.map((v) => typeof v === "string" ? v : v)] }),
     });
 
     if (res.ok) {
@@ -83,11 +83,12 @@ export async function appendToSheet(record: TransactionRecord): Promise<{ ok: bo
   }
 }
 
-// JWT 토큰 생성 (Google 서비스 계정용)
+// JWT 토큰 생성 (Google 서비스 계정용 — Node.js 호환)
 async function createJWT(credentials: any): Promise<string> {
-  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const b64url = (str: string) => Buffer.from(str).toString("base64url");
+  const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const now = Math.floor(Date.now() / 1000);
-  const claim = btoa(JSON.stringify({
+  const claim = b64url(JSON.stringify({
     iss: credentials.client_email,
     scope: "https://www.googleapis.com/auth/spreadsheets",
     aud: "https://oauth2.googleapis.com/token",
@@ -97,7 +98,6 @@ async function createJWT(credentials: any): Promise<string> {
 
   const signInput = `${header}.${claim}`;
 
-  // Node.js crypto로 RS256 서명
   const crypto = await import("crypto");
   const sign = crypto.createSign("RSA-SHA256");
   sign.update(signInput);
