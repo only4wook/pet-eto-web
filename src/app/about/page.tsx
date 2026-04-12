@@ -107,6 +107,42 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* 자문위원 / 전문가 네트워크 */}
+        <section style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", marginBottom: 24, border: "1px solid #F3F4F6" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1F2937", margin: "0 0 8px" }}>전문가 자문단 & 파트너 네트워크</h2>
+          <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 20px", lineHeight: 1.6 }}>
+            P.E.T는 수의학·행동학 전문가의 감수를 받아 서비스 품질을 보장합니다.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 20 }}>
+            {[
+              { icon: "🩺", title: "수의학 자문", status: "모집 중", desc: "AI 건강 분석 감수, 응급 사례 자문", color: "#059669" },
+              { icon: "🐾", title: "행동학 자문", status: "모집 중", desc: "행동 교정 콘텐츠, 훈련 가이드 감수", color: "#2563EB" },
+              { icon: "🏥", title: "제휴 동물병원", status: "제휴 준비 중", desc: "24시 응급 이송, 할인 진료 연계", color: "#DC2626" },
+              { icon: "🎓", title: "대학 산학협력", status: "협의 중", desc: "수의학과·동물보건학과 인턴십 연계", color: "#7C3AED" },
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: "#FAFAFA", borderRadius: 12, padding: "18px",
+                border: "1px solid #F0F0F0", textAlign: "center",
+              }}>
+                <div style={{ fontSize: 32, marginBottom: 6 }}>{item.icon}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1F2937" }}>{item.title}</div>
+                <span style={{
+                  display: "inline-block", fontSize: 11, fontWeight: 600, padding: "2px 10px",
+                  borderRadius: 10, marginTop: 4, marginBottom: 6,
+                  background: "#FEF3C7", color: "#D97706",
+                }}>{item.status}</span>
+                <div style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5 }}>{item.desc}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", margin: 0 }}>
+            전문가 자문·제휴에 관심 있으시다면 📧 peteto2026@gmail.com 또는{" "}
+            <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{ color: "#FF6B35", fontWeight: 600 }}>
+              카카오톡 채널
+            </a>로 연락주세요.
+          </p>
+        </section>
+
         {/* 연락처 */}
         <section style={{
           background: "linear-gradient(135deg, #FFF7ED, #FEF3C7)",
