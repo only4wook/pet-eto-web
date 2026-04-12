@@ -69,7 +69,7 @@ export async function appendToSheet(record: TransactionRecord): Promise<{ ok: bo
         Authorization: `Bearer ${jwt}`,
         "Content-Type": "application/json; charset=utf-8",
       },
-      body: JSON.stringify({ values: [values.map((v) => typeof v === "string" ? v : v)] }),
+      body: new TextEncoder().encode(JSON.stringify({ values: [values] })),
     });
 
     if (res.ok) {
