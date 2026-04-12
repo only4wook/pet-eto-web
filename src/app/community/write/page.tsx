@@ -46,11 +46,23 @@ export default function WritePage() {
     }
 
     // 포인트 (후기 +20P, 일반 +10P)
-    const pts = category === "후기" ? 20 : 10;
-    await supabase.from("point_logs").insert({ user_id: user.id, amount: pts, reason: category === "후기" ? "후기 작성" : "게시글 작성" });
+    let pts = category === "후기" ? 20 : 10;
+    let bonusMsg = "";
+
+    // 첫 후기 보너스 +100P
+    if (category === "후기") {
+      const { count } = await supabase.from("posts").select("id", { count: "exact", head: true })
+        .eq("author_id", user.id).eq("category", "후기");
+      if (count === 0 || count === null) {
+        pts += 100;
+        bonusMsg = "\n🎉 첫 후기 보너스 +100P!";
+      }
+    }
+
+    await supabase.from("point_logs").insert({ user_id: user.id, amount: pts, reason: category === "후기" ? "후기 작성" + (bonusMsg ? " (첫 후기 보너스)" : "") : "게시글 작성" });
     await supabase.rpc("add_points", { uid: user.id, pts });
 
-    alert(`게시글이 등록되었습니다! (+${pts}P)${category === "후기" ? "\n⭐ 후기 작성 보너스 포인트!" : ""}`);
+    alert(`게시글이 등록되었습니다! (+${pts}P)${bonusMsg}`);
     setLoading(false);
     router.push("/");
   };

@@ -241,9 +241,17 @@ export default function FeedUploadPage() {
 
       if (insertError) { alert("저장 실패: " + insertError.message); setLoading(false); return; }
 
-      // 포인트 +10P
-      await supabase.from("point_logs").insert({ user_id: user.id, amount: 10, reason: "피드 작성" });
-      await supabase.rpc("add_points", { uid: user.id, pts: 10 });
+      // 포인트 +10P (첫 피드 +100P 보너스)
+      let feedPts = 10;
+      let feedBonus = "";
+      const { count: feedCount } = await supabase.from("feed_posts").select("id", { count: "exact", head: true })
+        .eq("author_id", user.id);
+      if (feedCount === 1) { // 방금 올린 게 첫 번째
+        feedPts += 100;
+        feedBonus = "\n🎉 첫 피드 보너스 +100P!";
+      }
+      await supabase.from("point_logs").insert({ user_id: user.id, amount: feedPts, reason: feedBonus ? "피드 작성 (첫 피드 보너스)" : "피드 작성" });
+      await supabase.rpc("add_points", { uid: user.id, pts: feedPts });
 
       setLoading(false);
       setLoadingMsg("");
@@ -251,7 +259,7 @@ export default function FeedUploadPage() {
       if (analysis.severity === "moderate" || analysis.severity === "urgent") {
         setAlertData(analysis);
       } else {
-        alert("피드가 등록되었습니다! (+10P)");
+        alert(`피드가 등록되었습니다! (+${feedPts}P)${feedBonus}`);
         router.push("/feed");
       }
     } catch (err: any) {
