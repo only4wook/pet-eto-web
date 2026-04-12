@@ -170,16 +170,40 @@ export default function FeedUploadPage() {
         // imageUrl은 위에서 이미 설정됨
       }
 
-      // AI 증상 분석 (텍스트 기반)
+      // AI 분석: 이미지가 있으면 Gemini Vision, 없으면 텍스트 분석
       setLoadingMsg("AI 분석 중...");
-      const analysis = analyzeSymptoms(description, species);
+      let analysis: any = analyzeSymptoms(description, species); // 텍스트 기본 분석
+      let aiImageAnalysis = "";
+
+      if (mediaType === "image" && mediaFile) {
+        try {
+          const aiFd = new FormData();
+          aiFd.append("file", mediaFile);
+          aiFd.append("description", description);
+          aiFd.append("species", species);
+          const aiRes = await fetch("/api/analyze-image", { method: "POST", body: aiFd });
+          const aiData = await aiRes.json();
+          if (aiRes.ok && aiData.analysis) {
+            aiImageAnalysis = aiData.analysis;
+            // Gemini 분석 결과로 심각도 업데이트
+            if (aiData.severity !== "normal") {
+              analysis = {
+                severity: aiData.severity,
+                symptoms: [aiData.severity === "urgent" ? "긴급" : aiData.severity === "moderate" ? "주의" : "관찰"],
+                summary: aiImageAnalysis.slice(0, 300),
+                recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
+              };
+            }
+          }
+        } catch { /* Gemini 실패 시 텍스트 분석 유지 */ }
+      }
 
       // DB 저장
       setLoadingMsg("저장 중...");
       const { error: insertError } = await supabase.from("feed_posts").insert({
         author_id: user.id,
         image_url: imageUrl,
-        description: description.trim(),
+        description: description.trim() + (aiImageAnalysis ? "\n\n---\n🤖 AI 이미지 분석:\n" + aiImageAnalysis : ""),
         pet_name: petName.trim(),
         pet_species: species,
         analysis_result: analysis,
