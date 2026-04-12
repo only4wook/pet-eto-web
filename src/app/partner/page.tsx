@@ -109,10 +109,10 @@ export default function PartnerPage() {
           <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 16px", color: "#1F2937" }}>파트너 선정 프로세스</h2>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {[
-              { step: "1", title: "신청서 제출", desc: "아래 양식 작성", icon: "📝" },
-              { step: "2", title: "서류 검토", desc: "신원·자격 확인", icon: "🔍" },
-              { step: "3", title: "대면 면접", desc: "대표 직접 면접", icon: "🤝" },
-              { step: "4", title: "시범 케어", desc: "테스트 후 승인", icon: "✅" },
+              { step: "1", title: "신청서 제출", desc: "아래 양식 작성 (3분)", icon: "📝" },
+              { step: "2", title: "서류 검토", desc: "신원·자격·경력 확인", icon: "🔍" },
+              { step: "3", title: "면접", desc: "대면 또는 화상 면접", icon: "🤝" },
+              { step: "4", title: "시범 케어", desc: "테스트 1회 후 승인", icon: "✅" },
             ].map((s) => (
               <div key={s.step} style={{ flex: 1, minWidth: 130, textAlign: "center" }}>
                 <div style={{
