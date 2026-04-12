@@ -780,6 +780,86 @@ export const SYMPTOM_GUIDES: SymptomGuide[] = [
     warning: "3일 이상 안 먹음, 호흡 곤란, 눈곱이 노란/초록색(세균 감염), 새끼 동물",
     hospital: "새끼 고양이/강아지의 감기는 빠르게 악화될 수 있어 즉시 병원 방문하세요.",
   },
+  {
+    keywords: ["침을 흘","침 흘","침흘","침이 많","침이 나","군침","거품","입에서 거품","입 거품","입에서 침","침을 질질","침을 뚝뚝","입에서 냄새가 나면서"],
+    title: "침 흘림 (과다 유연)",
+    catCauses: [
+      "구내염/치주염: 고양이에서 가장 흔한 원인! 입 안이 아파서 침을 삼키지 못함",
+      "이물질: 입 안에 뭔가 걸림 (뼈 조각, 실, 풀 등)",
+      "중독: 식물(백합, 포인세티아), 세제 등을 핥았을 때",
+      "구역질: 토하기 직전에 침을 많이 흘림",
+    ],
+    dogCauses: [
+      "차멀미: 차 타면 침 흘리는 강아지 많음",
+      "치주염/치석: 심한 치석이 있으면 침 증가",
+      "이물질: 뼈, 장난감 조각이 입에 걸림",
+      "열사병: 더운 날 과도한 침 + 헥헥거림",
+      "중독: 두꺼비, 독성 식물 접촉",
+    ],
+    commonCauses: [
+      "스트레스/불안: 병원 방문, 차량 이동 시",
+      "약물 부작용: 쓴 약을 먹은 직후",
+    ],
+    homecare: [
+      "입 안을 살펴보세요 (이물질, 잇몸 빨갛게 부음, 혹)",
+      "최근 식물이나 세제를 핥았는지 확인",
+      "차멀미라면: 차 타기 30분 전 금식, 환기",
+      "쓴 약 먹은 직후면 정상 → 간식으로 입맛 달래주기",
+    ],
+    warning: "입에서 피가 섞인 침, 호흡 곤란 동반, 경련과 함께 거품, 갑자기 시작된 과다 침흘림",
+    hospital: "갑작스러운 침흘림 + 무기력은 중독의 신호일 수 있어요. 즉시 병원 방문하세요.",
+  },
+  {
+    keywords: ["열이 나","열 나","뜨거워","코가 뜨","코가 건","발열","체온","열감","이마가 뜨","귀가 뜨","배가 뜨"],
+    title: "발열/체온 이상",
+    catCauses: [
+      "감염: 바이러스/세균 감염의 가장 흔한 증상",
+      "FIP: 고양이 전염성 복막염에서 지속적 발열",
+    ],
+    dogCauses: [
+      "감염: 파보, 디스템퍼 등 전염병",
+      "열사병: 여름철 고온 환경",
+      "백신 후 미열: 접종 후 1~2일 미열은 정상",
+    ],
+    commonCauses: [
+      "정상 체온: 강아지/고양이 38~39.5도",
+      "염증: 어딘가 감염/염증이 있으면 발열",
+      "스트레스: 병원 방문 시 스트레스성 고체온",
+    ],
+    homecare: [
+      "귀 안쪽, 배를 만져서 평소보다 뜨거운지 확인",
+      "코가 건조하면 탈수 가능 → 물 충분히",
+      "체온계가 있다면 항문 체온 측정 (39.5도 이상이면 발열)",
+      "시원한 곳에서 휴식, 물 제공",
+    ],
+    warning: "40도 이상 고열, 경련 동반, 2일 이상 지속, 무기력+식욕 부진",
+    hospital: "40도 이상이면 즉시 병원! 해열제를 임의로 투여하지 마세요 (사람 약 독성).",
+  },
+  {
+    keywords: ["비틀","비틀거","비틀비틀","중심","균형","기울","한쪽으로","원을 그","빙글빙글","어지러","머리 기울","고개 기울","고개가 기울"],
+    title: "균형 장애/비틀거림",
+    catCauses: [
+      "전정 질환: 내이 문제로 균형 상실. 고개가 한쪽으로 기울어짐",
+      "귀 감염: 심한 중이염/내이염",
+    ],
+    dogCauses: [
+      "전정 증후군: 노령견에서 갑자기 발생 (양성인 경우 많음)",
+      "귀 감염: 중이염이 내이까지 진행",
+      "뇌종양: 노령 동물에서 서서히 진행",
+    ],
+    commonCauses: [
+      "중독: 독성 물질 섭취",
+      "저혈당: 특히 초소형견 새끼",
+      "뇌 질환: 뇌염, 뇌종양",
+    ],
+    homecare: [
+      "위험한 곳(계단, 높은 곳) 접근 차단",
+      "조용한 곳에서 안정",
+      "구토 동반 시 질식 방지 (머리를 옆으로)",
+    ],
+    warning: "갑작스러운 발생, 눈이 좌우로 떨림(안구진탕), 의식 저하, 경련",
+    hospital: "갑자기 비틀거리기 시작하면 전정 질환이나 뇌 문제일 수 있어 빠른 진료가 중요합니다.",
+  },
 ];
 
 // 질문에서 증상 가이드 찾기 (가장 많이 매칭되는 가이드 우선)
@@ -806,13 +886,36 @@ export function findSymptomGuide(query: string): SymptomGuide | null {
 
   if (bestGuide) return bestGuide;
 
-  // 유사도 fallback: 4글자 이상 키워드의 앞부분 매칭 (짧은 키워드 오매칭 방지)
+  // 유사도 fallback 1: 4글자 이상 키워드 앞부분 매칭
   for (const guide of SYMPTOM_GUIDES) {
     for (const kw of guide.keywords) {
       if (kw.length >= 4 && q.includes(kw.slice(0, 4))) {
         return guide;
       }
     }
+  }
+
+  // 유사도 fallback 2: 가이드 title + 원인 텍스트에서 검색
+  const words = q.split(/\s+/).filter((w) => w.length >= 2);
+  if (words.length > 0) {
+    let bestFallback: SymptomGuide | null = null;
+    let bestFallbackScore = 0;
+    for (const guide of SYMPTOM_GUIDES) {
+      const allText = [
+        guide.title,
+        ...guide.catCauses, ...guide.dogCauses, ...guide.commonCauses,
+        ...guide.homecare, guide.warning, guide.hospital,
+      ].join(" ").toLowerCase();
+      let score = 0;
+      for (const w of words) {
+        if (allText.includes(w)) score += w.length;
+      }
+      if (score > bestFallbackScore) {
+        bestFallbackScore = score;
+        bestFallback = guide;
+      }
+    }
+    if (bestFallback && bestFallbackScore >= 4) return bestFallback;
   }
 
   return null;
