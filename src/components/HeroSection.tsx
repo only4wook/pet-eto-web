@@ -370,10 +370,16 @@ export default function HeroSection() {
             <span style={{ color: "#FF6B35" }}>10분 안에</span> 케어러 연결
           </h1>
 
-          <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.6, margin: "0 0 14px" }}>
-            신원 인증 펫시터 · 수의사 자문 · 에스크로 안전결제<br />
-            출시 전 등록 시 <strong style={{ color: "#FF6B35" }}>첫 이용 20% 할인</strong>
+          <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.6, margin: "0 0 6px" }}>
+            신원 인증 펫시터 · 수의사 자문 · 에스크로 안전결제
           </p>
+          <div style={{
+            background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 8,
+            padding: "8px 12px", marginBottom: 12, fontSize: 13, color: "#92400E",
+          }}>
+            💰 <strong>기본 3만원/3시간</strong> · 야간 4만원 · 1일 8만원 &nbsp;
+            <span style={{ color: "#FF6B35", fontWeight: 700 }}>선착순 10명 무료 체험!</span>
+          </div>
 
           {submitted ? (
             <div style={{

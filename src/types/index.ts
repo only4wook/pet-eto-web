@@ -21,7 +21,7 @@ export interface Pet {
   created_at: string;
 }
 
-export type PostCategory = "전체" | "질문" | "정보" | "일상" | "긴급" | "후기" | "문의";
+export type PostCategory = "전체" | "질문" | "정보" | "일상" | "긴급" | "후기" | "문의" | "논문" | "행사";
 
 export interface Post {
   id: string;

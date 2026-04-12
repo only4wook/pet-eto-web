@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title: "P.E.T 펫에토 - 반려동물 긴급케어 플랫폼",
     description: "반려동물 긴급 돌봄 매칭, AI 건강 분석, 품종별 위키. 10분 안에 검증된 펫시터를 연결해드립니다.",
     images: [{
-      url: "https://pet-eto.vercel.app/og-image.png",
+      url: "https://pet-eto.vercel.app/og-image.svg",
       width: 1200,
       height: 630,
       alt: "P.E.T 펫에토 - 반려동물 긴급케어 플랫폼",

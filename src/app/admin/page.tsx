@@ -453,7 +453,7 @@ function PostManagement() {
     } catch (err: any) { alert("삭제 실패: " + err.message); }
   };
 
-  const categories = ["전체", "질문", "정보", "일상", "긴급", "후기", "문의"];
+  const categories = ["전체", "질문", "정보", "일상", "긴급", "후기", "문의", "논문", "행사"];
   const filteredPosts = catFilter === "전체" ? posts : posts.filter((p) => p.category === catFilter);
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
 

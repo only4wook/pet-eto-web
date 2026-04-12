@@ -10,11 +10,12 @@ import PostCard from "../components/PostCard";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import GradeBadge from "../components/GradeBadge";
-import type { Post } from "../types";
+import type { Post, FeedPost } from "../types";
 
 export default function Home() {
   const { posts: demoPosts, user } = useAppStore();
   const [dbPosts, setDbPosts] = useState<Post[]>([]);
+  const [recentFeeds, setRecentFeeds] = useState<FeedPost[]>([]);
 
   useEffect(() => {
     supabase
@@ -23,6 +24,14 @@ export default function Home() {
       .order("created_at", { ascending: false })
       .limit(30)
       .then(({ data }) => { if (data && data.length > 0) setDbPosts(data); });
+
+    // 최근 피드도 가져오기
+    supabase
+      .from("feed_posts")
+      .select("*, author:users(id, nickname, avatar_url, points)")
+      .order("created_at", { ascending: false })
+      .limit(4)
+      .then(({ data }) => { if (data) setRecentFeeds(data); });
   }, []);
 
   const posts = [...dbPosts, ...demoPosts];
@@ -68,6 +77,38 @@ export default function Home() {
                 <PostCard key={post.id} post={post} index={i} />
               ))}
             </div>
+
+            {/* 최근 피드 */}
+            {recentFeeds.length > 0 && (
+              <div style={{ marginTop: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: "#1F2937" }}>📸 최근 피드</h3>
+                  <Link href="/feed" style={{ fontSize: 12, color: "#FF6B35", fontWeight: 600, textDecoration: "none" }}>더보기 →</Link>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
+                  {recentFeeds.map((f) => (
+                    <Link key={f.id} href={`/feed/${f.id}`} style={{ textDecoration: "none" }}>
+                      <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", border: "1px solid #F3F4F6" }}>
+                        {f.image_url && !f.image_url.endsWith(".mp4") ? (
+                          <img src={f.image_url} alt="" style={{ width: "100%", height: 100, objectFit: "cover", display: "block" }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          <div style={{ width: "100%", height: 100, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", color: "#9CA3AF", fontSize: 24 }}>
+                            {f.image_url?.endsWith(".mp4") ? "🎥" : "📷"}
+                          </div>
+                        )}
+                        <div style={{ padding: "6px 8px" }}>
+                          <div style={{ fontSize: 11, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {f.description?.slice(0, 30)}
+                          </div>
+                          <div style={{ fontSize: 10, color: "#9CA3AF" }}>{f.author?.nickname}</div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 페이지네이션 */}
             <div style={{ display: "flex", justifyContent: "center", gap: 4, marginTop: 20 }}>

@@ -30,66 +30,34 @@ export default function AboutPage() {
 
         {/* 팀 소개 */}
         <section style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", marginBottom: 24, border: "1px solid #F3F4F6" }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1F2937", margin: "0 0 20px" }}>팀 소개</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
-            {[
-              {
-                name: "권대욱",
-                role: "대표 / 기획",
-                detail: "한양대학교 대학원 재학",
-                badges: ["반려동물관리사 1급 (취득 중)", "NEOs 1기"],
-                desc: "펫에토의 비전을 설계하고, 파트너 검증과 고객 상담을 직접 담당합니다.",
-              },
-              {
-                name: "팀원 A",
-                role: "마케팅 / 운영",
-                detail: "한양대학교",
-                badges: [],
-                desc: "SNS 마케팅과 커뮤니티 운영을 담당합니다.",
-              },
-              {
-                name: "팀원 B",
-                role: "디자인 / UX",
-                detail: "한양대학교",
-                badges: [],
-                desc: "사용자 경험 설계와 브랜드 디자인을 담당합니다.",
-              },
-              {
-                name: "팀원 C",
-                role: "사업개발",
-                detail: "한양대학교",
-                badges: [],
-                desc: "파트너십과 사업 전략을 담당합니다.",
-              },
-            ].map((member, i) => (
-              <div key={i} style={{
-                background: "#FAFAFA", borderRadius: 12, padding: "20px",
-                border: "1px solid #F0F0F0",
-              }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: "50%",
-                  background: i === 0 ? "#FF6B35" : "#E5E7EB",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 22, color: "#fff", fontWeight: 800, marginBottom: 12,
-                }}>
-                  {member.name.charAt(0)}
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#1F2937" }}>{member.name}</div>
-                <div style={{ fontSize: 13, color: "#FF6B35", fontWeight: 600, marginTop: 2 }}>{member.role}</div>
-                <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{member.detail}</div>
-                {member.badges.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-                    {member.badges.map((badge, j) => (
-                      <span key={j} style={{
-                        fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 8,
-                        background: "#FEF3C7", color: "#D97706",
-                      }}>{badge}</span>
-                    ))}
-                  </div>
-                )}
-                <p style={{ fontSize: 12, color: "#6B7280", margin: "8px 0 0", lineHeight: 1.5 }}>{member.desc}</p>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1F2937", margin: "0 0 20px" }}>대표 소개</h2>
+          <div style={{
+            background: "#FAFAFA", borderRadius: 16, padding: "28px",
+            border: "1px solid #F0F0F0", display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap",
+          }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: "50%", background: "#FF6B35",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 32, color: "#fff", fontWeight: 800, flexShrink: 0,
+            }}>권</div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#1F2937" }}>권대욱</div>
+              <div style={{ fontSize: 14, color: "#FF6B35", fontWeight: 600, marginTop: 2 }}>대표 · 기획 · 운영</div>
+              <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>한양대학교 대학원 창업학과 재학</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                {["반려동물관리사 1급 (취득 중)", "NEOs 1기 지원", "펫에토 창업"].map((badge, j) => (
+                  <span key={j} style={{
+                    fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 10,
+                    background: "#FEF3C7", color: "#D97706",
+                  }}>{badge}</span>
+                ))}
               </div>
-            ))}
+              <p style={{ fontSize: 13, color: "#6B7280", margin: "12px 0 0", lineHeight: 1.7 }}>
+                반려동물을 키우면서 느낀 긴급 돌봄의 불편함을 직접 해결하기 위해 P.E.T를 시작했습니다.
+                파트너 검증부터 고객 상담, 서비스 기획까지 모든 것을 직접 담당하고 있습니다.
+                반려동물관리사 자격을 취득하며 전문성도 갖춰가고 있습니다.
+              </p>
+            </div>
           </div>
         </section>
 
