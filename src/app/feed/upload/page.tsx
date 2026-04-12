@@ -107,25 +107,12 @@ export default function FeedUploadPage() {
     const isVideo = file.type.startsWith("video/");
     setMediaFile(file);
     setMediaType(isVideo ? "video" : "image");
+
     if (isVideo) {
       setPreview(URL.createObjectURL(file));
     } else {
-      // HEIC 감지 시 안내
-      const isHeic = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic");
-      if (isHeic) {
-        alert("HEIC 형식 사진이 감지되었어요.\n갤러리에서 JPEG/PNG로 변환 후 올려주시거나,\n카메라로 직접 촬영해주세요.\n\n📱 설정 → 카메라 → 포맷 → '호환성 우선'으로 변경하면 JPEG로 촬영됩니다.");
-      }
-      // canvas로 변환 시도
-      try {
-        const blob = await compressImage(file);
-        const reader = new FileReader();
-        reader.onload = (ev) => setPreview(ev.target?.result as string);
-        reader.readAsDataURL(blob);
-      } catch {
-        const reader = new FileReader();
-        reader.onload = (ev) => setPreview(ev.target?.result as string);
-        reader.readAsDataURL(file);
-      }
+      // 모든 이미지: URL.createObjectURL로 미리보기 (가장 호환성 높음)
+      setPreview(URL.createObjectURL(file));
     }
   };
 
@@ -163,65 +150,24 @@ export default function FeedUploadPage() {
           imageUrl = vUrl.publicUrl;
         }
       } else {
-        // 이미지: JPEG 변환 후 업로드
-        setLoadingMsg("이미지 처리 중...");
-        let fileToUpload: Blob = mediaFile;
-        let finalContentType = "image/jpeg";
+        // 이미지: 서버 API로 업로드 (HEIC 자동 처리)
+        setLoadingMsg("이미지 업로드 중...");
+        const fd = new FormData();
+        fd.append("file", mediaFile);
 
         try {
-          const compressed = await compressImage(mediaFile);
-          // 변환 성공 여부 확인: blob 크기가 다르면 변환된 것
-          if (compressed.size > 0 && compressed.size !== mediaFile.size) {
-            fileToUpload = compressed;
-          } else if (compressed.size > 0) {
-            fileToUpload = compressed;
+          const uploadRes = await fetch("/api/upload-image", { method: "POST", body: fd });
+          const uploadData = await uploadRes.json();
+          if (uploadRes.ok && uploadData.url) {
+            imageUrl = uploadData.url;
+          } else {
+            throw new Error(uploadData.error || "업로드 실패");
           }
-        } catch {
-          // 압축 완전 실패 → 원본 사용하되 경고
-          fileToUpload = mediaFile;
-          finalContentType = mediaFile.type || "image/jpeg";
+        } catch (uploadErr: any) {
+          alert("이미지 업로드 실패: " + (uploadErr?.message || "알 수 없는 오류") + "\n\n카메라로 직접 촬영해서 다시 시도해주세요.");
+          setLoading(false); return;
         }
-
-        const fileName = `feed-${ts}-${rand}.jpg`;
-
-        setLoadingMsg("업로드 중...");
-        const uploadPromise = storageClient.storage
-          .from("feed-images").upload(fileName, fileToUpload, { contentType: finalContentType, upsert: true });
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("업로드 시간 초과 (30초)")), 30000));
-        const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
-
-        if (uploadError) {
-          // 클라이언트 업로드 실패 → 서버 API로 fallback
-          setLoadingMsg("서버 경유 업로드 중...");
-          try {
-            const fd = new FormData();
-            fd.append("file", mediaFile);
-            const res = await fetch("/api/upload-image", { method: "POST", body: fd });
-            const data = await res.json();
-            if (res.ok && data.url) {
-              imageUrl = data.url;
-            } else {
-              alert("이미지 업로드 실패: " + (data.error || uploadError.message) + "\n\n카메라로 직접 촬영해서 올려보세요.");
-              setLoading(false); return;
-            }
-          } catch {
-            alert("이미지 업로드 실패.\n\n카메라로 직접 촬영해서 올려보세요.");
-            setLoading(false); return;
-          }
-        }
-        const { data: urlData } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
-        imageUrl = urlData.publicUrl;
-
-        // 업로드 검증: 실제 접근 가능한지 확인
-        setLoadingMsg("검증 중...");
-        try {
-          const check = await fetch(imageUrl, { method: "HEAD" });
-          if (!check.ok) {
-            alert("이미지 업로드는 됐지만 접근이 안 됩니다. 카메라로 직접 촬영해서 다시 시도해주세요.");
-            setLoading(false); return;
-          }
-        } catch { /* 검증 실패해도 진행 */ }
+        // imageUrl은 위에서 이미 설정됨
       }
 
       // AI 증상 분석 (텍스트 기반)
@@ -280,6 +226,7 @@ export default function FeedUploadPage() {
           <div style={{ padding: 20 }}>
             {/* 3가지 선택 버튼 */}
             <input ref={albumRef} type="file" accept="image/*,video/*" onChange={handleFileSelect} style={{ display: "none" }} />
+            {/* TODO: 다중 사진 지원은 추후 별도 구현 */}
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} style={{ display: "none" }} />
             <input ref={videoRef} type="file" accept="video/*" capture="environment" onChange={handleFileSelect} style={{ display: "none" }} />
 
