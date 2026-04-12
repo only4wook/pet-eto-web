@@ -192,8 +192,23 @@ export default function FeedUploadPage() {
         const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
         if (uploadError) {
-          alert("이미지 업로드 실패: " + uploadError.message + "\n\n카메라로 직접 촬영해서 올려보세요.");
-          setLoading(false); return;
+          // 클라이언트 업로드 실패 → 서버 API로 fallback
+          setLoadingMsg("서버 경유 업로드 중...");
+          try {
+            const fd = new FormData();
+            fd.append("file", mediaFile);
+            const res = await fetch("/api/upload-image", { method: "POST", body: fd });
+            const data = await res.json();
+            if (res.ok && data.url) {
+              imageUrl = data.url;
+            } else {
+              alert("이미지 업로드 실패: " + (data.error || uploadError.message) + "\n\n카메라로 직접 촬영해서 올려보세요.");
+              setLoading(false); return;
+            }
+          } catch {
+            alert("이미지 업로드 실패.\n\n카메라로 직접 촬영해서 올려보세요.");
+            setLoading(false); return;
+          }
         }
         const { data: urlData } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;

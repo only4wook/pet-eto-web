@@ -22,6 +22,7 @@ export default function Header() {
           <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#888" }}>
             <Link href="/mypage" style={{ color: "#888" }}>마이페이지</Link>
             <Link href="/pet/register" style={{ color: "#888" }}>반려동물 등록</Link>
+            <Link href="/partner" style={{ color: "#FF6B35", fontWeight: 600 }}>파트너 신청</Link>
           </div>
           <div style={{ display: "flex", gap: 8, fontSize: 12, alignItems: "center" }}>
             {user ? (
