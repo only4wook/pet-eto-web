@@ -16,16 +16,14 @@ export interface TransactionRecord {
 }
 
 // 서버 사이드에서만 호출 (API Route에서 사용)
-export async function appendToSheet(record: TransactionRecord): Promise<boolean> {
+export async function appendToSheet(record: TransactionRecord): Promise<{ ok: boolean; error?: string }> {
   try {
     const key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
     if (!key || !sheetId) {
-      console.log("[Sheets] 환경변수 미설정 — key:", !!key, "sheetId:", !!sheetId);
-      return false;
+      return { ok: false, error: "환경변수 미설정" };
     }
-    console.log("[Sheets] 환경변수 확인 OK — sheetId:", sheetId.slice(0, 10) + "...");
 
     const credentials = JSON.parse(key);
 
@@ -74,16 +72,13 @@ export async function appendToSheet(record: TransactionRecord): Promise<boolean>
     });
 
     if (res.ok) {
-      console.log("[Sheets] 거래 기록 추가 성공");
-      return true;
+      return { ok: true };
     } else {
-      const err = await res.text();
-      console.error("[Sheets] 실패:", err);
-      return false;
+      const errText = await res.text();
+      return { ok: false, error: `Sheets API ${res.status}: ${errText.slice(0, 200)}` };
     }
-  } catch (err) {
-    console.error("[Sheets] 오류:", err);
-    return false;
+  } catch (err: any) {
+    return { ok: false, error: `Exception: ${err?.message || String(err)}`.slice(0, 200) };
   }
 }
 

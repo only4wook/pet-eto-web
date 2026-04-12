@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Google Sheets에 자동 기록
-    const sheetResult = await appendToSheet({
+    const sheetResult: any = await appendToSheet({
       date: dateStr,
       customerName,
       customerPhone: customerPhone || "",
@@ -46,14 +46,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      sheetRecorded: sheetResult,
-      envCheck: {
-        hasKey: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
-        hasSheetId: !!process.env.GOOGLE_SHEET_ID,
-      },
-      message: sheetResult
+      sheetRecorded: sheetResult.ok,
+      sheetError: sheetResult.error || null,
+      message: sheetResult.ok
         ? "거래 기록 + 스프레드시트 동기화 완료!"
-        : "거래 기록 완료 (스프레드시트 미연동 — 환경변수 확인)",
+        : "스프레드시트 연동 실패: " + (sheetResult.error || "알 수 없는 오류"),
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "서버 오류" }, { status: 500 });
