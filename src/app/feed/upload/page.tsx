@@ -111,8 +111,33 @@ export default function FeedUploadPage() {
     if (isVideo) {
       setPreview(URL.createObjectURL(file));
     } else {
-      // 모든 이미지: URL.createObjectURL로 미리보기 (가장 호환성 높음)
-      setPreview(URL.createObjectURL(file));
+      // 미리보기: 먼저 URL.createObjectURL 시도
+      const objUrl = URL.createObjectURL(file);
+
+      // HEIC 감지: type이 heic이거나 이름이 .heic
+      const isHeic = file.type.includes("heic") || file.type.includes("heif") || file.name.toLowerCase().endsWith(".heic");
+
+      if (isHeic) {
+        // HEIC는 브라우저 미리보기 불가 → 서버에 미리 업로드 후 URL로 표시
+        setPreview(null); // 로딩 표시
+        setLoadingMsg("미리보기 생성 중...");
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          const res = await fetch("/api/upload-image", { method: "POST", body: fd });
+          const data = await res.json();
+          if (res.ok && data.url) {
+            setPreview(data.url);
+          } else {
+            setPreview(objUrl); // fallback
+          }
+        } catch {
+          setPreview(objUrl);
+        }
+        setLoadingMsg("");
+      } else {
+        setPreview(objUrl);
+      }
     }
   };
 
