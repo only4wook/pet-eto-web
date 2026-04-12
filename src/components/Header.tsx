@@ -11,7 +11,8 @@ export default function Header() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    window.location.href = "/";
+    // 세션 완전 삭제 후 리다이렉트
+    setTimeout(() => { window.location.href = "/"; }, 300);
   };
 
   return (

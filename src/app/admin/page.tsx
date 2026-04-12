@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { supabase } from "../../lib/supabase";
+import { supabase, storageClient } from "../../lib/supabase";
 import { CAT_DATA, DOG_DATA } from "../../lib/wikiData";
 import { getGrade } from "../../lib/grades";
 import type { User } from "../../types";
@@ -89,7 +89,7 @@ function UserManagement() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data } = await storageClient
       .from("users")
       .select("*")
       .order("created_at", { ascending: false });
@@ -440,13 +440,13 @@ function AnalyticsDashboard() {
         { data: recentUsers },
         { data: recentPosts },
       ] = await Promise.all([
-        supabase.from("users").select("*", { count: "exact", head: true }),
-        supabase.from("posts").select("*", { count: "exact", head: true }),
-        supabase.from("feed_posts").select("*", { count: "exact", head: true }),
-        supabase.from("posts").select("*", { count: "exact", head: true }).eq("category", "후기"),
-        supabase.from("pets").select("*", { count: "exact", head: true }),
-        supabase.from("users").select("nickname,created_at").order("created_at", { ascending: false }).limit(5),
-        supabase.from("posts").select("title,category,created_at").order("created_at", { ascending: false }).limit(5),
+        storageClient.from("users").select("*", { count: "exact", head: true }),
+        storageClient.from("posts").select("*", { count: "exact", head: true }),
+        storageClient.from("feed_posts").select("*", { count: "exact", head: true }),
+        storageClient.from("posts").select("*", { count: "exact", head: true }).eq("category", "후기"),
+        storageClient.from("pets").select("*", { count: "exact", head: true }),
+        storageClient.from("users").select("nickname,created_at").order("created_at", { ascending: false }).limit(5),
+        storageClient.from("posts").select("title,category,created_at").order("created_at", { ascending: false }).limit(5),
       ]);
       setStats({ userCount, postCount, feedCount, reviewCount, petCount, recentUsers, recentPosts });
       setLoading(false);
@@ -532,9 +532,10 @@ function PostManagement() {
 
   const fetchAll = async () => {
     setLoading(true);
+    // storageClient(anon key 강제)로 조회 — 로그인 유저의 RLS 우회
     const [{ data: p, error: e1 }, { data: f, error: e2 }] = await Promise.all([
-      supabase.from("posts").select("*").order("created_at", { ascending: false }).limit(100),
-      supabase.from("feed_posts").select("*").order("created_at", { ascending: false }).limit(100),
+      storageClient.from("posts").select("*").order("created_at", { ascending: false }).limit(100),
+      storageClient.from("feed_posts").select("*").order("created_at", { ascending: false }).limit(100),
     ]);
     if (p) setPosts(p);
     if (f) setFeedPosts(f);
