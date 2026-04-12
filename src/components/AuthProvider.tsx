@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../lib/store";
 
@@ -41,16 +41,31 @@ async function checkDailyAttendance(userId: string) {
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const setUser = useAppStore((s) => s.setUser);
-  const checkedRef = useRef(false); // 중복 호출 방지
+  const checkedRef = useRef(false);
+  const [attendancePopup, setAttendancePopup] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const { data } = await supabase
+      let { data } = await supabase
         .from("users").select("*").eq("id", session.user.id).single();
-      if (!data) return;
+
+      // 소셜 로그인 시 users 테이블에 프로필이 없으면 자동 생성
+      if (!data) {
+        const u = session.user;
+        const newProfile = {
+          id: u.id,
+          email: u.email || "",
+          nickname: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "유저",
+          avatar_url: u.user_metadata?.avatar_url || null,
+          points: 100,
+          created_at: new Date().toISOString(),
+        };
+        await supabase.from("users").insert(newProfile);
+        data = newProfile as any;
+      }
 
       setUser(data);
 
@@ -59,10 +74,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         checkedRef.current = true;
         const attended = await checkDailyAttendance(data.id);
         if (attended) {
-          // 포인트 업데이트된 유저 다시 가져오기
           const { data: updated } = await supabase
             .from("users").select("*").eq("id", data.id).single();
           if (updated) setUser(updated);
+          setAttendancePopup(true);
+          setTimeout(() => setAttendancePopup(false), 4000);
         }
       }
     }
@@ -72,8 +88,22 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (session?.user) {
-          const { data } = await supabase
+          let { data } = await supabase
             .from("users").select("*").eq("id", session.user.id).single();
+          // 소셜 로그인 시 자동 프로필 생성
+          if (!data) {
+            const u = session.user;
+            const newProfile = {
+              id: u.id,
+              email: u.email || "",
+              nickname: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "유저",
+              avatar_url: u.user_metadata?.avatar_url || null,
+              points: 100,
+              created_at: new Date().toISOString(),
+            };
+            await supabase.from("users").insert(newProfile);
+            data = newProfile as any;
+          }
           if (data) setUser(data);
         } else {
           setUser(null);
@@ -85,5 +115,24 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return () => subscription.unsubscribe();
   }, [setUser]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {attendancePopup && (
+        <div style={{
+          position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
+          background: "#059669", color: "#fff", padding: "14px 28px", borderRadius: 14,
+          fontSize: 15, fontWeight: 700, zIndex: 99999,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.2)", display: "flex", alignItems: "center", gap: 10,
+          animation: "slideDown 0.3s ease",
+        }}>
+          🎉 일일 출석 완료! +3P 적립되었습니다
+          <button onClick={() => setAttendancePopup(false)} style={{
+            background: "rgba(255,255,255,0.2)", border: "none", color: "#fff",
+            borderRadius: 8, padding: "2px 8px", cursor: "pointer", fontSize: 13,
+          }}>✕</button>
+        </div>
+      )}
+    </>
+  );
 }

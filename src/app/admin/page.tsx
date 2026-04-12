@@ -532,12 +532,14 @@ function PostManagement() {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: p }, { data: f }] = await Promise.all([
-      supabase.from("posts").select("*, author:users(id, nickname)").order("created_at", { ascending: false }).limit(100),
-      supabase.from("feed_posts").select("*, author:users(id, nickname)").order("created_at", { ascending: false }).limit(100),
+    const [{ data: p, error: e1 }, { data: f, error: e2 }] = await Promise.all([
+      supabase.from("posts").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("feed_posts").select("*").order("created_at", { ascending: false }).limit(100),
     ]);
     if (p) setPosts(p);
     if (f) setFeedPosts(f);
+    if (e1) console.error("posts fetch error:", e1);
+    if (e2) console.error("feeds fetch error:", e2);
     setLoading(false);
   };
 
@@ -628,7 +630,7 @@ function PostManagement() {
                       color: p.category === "긴급" ? "#DC2626" : p.category === "질문" ? "#2563EB" : "#6B7280",
                     }}>{p.category}</span></td>
                     <td style={{ ...td, textAlign: "left", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</td>
-                    <td style={td}>{p.author?.nickname || "?"}</td>
+                    <td style={td}>{(p as any).author?.nickname || p.author_id?.slice(0, 8) || "?"}</td>
                     <td style={{ ...td, fontSize: 11, color: "#9CA3AF" }}>{formatDate(p.created_at)}</td>
                     <td style={td}>{p.view_count}</td>
                     <td style={td}>
@@ -667,7 +669,7 @@ function PostManagement() {
                   <td style={{ ...td, textAlign: "left", maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
                     {f.description?.slice(0, 50)}
                   </td>
-                  <td style={td}>{f.author?.nickname || "?"}</td>
+                  <td style={td}>{(f as any).author?.nickname || f.author_id?.slice(0, 8) || "?"}</td>
                   <td style={{ ...td, fontSize: 11, color: "#9CA3AF" }}>{formatDate(f.created_at)}</td>
                   <td style={td}>
                     <button onClick={() => deleteFeed(f.id, f.image_url)} style={btnStyle("#EF4444")}>삭제</button>
