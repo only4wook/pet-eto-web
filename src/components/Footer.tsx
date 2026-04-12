@@ -19,6 +19,7 @@ export default function Footer() {
                 <Link href="/wiki" style={{ color: "#9CA3AF" }}>펫-위키</Link>
                 <Link href="/feed" style={{ color: "#9CA3AF" }}>피드</Link>
                 <Link href="/community" style={{ color: "#9CA3AF" }}>커뮤니티</Link>
+                <Link href="/guide" style={{ color: "#9CA3AF" }}>이용가이드</Link>
               </div>
             </div>
             <div>
@@ -27,6 +28,7 @@ export default function Footer() {
                 <Link href="/about" style={{ color: "#9CA3AF" }}>팀 소개</Link>
                 <Link href="/terms" style={{ color: "#9CA3AF" }}>이용약관</Link>
                 <Link href="/privacy" style={{ color: "#9CA3AF" }}>개인정보처리방침</Link>
+                <Link href="/partner" style={{ color: "#9CA3AF" }}>파트너 신청</Link>
               </div>
             </div>
           </div>
