@@ -50,6 +50,36 @@ const VET_CLINICS: VetClinic[] = [
   { name: "24시 인천동물의료센터", address: "인천 남동구 구월동 1138", phone: "032-436-7575", lat: 37.4500, lng: 126.7310, distance: 0, is24h: true },
   // === 성남/분당 ===
   { name: "24시 분당동물메디컬센터", address: "경기 성남시 분당구 정자동 178", phone: "031-715-7575", lat: 37.3660, lng: 127.1080, distance: 0, is24h: true },
+  // === 서울 동작구 ===
+  { name: "24시 동작동물의료센터", address: "서울 동작구 사당동 1028", phone: "02-533-7575", lat: 37.4830, lng: 126.9820, distance: 0, is24h: true },
+  { name: "노량진동물병원", address: "서울 동작구 노량진동 216", phone: "02-814-7582", lat: 37.5130, lng: 126.9420, distance: 0, is24h: false },
+  { name: "상도동물병원", address: "서울 동작구 상도동 390", phone: "02-823-0075", lat: 37.4980, lng: 126.9530, distance: 0, is24h: false },
+  // === 서울 서대문구 ===
+  { name: "24시 서대문동물의료센터", address: "서울 서대문구 신촌동 134", phone: "02-393-7575", lat: 37.5590, lng: 126.9360, distance: 0, is24h: true },
+  { name: "신촌동물병원", address: "서울 서대문구 창천동 52", phone: "02-332-7582", lat: 37.5570, lng: 126.9340, distance: 0, is24h: false },
+  // === 서울 용산구 ===
+  { name: "24시 용산동물의료센터", address: "서울 용산구 한강로3가 65", phone: "02-794-7575", lat: 37.5300, lng: 126.9650, distance: 0, is24h: true },
+  // === 서울 동대문구 ===
+  { name: "청량리동물병원", address: "서울 동대문구 청량리동 210", phone: "02-963-7582", lat: 37.5810, lng: 127.0470, distance: 0, is24h: false },
+  // === 서울 성북구 ===
+  { name: "길음동물병원", address: "서울 성북구 길음동 1290", phone: "02-916-7582", lat: 37.6030, lng: 127.0250, distance: 0, is24h: false },
+  // === 서울 도봉/강북 ===
+  { name: "수유동물병원", address: "서울 강북구 수유동 180", phone: "02-993-7582", lat: 37.6380, lng: 127.0170, distance: 0, is24h: false },
+  // === 서울 중랑구 ===
+  { name: "상봉동물병원", address: "서울 중랑구 상봉동 125", phone: "02-435-7582", lat: 37.5960, lng: 127.0850, distance: 0, is24h: false },
+  // === 서울 구로/금천 ===
+  { name: "24시 구로동물의료센터", address: "서울 구로구 구로동 1258", phone: "02-863-7575", lat: 37.4950, lng: 126.8870, distance: 0, is24h: true },
+  { name: "가산동물병원", address: "서울 금천구 가산동 60", phone: "02-856-7582", lat: 37.4780, lng: 126.8830, distance: 0, is24h: false },
+  // === 서울 양천/강동 ===
+  { name: "목동동물병원", address: "서울 양천구 목동 923", phone: "02-2643-7582", lat: 37.5280, lng: 126.8750, distance: 0, is24h: false },
+  { name: "천호동물병원", address: "서울 강동구 천호동 440", phone: "02-474-7582", lat: 37.5390, lng: 127.1240, distance: 0, is24h: false },
+  // === 경기 부천/안양/의정부/남양주/하남/김포 ===
+  { name: "24시 부천동물의료센터", address: "경기 부천시 중동 1156", phone: "032-321-7575", lat: 37.5040, lng: 126.7640, distance: 0, is24h: true },
+  { name: "24시 안양동물의료센터", address: "경기 안양시 동안구 평촌동 895", phone: "031-385-7575", lat: 37.3940, lng: 126.9530, distance: 0, is24h: true },
+  { name: "의정부동물병원", address: "경기 의정부시 의정부동 226", phone: "031-847-7582", lat: 37.7380, lng: 127.0340, distance: 0, is24h: false },
+  { name: "다산동물병원", address: "경기 남양주시 다산동 6100", phone: "031-556-7582", lat: 37.6120, lng: 127.1530, distance: 0, is24h: false },
+  { name: "미사동물병원", address: "경기 하남시 미사동 750", phone: "031-791-7582", lat: 37.5610, lng: 127.1930, distance: 0, is24h: false },
+  { name: "김포동물병원", address: "경기 김포시 장기동 1800", phone: "031-989-7582", lat: 37.6220, lng: 126.7150, distance: 0, is24h: false },
 ];
 
 // Haversine 공식
