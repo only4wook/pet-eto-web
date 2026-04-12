@@ -103,7 +103,7 @@ export default function LoginPage() {
               Google로 로그인
             </button>
             <button onClick={async () => {
-              await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.origin } });
+              await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.origin, scopes: "profile_nickname profile_image" } });
             }} style={{
               width: "100%", padding: "11px", border: "none", borderRadius: 8,
               background: "#FEE500", cursor: "pointer", fontSize: 14, fontWeight: 600,

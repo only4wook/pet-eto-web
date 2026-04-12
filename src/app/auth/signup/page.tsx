@@ -181,7 +181,7 @@ export default function SignupPage() {
               Google
             </button>
             <button onClick={async () => {
-              await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.origin } });
+              await supabase.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: window.location.origin, scopes: "profile_nickname profile_image" } });
             }} style={{
               flex: 1, padding: "10px", border: "none", borderRadius: 8,
               background: "#FEE500", cursor: "pointer", fontSize: 13, fontWeight: 600,
