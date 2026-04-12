@@ -99,6 +99,7 @@ export default function Header() {
             { label: "긴급", href: "/community?cat=긴급" },
             { label: "⭐후기", href: "/community?cat=후기" },
             { label: "💬문의", href: "/community?cat=문의" },
+            { label: "📋가이드", href: "/guide" },
             { label: "마이", href: "/mypage" },
           ].map((item) => (
             <Link key={item.label} href={item.href} style={{

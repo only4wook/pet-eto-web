@@ -25,6 +25,8 @@ export default function PartnerPage() {
   const [form, setForm] = useState({
     name: "", phone: "", email: "", region: "", serviceType: [] as string[],
     experience: "", qualification: "", introduction: "", hasPet: "",
+    vehicleType: "", vehicleInsurance: "",
+    groomingCert: "", trainerCert: "",
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export default function PartnerPage() {
       author_id: user?.id || null,
       category: "문의",
       title: `[파트너 신청] ${form.name} - ${form.serviceType.join(", ")}`,
-      content: `이름: ${form.name}\n연락처: ${form.phone}\n이메일: ${form.email}\n지역: ${form.region}\n서비스: ${form.serviceType.join(", ")}\n경력: ${form.experience}\n자격증: ${form.qualification}\n반려동물 양육: ${form.hasPet}\n\n자기소개:\n${form.introduction}`,
+      content: `이름: ${form.name}\n연락처: ${form.phone}\n이메일: ${form.email}\n지역: ${form.region}\n서비스: ${form.serviceType.join(", ")}\n경력: ${form.experience}\n자격증: ${form.qualification}\n반려동물 양육: ${form.hasPet}${form.vehicleType ? `\n차량종류: ${form.vehicleType}` : ""}${form.vehicleInsurance ? `\n차량보험: ${form.vehicleInsurance}` : ""}${form.groomingCert ? `\n미용자격: ${form.groomingCert}` : ""}${form.trainerCert ? `\n훈련자격: ${form.trainerCert}` : ""}\n\n자기소개:\n${form.introduction}`,
       tags: ["파트너신청", ...form.serviceType],
     });
 
@@ -190,6 +192,45 @@ export default function PartnerPage() {
                   placeholder="예: 반려동물관리사 1급" style={inputStyle} />
               </div>
             </div>
+            {/* 서비스별 추가 정보 */}
+            {form.serviceType.includes("taxi") && (
+              <div style={{ background: "#EFF6FF", borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #BFDBFE" }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: "#1E40AF", margin: "0 0 10px" }}>🚗 펫택시 추가 정보</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div>
+                    <label style={labelStyle}>차량 종류 *</label>
+                    <input value={form.vehicleType} onChange={(e) => setForm({ ...form, vehicleType: e.target.value })}
+                      placeholder="예: 스타렉스, 카니발" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>차량 보험 가입 여부 *</label>
+                    <select value={form.vehicleInsurance} onChange={(e) => setForm({ ...form, vehicleInsurance: e.target.value })} style={inputStyle}>
+                      <option value="">선택</option>
+                      <option value="yes">가입되어 있음</option>
+                      <option value="no">미가입</option>
+                    </select>
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: "#6B7280", marginTop: 8 }}>* 차량사진, 차량등록증은 면접 시 제출해주세요.</p>
+              </div>
+            )}
+            {form.serviceType.includes("grooming") && (
+              <div style={{ background: "#FFF7ED", borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #FDBA74" }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: "#C2410C", margin: "0 0 10px" }}>✂️ 미용사 추가 정보</h4>
+                <label style={labelStyle}>미용 관련 자격증/경력</label>
+                <input value={form.groomingCert} onChange={(e) => setForm({ ...form, groomingCert: e.target.value })}
+                  placeholder="예: 반려동물미용사 2급, 미용 경력 3년" style={inputStyle} />
+              </div>
+            )}
+            {form.serviceType.includes("trainer") && (
+              <div style={{ background: "#F0FDF4", borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #BBF7D0" }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: "#166534", margin: "0 0 10px" }}>🎓 훈련사 추가 정보</h4>
+                <label style={labelStyle}>훈련 관련 자격증/경력</label>
+                <input value={form.trainerCert} onChange={(e) => setForm({ ...form, trainerCert: e.target.value })}
+                  placeholder="예: 반려동물행동교정사, KKC 훈련사" style={inputStyle} />
+              </div>
+            )}
+
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>현재 반려동물 양육 여부</label>
               <select value={form.hasPet} onChange={(e) => setForm({ ...form, hasPet: e.target.value })} style={inputStyle}>
