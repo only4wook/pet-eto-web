@@ -13,14 +13,38 @@ export default function MyPage() {
   const user = useAppStore((s) => s.user);
   const [showExpertForm, setShowExpertForm] = useState(false);
   const [myPets, setMyPets] = useState<Pet[]>([]);
+  const [myPostCount, setMyPostCount] = useState(0);
+  const [myFeedCount, setMyFeedCount] = useState(0);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [myFeeds, setMyFeeds] = useState<any[]>([]);
 
   useEffect(() => {
     if (user && user.id !== "demo-user") {
       supabase.from("pets").select("*").eq("owner_id", user.id)
         .order("created_at", { ascending: false })
         .then(({ data }) => { if (data) setMyPets(data); });
+      supabase.from("posts").select("id", { count: "exact", head: true })
+        .eq("author_id", user.id)
+        .then(({ count }) => { if (count) setMyPostCount(count); });
+      supabase.from("feed_posts").select("id", { count: "exact", head: true })
+        .eq("author_id", user.id)
+        .then(({ count }) => { if (count) setMyFeedCount(count); });
     }
   }, [user]);
+
+  const loadMyPosts = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("posts").select("id,title,category,created_at")
+      .eq("author_id", user.id).order("created_at", { ascending: false }).limit(20);
+    if (data) setMyPosts(data);
+  };
+  const loadMyFeeds = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("feed_posts").select("id,description,created_at")
+      .eq("author_id", user.id).order("created_at", { ascending: false }).limit(20);
+    if (data) setMyFeeds(data);
+  };
 
   const points = user?.points ?? 0;
   const grade = getGrade(points);
@@ -89,9 +113,9 @@ export default function MyPage() {
             }}>
               {[
                 { label: "포인트", value: points, color: "#FF6B35" },
-                { label: "게시글", value: 3, color: "#333" },
-                { label: "댓글", value: 12, color: "#333" },
-                { label: "좋아요", value: 45, color: "#EF4444" },
+                { label: "게시글", value: myPostCount, color: "#333" },
+                { label: "피드", value: myFeedCount, color: "#333" },
+                { label: "반려동물", value: myPets.length, color: "#2EC4B6" },
               ].map((item, i) => (
                 <div key={i} style={{ flex: 1, padding: "16px 0", borderRight: i < 3 ? "1px solid #e0e0e0" : "none" }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: item.color }}>{item.value}</div>
@@ -102,16 +126,52 @@ export default function MyPage() {
 
             {/* 메뉴 */}
             <div>
-              {["내가 쓴 글", "내가 쓴 댓글", "좋아요한 글", "포인트 내역", "내 반려동물 관리", "설정"].map((label, i) => (
-                <div key={i} style={{
-                  padding: "12px 0", borderBottom: "1px solid #f0f0f0", fontSize: 14,
-                  cursor: "pointer", display: "flex", justifyContent: "space-between",
-                }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#FF6B35")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#333")}
-                >
-                  {label}
-                  <span style={{ color: "#ccc" }}>›</span>
+              {[
+                { label: "내가 쓴 글", key: "posts", action: () => { setActiveMenu(activeMenu === "posts" ? null : "posts"); loadMyPosts(); } },
+                { label: "내 피드", key: "feeds", action: () => { setActiveMenu(activeMenu === "feeds" ? null : "feeds"); loadMyFeeds(); } },
+                { label: "내 반려동물", key: "pets", action: () => { const el = document.getElementById("my-pets"); el?.scrollIntoView({ behavior: "smooth" }); } },
+                { label: "이용 가이드", key: "guide", action: () => { window.location.href = "/guide"; } },
+              ].map((item, i) => (
+                <div key={i}>
+                  <div style={{
+                    padding: "12px 0", borderBottom: "1px solid #f0f0f0", fontSize: 14,
+                    cursor: "pointer", display: "flex", justifyContent: "space-between",
+                    color: activeMenu === item.key ? "#FF6B35" : "#333", fontWeight: activeMenu === item.key ? 700 : 400,
+                  }} onClick={item.action}>
+                    {item.label}
+                    <span style={{ color: "#ccc" }}>{activeMenu === item.key ? "▼" : "›"}</span>
+                  </div>
+                  {/* 내가 쓴 글 목록 */}
+                  {activeMenu === "posts" && item.key === "posts" && (
+                    <div style={{ padding: "8px 0 12px" }}>
+                      {myPosts.length === 0 ? (
+                        <p style={{ fontSize: 13, color: "#9CA3AF", margin: 0 }}>작성한 글이 없습니다.</p>
+                      ) : myPosts.map((p) => (
+                        <Link key={p.id} href={`/community/${p.id}`} style={{
+                          display: "block", padding: "8px 0", borderBottom: "1px solid #F9FAFB",
+                          fontSize: 13, color: "#374151", textDecoration: "none",
+                        }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "#FF6B35", marginRight: 6 }}>[{p.category}]</span>
+                          {p.title}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  {/* 내 피드 목록 */}
+                  {activeMenu === "feeds" && item.key === "feeds" && (
+                    <div style={{ padding: "8px 0 12px" }}>
+                      {myFeeds.length === 0 ? (
+                        <p style={{ fontSize: 13, color: "#9CA3AF", margin: 0 }}>올린 피드가 없습니다.</p>
+                      ) : myFeeds.map((f) => (
+                        <Link key={f.id} href={`/feed/${f.id}`} style={{
+                          display: "block", padding: "8px 0", borderBottom: "1px solid #F9FAFB",
+                          fontSize: 13, color: "#374151", textDecoration: "none",
+                        }}>
+                          📸 {f.description?.slice(0, 40)}...
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -158,6 +218,7 @@ export default function MyPage() {
         </div>
 
         {/* 내 반려동물 */}
+        <div id="my-pets"></div>
         <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 4, marginBottom: 16 }}>
           <div style={{
             padding: "12px 20px", borderBottom: "1px solid #e0e0e0",

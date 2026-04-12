@@ -7,11 +7,9 @@ import { supabase } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 
 const SPECIES = [
-  { value: "cat", label: "고양이" },
-  { value: "dog", label: "강아지" },
-  { value: "fish", label: "물고기" },
-  { value: "reptile", label: "파충류" },
-  { value: "other", label: "기타" },
+  { value: "cat", label: "🐱 고양이" },
+  { value: "dog", label: "🐶 강아지" },
+  { value: "other", label: "🐾 기타" },
 ];
 
 export default function PetRegisterPage() {

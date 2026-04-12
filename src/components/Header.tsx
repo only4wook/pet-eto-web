@@ -65,14 +65,21 @@ export default function Header() {
               padding: "7px 12px", fontSize: 13, cursor: "pointer", borderRadius: "0 4px 4px 0", flexShrink: 0,
             }}>검색</button>
           </form>
-          {/* 모바일 로그인/프로필 버튼 */}
-          <Link href={user ? "/mypage" : "/auth/login"} className="mobile-only" style={{
-            width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-            background: user ? "#FF6B35" : "#ddd", display: "none", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none",
-          }}>
-            {user ? user.nickname.charAt(0) : "?"}
-          </Link>
+          {/* 모바일 로그인/프로필 + 로그아웃 */}
+          <div className="mobile-only" style={{ display: "none", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <Link href={user ? "/mypage" : "/auth/login"} style={{
+              width: 32, height: 32, borderRadius: "50%",
+              background: user ? "#FF6B35" : "#ddd", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none",
+            }}>
+              {user ? user.nickname.charAt(0) : "?"}
+            </Link>
+            {user && (
+              <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} style={{
+                fontSize: 11, color: "#888", textDecoration: "none",
+              }}>로그아웃</a>
+            )}
+          </div>
         </div>
       </div>
 
