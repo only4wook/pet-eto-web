@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
 
     // RPC 함수로 삭제 (SECURITY DEFINER → RLS 우회)
     const { data, error } = await supabaseAdmin.rpc("admin_delete_post", {
-      target_table: table,
-      target_id: id,
+      p_table: table,
+      p_id: id,
     });
 
     if (error) {
