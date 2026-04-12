@@ -39,3 +39,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+sonic-momentum-493113-j9-55782e07dc06.json
+*.json

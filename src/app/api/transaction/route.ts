@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appendToSheet } from "../../../lib/sheets";
 
+// 환경변수 확인용 GET
+export async function GET() {
+  const hasKey = !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  const hasSheet = !!process.env.GOOGLE_SHEET_ID;
+  const sheetId = process.env.GOOGLE_SHEET_ID?.slice(0, 10) + "...";
+  return NextResponse.json({ hasKey, hasSheet, sheetIdPreview: sheetId });
+}
+
 // 거래 기록 API — 거래 발생 시 DB + Google Sheets 동시 기록
 export async function POST(req: NextRequest) {
   try {
@@ -39,8 +47,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       sheetRecorded: sheetResult,
+      envCheck: {
+        hasKey: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
+        hasSheetId: !!process.env.GOOGLE_SHEET_ID,
+      },
       message: sheetResult
-        ? "거래 기록 + 스프레드시트 동기화 완료"
+        ? "거래 기록 + 스프레드시트 동기화 완료!"
         : "거래 기록 완료 (스프레드시트 미연동 — 환경변수 확인)",
     });
   } catch (err: any) {

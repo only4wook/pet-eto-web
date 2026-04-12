@@ -22,9 +22,10 @@ export async function appendToSheet(record: TransactionRecord): Promise<boolean>
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
     if (!key || !sheetId) {
-      console.log("[Sheets] 환경변수 미설정 — 스프레드시트 연동 건너뜀");
+      console.log("[Sheets] 환경변수 미설정 — key:", !!key, "sheetId:", !!sheetId);
       return false;
     }
+    console.log("[Sheets] 환경변수 확인 OK — sheetId:", sheetId.slice(0, 10) + "...");
 
     const credentials = JSON.parse(key);
 
