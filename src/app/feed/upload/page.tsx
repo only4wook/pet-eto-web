@@ -163,21 +163,50 @@ export default function FeedUploadPage() {
           imageUrl = vUrl.publicUrl;
         }
       } else {
-        // 이미지: JPEG 변환 후 업로드 (항상 image/jpeg로 강제)
+        // 이미지: JPEG 변환 후 업로드
         setLoadingMsg("이미지 처리 중...");
-        const compressed = await compressImage(mediaFile);
+        let fileToUpload: Blob = mediaFile;
+        let finalContentType = "image/jpeg";
+
+        try {
+          const compressed = await compressImage(mediaFile);
+          // 변환 성공 여부 확인: blob 크기가 다르면 변환된 것
+          if (compressed.size > 0 && compressed.size !== mediaFile.size) {
+            fileToUpload = compressed;
+          } else if (compressed.size > 0) {
+            fileToUpload = compressed;
+          }
+        } catch {
+          // 압축 완전 실패 → 원본 사용하되 경고
+          fileToUpload = mediaFile;
+          finalContentType = mediaFile.type || "image/jpeg";
+        }
+
         const fileName = `feed-${ts}-${rand}.jpg`;
 
         setLoadingMsg("업로드 중...");
         const uploadPromise = storageClient.storage
-          .from("feed-images").upload(fileName, compressed, { contentType: "image/jpeg", upsert: true });
+          .from("feed-images").upload(fileName, fileToUpload, { contentType: finalContentType, upsert: true });
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("업로드 시간 초과 (30초)")), 30000));
         const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
-        if (uploadError) { alert("이미지 업로드 실패: " + uploadError.message); setLoading(false); return; }
+        if (uploadError) {
+          alert("이미지 업로드 실패: " + uploadError.message + "\n\n카메라로 직접 촬영해서 올려보세요.");
+          setLoading(false); return;
+        }
         const { data: urlData } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
+
+        // 업로드 검증: 실제 접근 가능한지 확인
+        setLoadingMsg("검증 중...");
+        try {
+          const check = await fetch(imageUrl, { method: "HEAD" });
+          if (!check.ok) {
+            alert("이미지 업로드는 됐지만 접근이 안 됩니다. 카메라로 직접 촬영해서 다시 시도해주세요.");
+            setLoading(false); return;
+          }
+        } catch { /* 검증 실패해도 진행 */ }
       }
 
       // AI 증상 분석 (텍스트 기반)
