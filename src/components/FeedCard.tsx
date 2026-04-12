@@ -77,15 +77,31 @@ export default function FeedCard({ post }: { post: FeedPost }) {
         </Link>
       </div>
 
-      {/* 설명 */}
-      <div style={{ padding: "8px 16px 12px" }}>
-        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "#333" }}>
-          <b style={{ marginRight: 6 }}>{post.author?.nickname}</b>
-          {post.description.length > 100
-            ? post.description.slice(0, 100) + "..."
-            : post.description}
-        </p>
-      </div>
+      {/* 설명 + AI 분석 */}
+      <Link href={`/feed/${post.id}`} style={{ textDecoration: "none", display: "block" }}>
+        <div style={{ padding: "8px 16px 12px" }}>
+          {/* 사용자 설명 */}
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "#333" }}>
+            <b style={{ marginRight: 6 }}>{post.author?.nickname}</b>
+            {(post.description?.split("---")[0] || post.description || "").slice(0, 120)}
+            {(post.description?.length || 0) > 120 ? "..." : ""}
+          </p>
+          {/* Gemini AI 이미지 분석 결과 (있으면 표시) */}
+          {post.description?.includes("🤖 AI 이미지 분석:") && (
+            <div style={{
+              marginTop: 8, padding: "10px 12px", borderRadius: 8,
+              background: "#F0F9FF", border: "1px solid #BAE6FD", fontSize: 12,
+              color: "#0369A1", lineHeight: 1.7, whiteSpace: "pre-line",
+            }}>
+              🤖 <b>AI 이미지 분석</b>
+              <div style={{ marginTop: 4, color: "#374151" }}>
+                {post.description.split("🤖 AI 이미지 분석:")[1]?.slice(0, 200)}...
+              </div>
+              <span style={{ color: "#FF6B35", fontWeight: 600, fontSize: 11 }}>자세히 보기 →</span>
+            </div>
+          )}
+        </div>
+      </Link>
 
       {/* AI 분석 결과 미리보기 */}
       {analysis && (
