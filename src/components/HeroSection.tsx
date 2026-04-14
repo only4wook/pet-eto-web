@@ -375,12 +375,13 @@ export default function HeroSection() {
   return (
     <section style={{
       position: "relative", overflow: "hidden",
-      background: "linear-gradient(135deg, #FFF7ED, #FEF3C7, #FFFBEB)",
-      borderRadius: 16, marginBottom: 24,
+      background: "linear-gradient(135deg, #FAFAFA, #F5F5F7)",
+      borderRadius: 20, marginBottom: 24,
+      border: "1px solid #E5E7EB",
     }}>
       <div style={{
         position: "absolute", top: -80, right: -80, width: 300, height: 300,
-        background: "rgba(255,107,53,0.08)", borderRadius: "50%", filter: "blur(60px)",
+        background: "rgba(99,102,241,0.06)", borderRadius: "50%", filter: "blur(80px)",
       }} />
 
       <div className="container-pet hero-flex" style={{
@@ -390,30 +391,35 @@ export default function HeroSection() {
         {/* 왼쪽: CTA (축소) */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{
-            display: "inline-block", background: "#FFF7ED", border: "1px solid #FDBA74",
-            color: "#C2410C", fontSize: 12, fontWeight: 700, padding: "3px 12px",
-            borderRadius: 20, marginBottom: 10,
+            display: "inline-block", background: "#1D1D1F",
+            color: "#fff", fontSize: 11, fontWeight: 600, padding: "4px 12px",
+            borderRadius: 20, marginBottom: 12, letterSpacing: "0.02em",
           }}>
-            반려동물 긴급케어 플랫폼
+            반려동물 긴급 돌봄
           </span>
 
           <h1 style={{
-            fontSize: 22, fontWeight: 900, color: "#1F2937", lineHeight: 1.4,
-            margin: "0 0 8px", letterSpacing: "-0.5px",
+            fontSize: 24, fontWeight: 800, color: "#1D1D1F", lineHeight: 1.35,
+            margin: "0 0 10px", letterSpacing: "-0.03em",
           }} className="hero-title">
-            갑자기 못 돌볼 때,<br />
-            <span style={{ color: "#FF6B35" }}>10분 안에</span> 케어러 연결
+            우리 아이를 안전하게,<br />
+            <span style={{ background: "linear-gradient(135deg, #FF6B35, #F59E0B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>10분 안에</span> 연결해드려요
           </h1>
 
-          <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.6, margin: "0 0 6px" }}>
-            신원 인증 펫시터 · 수의사 자문 · 에스크로 안전결제
+          <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6, margin: "0 0 10px" }}>
+            검증된 펫시터 · AI 건강 분석 · 안전 결제
           </p>
           <div style={{
-            background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 8,
-            padding: "8px 12px", marginBottom: 12, fontSize: 13, color: "#92400E",
+            background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 10,
+            padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#374151",
+            display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
           }}>
-            💰 <strong>긴급 방문 3만원/1시간</strong> · 반일 6만원 · 1일 12만원 &nbsp;
-            <span style={{ color: "#FF6B35", fontWeight: 700 }}>선착순 10명 무료 체험!</span>
+            <span style={{ fontWeight: 700 }}>긴급 방문 3만원/1h</span>
+            <span style={{ color: "#D1D5DB" }}>·</span>
+            <span>반일 6만원</span>
+            <span style={{ color: "#D1D5DB" }}>·</span>
+            <span>1일 12만원</span>
+            <span style={{ background: "#FF6B35", color: "#fff", padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, marginLeft: "auto" }}>무료 체험</span>
           </div>
 
           {submitted ? (
@@ -435,28 +441,24 @@ export default function HeroSection() {
                 }}
               />
               <button type="submit" style={{
-                background: "#FF6B35", color: "#fff", fontWeight: 700,
-                padding: "10px 18px", borderRadius: 10, border: "none",
-                fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                background: "#1D1D1F", color: "#fff", fontWeight: 600,
+                padding: "10px 20px", borderRadius: 10, border: "none",
+                fontSize: 14, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                letterSpacing: "-0.01em",
               }}>
-                출시 알림
+                시작하기
               </button>
             </form>
           )}
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-            {[
-              { icon: "🛡️", label: "안전결제" },
-              { icon: "👨‍⚕️", label: "수의사 자문" },
-              { icon: "✅", label: "신원인증" },
-              { icon: "🎓", label: "한양대 창업팀" },
-            ].map((item) => (
-              <span key={item.label} style={{
-                display: "inline-flex", alignItems: "center", gap: 4,
-                fontSize: 11, color: "#6B7280", background: "rgba(255,255,255,0.7)",
-                borderRadius: 16, padding: "4px 10px",
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            {["신원검증", "AI분석", "안전결제"].map((label) => (
+              <span key={label} style={{
+                fontSize: 12, color: "#6B7280",
+                background: "#fff", border: "1px solid #E5E7EB",
+                borderRadius: 20, padding: "4px 12px", fontWeight: 500,
               }}>
-                {item.icon} {item.label}
+                {label}
               </span>
             ))}
           </div>

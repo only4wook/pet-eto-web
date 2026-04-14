@@ -16,7 +16,7 @@ export default function Header() {
   };
 
   return (
-    <header style={{ background: "#fff", borderBottom: "2px solid #FF6B35" }}>
+    <header style={{ background: "#fff", borderBottom: "1px solid #E5E7EB" }}>
       {/* PC 상단 바 */}
       <div className="container-pet" style={{ padding: "0 16px" }}>
         <div className="pc-only" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 40 }}>
@@ -50,7 +50,7 @@ export default function Header() {
       <div className="container-pet" style={{ padding: "8px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-            <span style={{ fontSize: 22, fontWeight: 900, color: "#FF6B35" }}>P.E.T</span>
+            <span style={{ fontSize: 22, fontWeight: 900, color: "#1D1D1F", letterSpacing: "-0.03em" }}>P.E.T</span>
           </Link>
           <form style={{ flex: 1, display: "flex", minWidth: 0 }} onSubmit={(e) => {
             e.preventDefault();
@@ -62,8 +62,9 @@ export default function Header() {
               padding: "7px 10px", fontSize: 13, borderRadius: "4px 0 0 4px", outline: "none", minWidth: 0,
             }} />
             <button type="submit" style={{
-              background: "#FF6B35", color: "#fff", border: "none",
-              padding: "7px 12px", fontSize: 13, cursor: "pointer", borderRadius: "0 4px 4px 0", flexShrink: 0,
+              background: "#1D1D1F", color: "#fff", border: "none",
+              padding: "8px 14px", fontSize: 14, cursor: "pointer", borderRadius: "0 8px 8px 0", flexShrink: 0,
+              fontWeight: 500,
             }}>검색</button>
           </form>
           {/* 모바일 로그인/프로필 + 로그아웃 */}
@@ -84,28 +85,31 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 네비게이션 */}
-      <nav style={{ background: "#FF6B35", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      {/* 네비게이션 — 모던/미니멀 */}
+      <nav style={{ background: "#1D1D1F", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <div className="container-pet" style={{
-          padding: "0 8px",
-          display: "flex", gap: 0, whiteSpace: "nowrap",
+          padding: "0",
+          display: "flex", gap: 0, whiteSpace: "nowrap", alignItems: "center",
         }}>
           {[
-            { label: "전체글", href: "/" },
-            { label: "📸피드", href: "/feed" },
-            { label: "📖위키", href: "/wiki" },
-            { label: "질문", href: "/community?cat=질문" },
-            { label: "정보", href: "/community?cat=정보" },
-            { label: "긴급", href: "/community?cat=긴급" },
-            { label: "⭐후기", href: "/community?cat=후기" },
-            { label: "💬문의", href: "/community?cat=문의" },
-            { label: "📋가이드", href: "/guide" },
+            { label: "홈", href: "/" },
+            { label: "피드", href: "/feed" },
+            { label: "AI 상담", href: "/#ai-chat" },
+            { label: "위키", href: "/wiki" },
+            { label: "커뮤니티", href: "/community" },
+            { label: "후기", href: "/community?cat=후기" },
+            { label: "가이드", href: "/guide" },
             { label: "마이", href: "/mypage" },
           ].map((item) => (
             <Link key={item.label} href={item.href} style={{
-              color: "#fff", padding: "10px 14px", fontSize: 13,
-              fontWeight: 600, textDecoration: "none", display: "block", flexShrink: 0,
-            }}>
+              color: "rgba(255,255,255,0.85)", padding: "12px 16px", fontSize: 14,
+              fontWeight: 500, textDecoration: "none", display: "block", flexShrink: 0,
+              letterSpacing: "-0.01em",
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.85)")}
+            >
               {item.label}
             </Link>
           ))}

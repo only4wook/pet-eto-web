@@ -63,8 +63,8 @@ export default function Home() {
               <Link
                 href="/community/write"
                 style={{
-                  background: "#FF6B35", color: "#fff", padding: "8px 20px",
-                  borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
+                  background: "#1D1D1F", color: "#fff", padding: "8px 20px",
+                  borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
                 }}
               >
                 글쓰기
