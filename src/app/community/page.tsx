@@ -33,16 +33,35 @@ function CommunityContent() {
   return (
     <>
       <Header />
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px", flex: 1, width: "100%" }}>
-        {/* 현재 카테고리 표시 + 글쓰기 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: "2px solid #333", paddingBottom: 10 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
-            {cat === "전체" ? "전체 게시글" : `${cat} 게시글`}
-          </h3>
+      <main className="container-pet" style={{ padding: "20px 0", flex: 1 }}>
+        {/* 헤더 + 글쓰기 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1D1D1F", letterSpacing: "-0.02em" }}>커뮤니티</h2>
           <Link href="/community/write" style={{
-            padding: "8px 16px", background: "#FF6B35", color: "#fff", borderRadius: 4,
+            padding: "8px 18px", background: "#1D1D1F", color: "#fff", borderRadius: 10,
             fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}>글쓰기</Link>
+        </div>
+
+        {/* 카테고리 탭 */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 4 }}>
+          {["전체", "질문", "일상", "후기", "논문", "행사"].map((c) => (
+            <Link key={c} href={c === "전체" ? "/community" : `/community?cat=${c}`} style={{
+              padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
+              background: cat === c ? "#1D1D1F" : "#F3F4F6",
+              color: cat === c ? "#fff" : "#6B7280",
+              textDecoration: "none", whiteSpace: "nowrap",
+              transition: "all 0.15s",
+            }}>
+              {c}
+            </Link>
+          ))}
+          <Link href="/guide" style={{
+            padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
+            background: "#F3F4F6", color: "#6B7280", textDecoration: "none", whiteSpace: "nowrap",
+          }}>
+            가이드
+          </Link>
         </div>
 
         {/* 게시판 테이블 */}

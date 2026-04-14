@@ -94,11 +94,8 @@ export default function Header() {
           {[
             { label: "홈", href: "/" },
             { label: "피드", href: "/feed" },
-            { label: "AI 상담", href: "/#ai-chat" },
             { label: "위키", href: "/wiki" },
             { label: "커뮤니티", href: "/community" },
-            { label: "후기", href: "/community?cat=후기" },
-            { label: "가이드", href: "/guide" },
             { label: "마이", href: "/mypage" },
           ].map((item) => (
             <Link key={item.label} href={item.href} style={{
