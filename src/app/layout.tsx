@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         <AuthProvider>{children}</AuthProvider>
-        <KakaoButton />
+        {/* KakaoButton 플로팅 제거 — 헤더에 카톡 아이콘으로 이동 */}
         <Analytics />
       </body>
     </html>

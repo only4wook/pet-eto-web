@@ -113,6 +113,14 @@ export default function Header() {
               {item.label}
             </Link>
           ))}
+          {/* 카톡 상담 */}
+          <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
+            marginLeft: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
+            background: "#FEE500", color: "#1D1D1F", padding: "6px 14px",
+            borderRadius: 20, fontSize: 12, fontWeight: 700, textDecoration: "none",
+          }}>
+            카톡 상담
+          </a>
         </div>
       </nav>
     </header>

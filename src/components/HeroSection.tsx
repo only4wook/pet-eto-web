@@ -373,198 +373,168 @@ export default function HeroSection() {
   }
 
   return (
-    <section style={{
-      position: "relative", overflow: "hidden",
-      background: "linear-gradient(135deg, #FAFAFA, #F5F5F7)",
-      borderRadius: 20, marginBottom: 24,
-      border: "1px solid #E5E7EB",
-    }}>
+    <section id="ai-chat" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* ── 상단 CTA 스트립 (5%) ── */}
       <div style={{
-        position: "absolute", top: -80, right: -80, width: 300, height: 300,
-        background: "rgba(99,102,241,0.06)", borderRadius: "50%", filter: "blur(80px)",
-      }} />
-
-      <div className="container-pet hero-flex" style={{
-        position: "relative",
-        padding: "28px 24px", display: "flex", gap: 24, alignItems: "stretch",
+        background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB",
+        padding: "16px 24px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexWrap: "wrap", gap: 12,
       }}>
-        {/* 왼쪽: CTA (축소) */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{
-            display: "inline-block", background: "#1D1D1F",
-            color: "#fff", fontSize: 11, fontWeight: 600, padding: "4px 12px",
-            borderRadius: 20, marginBottom: 12, letterSpacing: "0.02em",
-          }}>
-            반려동물 긴급 돌봄
-          </span>
-
-          <h1 style={{
-            fontSize: 24, fontWeight: 800, color: "#1D1D1F", lineHeight: 1.35,
-            margin: "0 0 10px", letterSpacing: "-0.03em",
-          }} className="hero-title">
-            우리 아이를 안전하게,<br />
-            <span style={{ background: "linear-gradient(135deg, #FF6B35, #F59E0B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>10분 안에</span> 연결해드려요
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#1D1D1F", margin: 0, letterSpacing: "-0.03em" }}>
+            우리 아이를 안전하게 연결해드려요
           </h1>
-
-          <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6, margin: "0 0 10px" }}>
+          <p style={{ fontSize: 13, color: "#6B7280", margin: "4px 0 0" }}>
             검증된 펫시터 · AI 건강 분석 · 안전 결제
           </p>
-          <div style={{
-            background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 10,
-            padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#374151",
-            display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-          }}>
-            <span style={{ fontWeight: 700 }}>긴급 방문 3만원/1h</span>
-            <span style={{ color: "#D1D5DB" }}>·</span>
-            <span>반일 6만원</span>
-            <span style={{ color: "#D1D5DB" }}>·</span>
-            <span>1일 12만원</span>
-            <span style={{ background: "#FF6B35", color: "#fff", padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, marginLeft: "auto" }}>무료 체험</span>
-          </div>
-
-          {submitted ? (
-            <div style={{
-              background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10,
-              padding: "10px 16px", color: "#15803D", fontWeight: 600, fontSize: 13,
-            }}>
-              출시 시 가장 먼저 알려드릴게요!
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8 }} className="hero-form">
-              <input
-                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="이메일 주소 입력" required
-                style={{
-                  flex: 1, padding: "10px 14px", borderRadius: 10,
-                  border: "1px solid #E5E7EB", fontSize: 13, outline: "none",
-                  background: "#fff", minWidth: 0,
-                }}
-              />
-              <button type="submit" style={{
-                background: "#1D1D1F", color: "#fff", fontWeight: 600,
-                padding: "10px 20px", borderRadius: 10, border: "none",
-                fontSize: 14, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                letterSpacing: "-0.01em",
-              }}>
-                시작하기
-              </button>
-            </form>
-          )}
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-            {["신원검증", "AI분석", "안전결제"].map((label) => (
-              <span key={label} style={{
-                fontSize: 12, color: "#6B7280",
-                background: "#fff", border: "1px solid #E5E7EB",
-                borderRadius: 20, padding: "4px 12px", fontWeight: 500,
-              }}>
-                {label}
-              </span>
-            ))}
-          </div>
         </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {["3단계 검증", "AI 분석", "실시간 보고", "안전 결제"].map((label) => (
+            <span key={label} style={{
+              fontSize: 12, color: "#6B7280", background: "#F9FAFB",
+              border: "1px solid #E5E7EB", borderRadius: 20, padding: "5px 14px",
+              fontWeight: 500, whiteSpace: "nowrap",
+            }} className="pc-only">
+              {label}
+            </span>
+          ))}
+          <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
+            background: "#1D1D1F", color: "#fff", padding: "8px 18px",
+            borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
+            whiteSpace: "nowrap",
+          }}>
+            매칭 요청
+          </a>
+        </div>
+      </div>
 
-        {/* 오른쪽: AI 검색/상담 */}
+      {/* ── AI 채팅 (80%) ── */}
+      <div style={{
+        background: "#1D1D1F", borderRadius: 20, overflow: "hidden",
+        display: "flex", flexDirection: "column",
+        minHeight: "calc(100vh - 250px)",
+        boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+      }}>
+        {/* AI 헤더 */}
         <div style={{
-          flex: 1, minWidth: 0, background: "#1F2937", borderRadius: 16,
-          display: "flex", flexDirection: "column", overflow: "hidden",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-        }} className="hero-ai-area">
-          {/* AI 헤더 */}
+          padding: "16px 24px", borderBottom: "1px solid rgba(255,255,255,0.08)",
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
           <div style={{
-            padding: "14px 18px", borderBottom: "1px solid #374151",
-            display: "flex", alignItems: "center", gap: 10,
-          }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 10,
-              background: "linear-gradient(135deg, #FF6B35, #FB923C)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 16,
-            }}>🤖</div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#F9FAFB" }}>P.E.T AI</div>
-              <div style={{ fontSize: 11, color: "#9CA3AF" }}>품종 정보 · 증상 분석 · 비용 안내</div>
-            </div>
-            <span style={{
-              marginLeft: "auto", fontSize: 10, fontWeight: 600,
-              background: "#059669", color: "#fff", padding: "2px 8px", borderRadius: 8,
-            }}>온라인</span>
+            width: 36, height: 36, borderRadius: 12,
+            background: "linear-gradient(135deg, #FF6B35, #F59E0B)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 18,
+          }}>🤖</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>P.E.T AI</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>품종 · 증상 · 비용 · 병원 무엇이든 물어보세요</div>
           </div>
-
-          {/* 채팅 영역 */}
-          <div ref={chatBoxRef} style={{
-            flex: 1, padding: "12px 16px", overflowY: "auto",
-            display: "flex", flexDirection: "column", gap: 10,
-            minHeight: 200, maxHeight: 300,
-          }}>
-            {messages.map((msg, i) => (
-              <div key={i} style={{
-                alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                maxWidth: "85%",
-              }}>
-                <div style={{
-                  background: msg.role === "user" ? "#FF6B35" : "#374151",
-                  color: msg.role === "user" ? "#fff" : "#E5E7EB",
-                  padding: "10px 14px", borderRadius: 12,
-                  fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-line",
-                  borderBottomRightRadius: msg.role === "user" ? 4 : 12,
-                  borderBottomLeftRadius: msg.role === "ai" ? 4 : 12,
-                }}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-            {thinking && (
-              <div style={{
-                alignSelf: "flex-start", background: "#374151",
-                color: "#9CA3AF", padding: "10px 14px", borderRadius: 12,
-                fontSize: 13, borderBottomLeftRadius: 4,
-              }}>
-                분석 중...
-              </div>
-            )}
-          </div>
-
-          {/* 빠른 질문 버튼 */}
-          <div style={{
-            padding: "8px 16px", display: "flex", gap: 6,
-            overflowX: "auto", borderTop: "1px solid #374151",
-          }}>
-            {["말티즈 특징", "구토 증상", "중성화 비용", "서울 24시 병원", "처음 키우기"].map((q) => (
-              <button key={q} onClick={() => { setChatInput(q); }}
-                style={{
-                  flexShrink: 0, background: "#374151", color: "#D1D5DB",
-                  border: "1px solid #4B5563", borderRadius: 16,
-                  padding: "4px 12px", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap",
-                }}>
-                {q}
-              </button>
-            ))}
-          </div>
-
-          {/* 입력 */}
-          <form onSubmit={handleChat} style={{
-            padding: "12px 16px", borderTop: "1px solid #374151",
-            display: "flex", gap: 8,
-          }}>
-            <input
-              value={chatInput} onChange={(e) => setChatInput(e.target.value)}
-              placeholder="증상, 품종, 비용 등 무엇이든 물어보세요..."
-              style={{
-                flex: 1, background: "#374151", border: "1px solid #4B5563",
-                borderRadius: 10, padding: "10px 14px", color: "#F9FAFB",
-                fontSize: 13, outline: "none", minWidth: 0,
-              }}
-            />
-            <button type="submit" disabled={thinking} style={{
-              background: "#FF6B35", color: "#fff", border: "none",
-              borderRadius: 10, padding: "10px 16px", fontSize: 13,
-              fontWeight: 700, cursor: "pointer", flexShrink: 0,
-            }}>
-              전송
-            </button>
-          </form>
+          <span style={{
+            fontSize: 11, fontWeight: 600,
+            background: "rgba(5,150,105,0.2)", color: "#34D399", padding: "3px 10px", borderRadius: 8,
+          }}>온라인</span>
         </div>
+
+        {/* 채팅 메시지 영역 */}
+        <div ref={chatBoxRef} style={{
+          flex: 1, padding: "20px 24px", overflowY: "auto",
+          display: "flex", flexDirection: "column", gap: 12,
+        }}>
+          {messages.map((msg, i) => (
+            <div key={i} style={{
+              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+              maxWidth: "80%",
+            }}>
+              <div style={{
+                background: msg.role === "user"
+                  ? "linear-gradient(135deg, #FF6B35, #F59E0B)"
+                  : "rgba(255,255,255,0.06)",
+                color: msg.role === "user" ? "#fff" : "rgba(255,255,255,0.9)",
+                padding: "12px 16px", borderRadius: 16,
+                fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-line",
+                borderBottomRightRadius: msg.role === "user" ? 4 : 16,
+                borderBottomLeftRadius: msg.role === "ai" ? 4 : 16,
+              }}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {thinking && (
+            <div style={{
+              alignSelf: "flex-start", background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.4)", padding: "12px 16px", borderRadius: 16,
+              fontSize: 14, borderBottomLeftRadius: 4,
+            }}>
+              <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}>분석 중...</span>
+            </div>
+          )}
+        </div>
+
+        {/* 빠른 질문 */}
+        <div style={{
+          padding: "10px 24px", display: "flex", gap: 8,
+          overflowX: "auto", borderTop: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          {["말티즈 특징", "구토 증상", "중성화 비용", "서울 병원", "처음 키우기", "슬개골 수술비"].map((q) => (
+            <button key={q} onClick={() => { setChatInput(q); }}
+              style={{
+                flexShrink: 0, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)",
+                border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20,
+                padding: "6px 14px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+
+        {/* 입력 */}
+        <form onSubmit={handleChat} style={{
+          padding: "16px 24px", borderTop: "1px solid rgba(255,255,255,0.06)",
+          display: "flex", gap: 10,
+        }}>
+          <input
+            value={chatInput} onChange={(e) => setChatInput(e.target.value)}
+            placeholder="증상, 품종, 비용 등 무엇이든 물어보세요..."
+            style={{
+              flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 12, padding: "12px 18px", color: "#fff",
+              fontSize: 15, outline: "none", minWidth: 0,
+              fontFamily: "inherit",
+            }}
+          />
+          <button type="submit" disabled={thinking} style={{
+            background: "linear-gradient(135deg, #FF6B35, #F59E0B)", color: "#fff", border: "none",
+            borderRadius: 12, padding: "12px 20px", fontSize: 15,
+            fontWeight: 700, cursor: "pointer", flexShrink: 0,
+            letterSpacing: "-0.01em",
+          }}>
+            전송
+          </button>
+        </form>
+      </div>
+
+      {/* ── 신뢰 배지 (5%) ── */}
+      <div style={{
+        display: "flex", justifyContent: "center", gap: 24, padding: "8px 0",
+        flexWrap: "wrap",
+      }}>
+        {[
+          { label: "3단계 검증", desc: "신원·면접·시범" },
+          { label: "AI 분석", desc: "증상 즉시 분석" },
+          { label: "실시간 보고", desc: "사진·영상 공유" },
+          { label: "안전 결제", desc: "에스크로 보호" },
+        ].map((item) => (
+          <div key={item.label} style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#1D1D1F" }}>{item.label}</div>
+            <div style={{ fontSize: 11, color: "#9CA3AF" }}>{item.desc}</div>
+          </div>
+        ))}
       </div>
     </section>
   );
