@@ -18,7 +18,7 @@ export default function Header() {
   return (
     <header style={{ background: "#fff", borderBottom: "2px solid #FF6B35" }}>
       {/* PC 상단 바 */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px" }}>
+      <div className="container-pet" style={{ padding: "0 16px" }}>
         <div className="pc-only" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 40 }}>
           <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#888" }}>
             <Link href="/mypage" style={{ color: "#888" }}>마이페이지</Link>
@@ -47,7 +47,7 @@ export default function Header() {
       </div>
 
       {/* 로고 + 검색 */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "8px 16px" }}>
+      <div className="container-pet" style={{ padding: "8px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
             <span style={{ fontSize: 22, fontWeight: 900, color: "#FF6B35" }}>P.E.T</span>
@@ -86,8 +86,8 @@ export default function Header() {
 
       {/* 네비게이션 */}
       <nav style={{ background: "#FF6B35", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        <div style={{
-          maxWidth: 1100, margin: "0 auto", padding: "0 8px",
+        <div className="container-pet" style={{
+          padding: "0 8px",
           display: "flex", gap: 0, whiteSpace: "nowrap",
         }}>
           {[

@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer style={{ background: "#1F2937", color: "#9CA3AF", padding: "36px 16px", marginTop: 40, fontSize: 12 }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div className="container-pet">
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 24, marginBottom: 20 }}>
           <div>
             <p style={{ fontWeight: 800, color: "#F3F4F6", fontSize: 16, marginBottom: 6 }}>P.E.T 펫에토</p>

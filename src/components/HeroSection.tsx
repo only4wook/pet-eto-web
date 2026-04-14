@@ -383,10 +383,10 @@ export default function HeroSection() {
         background: "rgba(255,107,53,0.08)", borderRadius: "50%", filter: "blur(60px)",
       }} />
 
-      <div style={{
-        position: "relative", maxWidth: 1100, margin: "0 auto",
+      <div className="container-pet hero-flex" style={{
+        position: "relative",
         padding: "28px 24px", display: "flex", gap: 24, alignItems: "stretch",
-      }} className="hero-flex">
+      }}>
         {/* 왼쪽: CTA (축소) */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{

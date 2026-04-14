@@ -22,8 +22,8 @@ export default function EmergencyBanner({ posts }: { posts: Post[] }) {
       background: "#DC2626", color: "#fff", borderRadius: 10,
       marginBottom: 16, overflow: "hidden",
     }}>
-      <div style={{
-        maxWidth: 1100, margin: "0 auto", padding: "10px 16px",
+      <div className="container-pet" style={{
+        padding: "10px 16px",
         display: "flex", alignItems: "center", gap: 12,
       }}>
         {/* 긴급 레이블 */}

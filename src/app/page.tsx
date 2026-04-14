@@ -40,7 +40,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px", flex: 1, width: "100%" }}>
+      <main className="container-pet" style={{ padding: "20px 0", flex: 1 }}>
 
         {/* 1. 히어로 섹션 */}
         <HeroSection />
