@@ -1,65 +1,92 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- P.E.T Logo Mark v2 — Cute, Feminine, 10~30대 여성 타겟 -->
-  <!-- Concept: 귀여운 고양이 귀 실루엣 + 하트 코 + 부드러운 라운드 -->
+  <!-- P.E.T Logo v3 — 몰랑/카카오프렌즈급 귀여움 -->
+  <!-- 컨셉: 통통한 고양이+강아지 하이브리드, 하트 발바닥, 파스텔 -->
 
-  <!-- 배경 원 (부드러운 파스텔 그라데이션 느낌의 단색) -->
-  <circle cx="256" cy="256" r="240" fill="#FF6B35"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF8A5C"/>
+      <stop offset="100%" stop-color="#FF6B35"/>
+    </linearGradient>
+    <linearGradient id="cheek" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFB8C9"/>
+      <stop offset="100%" stop-color="#FFA0B8"/>
+    </linearGradient>
+  </defs>
 
-  <!-- 고양이 얼굴 실루엣 — 둥글고 귀여움 -->
-  <!-- 왼쪽 귀 -->
-  <path d="M148 200 Q130 100 180 130 Q200 140 195 190 Z" fill="#FFFFFF"/>
+  <!-- 배경 — 부드러운 둥근 사각형 (앱 아이콘 스타일) -->
+  <rect x="16" y="16" width="480" height="480" rx="110" ry="110" fill="url(#bg)"/>
+
+  <!-- 그림자 (깊이감) -->
+  <ellipse cx="256" cy="420" rx="120" ry="14" fill="#E85D2A" opacity="0.3"/>
+
+  <!-- 몸체 — 통통한 타원형 (아래쪽) -->
+  <ellipse cx="256" cy="350" rx="105" ry="80" fill="#FFFFFF"/>
+
+  <!-- 얼굴 — 큰 원 (몸체와 자연스럽게 연결) -->
+  <circle cx="256" cy="248" r="138" fill="#FFFFFF"/>
+
+  <!-- 왼쪽 귀 — 통통하고 둥근 삼각형 -->
+  <path d="M152 180 C135 90, 160 70, 185 90 C210 110, 200 165, 190 185 Z" fill="#FFFFFF"/>
+  <path d="M162 175 C150 105, 168 88, 186 100 C200 115, 196 160, 190 178 Z" fill="#FFB8C9"/>
+
   <!-- 오른쪽 귀 -->
-  <path d="M364 200 Q382 100 332 130 Q312 140 317 190 Z" fill="#FFFFFF"/>
+  <path d="M360 180 C377 90, 352 70, 327 90 C302 110, 312 165, 322 185 Z" fill="#FFFFFF"/>
+  <path d="M350 175 C362 105, 344 88, 326 100 C312 115, 316 160, 322 178 Z" fill="#FFB8C9"/>
 
-  <!-- 얼굴 원 -->
-  <circle cx="256" cy="280" r="130" fill="#FFFFFF"/>
-
-  <!-- 왼쪽 눈 — 반짝이는 크고 둥근 눈 -->
-  <circle cx="210" cy="262" r="28" fill="#2D2D2D"/>
-  <circle cx="200" cy="252" r="10" fill="#FFFFFF"/>
-  <circle cx="216" cy="268" r="5" fill="#FFFFFF"/>
+  <!-- 왼쪽 눈 — 크고 반짝이는 (카와이 스타일) -->
+  <ellipse cx="206" cy="240" rx="30" ry="32" fill="#2D2D2D"/>
+  <ellipse cx="195" cy="228" rx="12" ry="13" fill="#FFFFFF"/>
+  <circle cx="214" cy="250" r="6" fill="#FFFFFF"/>
 
   <!-- 오른쪽 눈 -->
-  <circle cx="302" cy="262" r="28" fill="#2D2D2D"/>
-  <circle cx="292" cy="252" r="10" fill="#FFFFFF"/>
-  <circle cx="308" cy="268" r="5" fill="#FFFFFF"/>
+  <ellipse cx="306" cy="240" rx="30" ry="32" fill="#2D2D2D"/>
+  <ellipse cx="295" cy="228" rx="12" ry="13" fill="#FFFFFF"/>
+  <circle cx="314" cy="250" r="6" fill="#FFFFFF"/>
 
-  <!-- 코 — 작은 하트 모양 -->
-  <path d="M256 306
-    C256 306 248 296 242 300
-    C236 304 236 312 242 316
-    L256 328
-    L270 316
-    C276 312 276 304 270 300
-    C264 296 256 306 256 306Z"
-    fill="#FF8FAB"/>
+  <!-- 눈썹 (귀여운 아치형) -->
+  <path d="M178 205 Q206 192 230 205" fill="none" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round" opacity="0.15"/>
+  <path d="M282 205 Q306 192 334 205" fill="none" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round" opacity="0.15"/>
 
-  <!-- 입 -->
-  <path d="M240 328 Q256 340 272 328" fill="none" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- 코 — 작고 귀여운 역삼각형 -->
+  <path d="M248 288 L256 298 L264 288 Q256 282 248 288Z" fill="#FF8FAB"/>
 
-  <!-- 볼터치 — 핑크 블러쉬 -->
-  <circle cx="176" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
-  <circle cx="336" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
+  <!-- 입 — ω 모양 (고양이 특유의 귀여운 입) -->
+  <path d="M236 302 Q246 314 256 304 Q266 314 276 302" fill="none" stroke="#2D2D2D" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- 왼쪽 수염 -->
-  <line x1="120" y1="285" x2="185" y2="292" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
-  <line x1="118" y1="305" x2="184" y2="305" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
-  <line x1="120" y1="325" x2="185" y2="318" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+  <!-- 볼터치 — 그라데이션 핑크 (큼직하게) -->
+  <circle cx="164" cy="272" r="28" fill="url(#cheek)" opacity="0.45"/>
+  <circle cx="348" cy="272" r="28" fill="url(#cheek)" opacity="0.45"/>
 
-  <!-- 오른쪽 수염 -->
-  <line x1="392" y1="285" x2="327" y2="292" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
-  <line x1="394" y1="305" x2="328" y2="305" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
-  <line x1="392" y1="325" x2="327" y2="318" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+  <!-- 수염 — 도톰하고 귀여운 곡선 -->
+  <path d="M110 258 Q155 262 170 255" fill="none" stroke="#E8D5CC" stroke-width="3" stroke-linecap="round"/>
+  <path d="M108 280 Q155 280 172 278" fill="none" stroke="#E8D5CC" stroke-width="3" stroke-linecap="round"/>
+  <path d="M342 255 Q357 262 402 258" fill="none" stroke="#E8D5CC" stroke-width="3" stroke-linecap="round"/>
+  <path d="M340 278 Q357 280 404 280" fill="none" stroke="#E8D5CC" stroke-width="3" stroke-linecap="round"/>
 
-  <!-- 귀 안쪽 핑크 -->
-  <path d="M158 195 Q147 125 185 145 Q197 152 194 188 Z" fill="#FFB8C9" opacity="0.6"/>
-  <path d="M354 195 Q365 125 327 145 Q315 152 318 188 Z" fill="#FFB8C9" opacity="0.6"/>
+  <!-- 왼쪽 앞발 — 통통한 발 (몸에서 삐져나옴) -->
+  <ellipse cx="185" cy="390" rx="35" ry="24" fill="#FFFFFF"/>
+  <!-- 발바닥 패드 (핑크) -->
+  <ellipse cx="185" cy="393" rx="14" ry="10" fill="#FFB8C9"/>
+  <circle cx="173" cy="383" r="5.5" fill="#FFB8C9"/>
+  <circle cx="185" cy="379" r="5.5" fill="#FFB8C9"/>
+  <circle cx="197" cy="383" r="5.5" fill="#FFB8C9"/>
 
-  <!-- 작은 발바닥 마크 (하단) -->
-  <g transform="translate(232, 388) scale(0.6)">
-    <circle cx="40" cy="30" r="18" fill="#FFFFFF" opacity="0.9"/>
-    <circle cx="14" cy="10" r="9" fill="#FFFFFF" opacity="0.9"/>
-    <circle cx="40" cy="2" r="9" fill="#FFFFFF" opacity="0.9"/>
-    <circle cx="66" cy="10" r="9" fill="#FFFFFF" opacity="0.9"/>
+  <!-- 오른쪽 앞발 -->
+  <ellipse cx="327" cy="390" rx="35" ry="24" fill="#FFFFFF"/>
+  <ellipse cx="327" cy="393" rx="14" ry="10" fill="#FFB8C9"/>
+  <circle cx="315" cy="383" r="5.5" fill="#FFB8C9"/>
+  <circle cx="327" cy="379" r="5.5" fill="#FFB8C9"/>
+  <circle cx="339" cy="383" r="5.5" fill="#FFB8C9"/>
+
+  <!-- 하트 — 머리 위에 떠있는 작은 하트 -->
+  <g transform="translate(330, 80) rotate(15)">
+    <path d="M0 10 C0 10, -8 0, -14 2 C-20 5, -20 14, -14 18 L0 30 L14 18 C20 14, 20 5, 14 2 C8 0, 0 10, 0 10Z" fill="#FF8FAB" opacity="0.8"/>
+  </g>
+
+  <!-- 반짝이 — 작은 별 모양 -->
+  <g fill="#FFFFFF" opacity="0.6">
+    <path d="M140 100 L143 108 L151 108 L145 113 L147 121 L140 116 L133 121 L135 113 L129 108 L137 108Z" transform="scale(0.7) translate(50, 30)"/>
+    <circle cx="380" cy="118" r="4"/>
+    <circle cx="395" cy="105" r="2.5"/>
   </g>
 </svg>

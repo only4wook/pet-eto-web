@@ -1,57 +1,71 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120">
-  <!-- P.E.T Horizontal Logo v2 — Cute cat + rounded text -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 140" width="480" height="140">
+  <!-- P.E.T Horizontal Logo v3 — 캐릭터 + 텍스트 -->
+  <defs>
+    <linearGradient id="hbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF8A5C"/>
+      <stop offset="100%" stop-color="#FF6B35"/>
+    </linearGradient>
+  </defs>
 
-  <!-- === Cat Icon (scaled to fit) === -->
-  <g transform="translate(5, 2) scale(0.22)">
-    <circle cx="256" cy="256" r="240" fill="#FF6B35"/>
-    <!-- 귀 -->
-    <path d="M148 200 Q130 100 180 130 Q200 140 195 190 Z" fill="#FFF"/>
-    <path d="M364 200 Q382 100 332 130 Q312 140 317 190 Z" fill="#FFF"/>
-    <path d="M158 195 Q147 125 185 145 Q197 152 194 188 Z" fill="#FFB8C9" opacity="0.6"/>
-    <path d="M354 195 Q365 125 327 145 Q315 152 318 188 Z" fill="#FFB8C9" opacity="0.6"/>
-    <!-- 얼굴 -->
-    <circle cx="256" cy="280" r="130" fill="#FFF"/>
-    <!-- 눈 -->
-    <circle cx="210" cy="262" r="28" fill="#2D2D2D"/>
-    <circle cx="200" cy="252" r="10" fill="#FFF"/>
-    <circle cx="216" cy="268" r="5" fill="#FFF"/>
-    <circle cx="302" cy="262" r="28" fill="#2D2D2D"/>
-    <circle cx="292" cy="252" r="10" fill="#FFF"/>
-    <circle cx="308" cy="268" r="5" fill="#FFF"/>
-    <!-- 코 하트 -->
-    <path d="M256 306 C256 306 248 296 242 300 C236 304 236 312 242 316 L256 328 L270 316 C276 312 276 304 270 300 C264 296 256 306 256 306Z" fill="#FFB8C9"/>
-    <!-- 입 -->
-    <path d="M240 328 Q256 340 272 328" fill="none" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
-    <!-- 볼 -->
-    <circle cx="176" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
-    <circle cx="336" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
+  <!-- 캐릭터 아이콘 (축소) -->
+  <g transform="translate(8, 5) scale(0.25)">
+    <rect x="16" y="16" width="480" height="480" rx="110" ry="110" fill="url(#hbg)"/>
+    <ellipse cx="256" cy="420" rx="120" ry="14" fill="#E85D2A" opacity="0.3"/>
+    <ellipse cx="256" cy="350" rx="105" ry="80" fill="#FFF"/>
+    <circle cx="256" cy="248" r="138" fill="#FFF"/>
+    <path d="M152 180 C135 90, 160 70, 185 90 C210 110, 200 165, 190 185 Z" fill="#FFF"/>
+    <path d="M162 175 C150 105, 168 88, 186 100 C200 115, 196 160, 190 178 Z" fill="#FFB8C9"/>
+    <path d="M360 180 C377 90, 352 70, 327 90 C302 110, 312 165, 322 185 Z" fill="#FFF"/>
+    <path d="M350 175 C362 105, 344 88, 326 100 C312 115, 316 160, 322 178 Z" fill="#FFB8C9"/>
+    <ellipse cx="206" cy="240" rx="30" ry="32" fill="#2D2D2D"/>
+    <ellipse cx="195" cy="228" rx="12" ry="13" fill="#FFF"/>
+    <circle cx="214" cy="250" r="6" fill="#FFF"/>
+    <ellipse cx="306" cy="240" rx="30" ry="32" fill="#2D2D2D"/>
+    <ellipse cx="295" cy="228" rx="12" ry="13" fill="#FFF"/>
+    <circle cx="314" cy="250" r="6" fill="#FFF"/>
+    <path d="M248 288 L256 298 L264 288 Q256 282 248 288Z" fill="#FF8FAB"/>
+    <path d="M236 302 Q246 314 256 304 Q266 314 276 302" fill="none" stroke="#2D2D2D" stroke-width="2.8" stroke-linecap="round"/>
+    <circle cx="164" cy="272" r="28" fill="#FFB8C9" opacity="0.45"/>
+    <circle cx="348" cy="272" r="28" fill="#FFB8C9" opacity="0.45"/>
+    <ellipse cx="185" cy="390" rx="35" ry="24" fill="#FFF"/>
+    <ellipse cx="185" cy="393" rx="14" ry="10" fill="#FFB8C9"/>
+    <circle cx="173" cy="383" r="5.5" fill="#FFB8C9"/>
+    <circle cx="185" cy="379" r="5.5" fill="#FFB8C9"/>
+    <circle cx="197" cy="383" r="5.5" fill="#FFB8C9"/>
+    <ellipse cx="327" cy="390" rx="35" ry="24" fill="#FFF"/>
+    <ellipse cx="327" cy="393" rx="14" ry="10" fill="#FFB8C9"/>
+    <circle cx="315" cy="383" r="5.5" fill="#FFB8C9"/>
+    <circle cx="327" cy="379" r="5.5" fill="#FFB8C9"/>
+    <circle cx="339" cy="383" r="5.5" fill="#FFB8C9"/>
   </g>
 
-  <!-- === "P.E.T" Text — Rounded, friendly font style === -->
+  <!-- "P.E.T" 텍스트 — 둥글고 도톰한 폰트 스타일 -->
   <g fill="#FF6B35">
-    <!-- P -->
-    <path d="M140,32 C140,32 140,88 140,88 C140,92 142,94 146,94 C150,94 152,92 152,88 L152,72 L164,72 C178,72 186,63 186,52 C186,41 178,32 164,32 Z M152,44 L162,44 C169,44 174,47 174,52 C174,57 169,60 162,60 L152,60 Z"/>
-    <!-- Dot -->
-    <circle cx="197" cy="88" r="5.5"/>
+    <!-- P — 둥근 볼드체 -->
+    <path d="M168 35 C168 35, 168 100, 168 100 C168 105, 172 108, 176 108 C180 108, 184 105, 184 100 L184 80 L200 80 C216 80, 224 70, 224 56 C224 42, 216 32, 200 32 L180 32 C172 32, 168 35, 168 35Z M184 48 L198 48 C206 48, 210 52, 210 56 C210 61, 206 65, 198 65 L184 65 Z"/>
+    <!-- 점 -->
+    <circle cx="237" cy="102" r="6"/>
     <!-- E -->
-    <path d="M214,32 C214,32 214,88 214,88 C214,92 216,94 220,94 L252,94 C256,94 258,92 258,88 C258,84 256,82 252,82 L226,82 L226,68 L246,68 C250,68 252,66 252,62 C252,58 250,56 246,56 L226,56 L226,44 L250,44 C254,44 256,42 256,38 C256,34 254,32 250,32 Z"/>
-    <!-- Dot -->
-    <circle cx="269" cy="88" r="5.5"/>
+    <path d="M256 35 C256 35, 256 100, 256 100 C256 105, 260 108, 264 108 L296 108 C300 108, 304 105, 304 100 C304 96, 300 93, 296 93 L272 93 L272 76 L290 76 C294 76, 297 73, 297 69 C297 65, 294 62, 290 62 L272 62 L272 48 L294 48 C298 48, 302 45, 302 41 C302 37, 298 34, 294 34 L264 34 C260 34, 256 37, 256 35Z"/>
+    <!-- 점 -->
+    <circle cx="317" cy="102" r="6"/>
     <!-- T -->
-    <path d="M286,32 L324,32 C328,32 330,34 330,38 C330,42 328,44 324,44 L312,44 L312,88 C312,92 310,94 306,94 C302,94 300,92 300,88 L300,44 L288,44 C284,44 282,42 282,38 C282,34 284,32 286,32 Z"/>
+    <path d="M336 34 L370 34 C374 34, 378 37, 378 41 C378 45, 374 48, 370 48 L362 48 L362 100 C362 105, 358 108, 354 108 C350 108, 346 105, 346 100 L346 48 L338 48 C334 48, 330 45, 330 41 C330 37, 334 34, 336 34Z"/>
   </g>
 
-  <!-- "펫에토" subtitle -->
-  <text x="143" y="115" font-family="Arial, sans-serif" font-size="14" fill="#AAAAAA" letter-spacing="3">Pet Ever Total</text>
+  <!-- 서브타이틀 -->
+  <text x="168" y="128" font-family="Arial, 'Apple SD Gothic Neo', sans-serif" font-size="13" fill="#AAAAAA" letter-spacing="1.5">Pet Ever Total</text>
 
   <!-- 하트 장식 -->
-  <path d="M350,50 C350,50 346,44 342,47 C338,50 338,56 342,59 L350,66 L358,59 C362,56 362,50 358,47 C354,44 350,50 350,50Z" fill="#FFB8C9" opacity="0.7"/>
+  <g transform="translate(394, 48)">
+    <path d="M0 8 C0 8, -6 0, -10 2 C-14 4, -14 10, -10 14 L0 22 L10 14 C14 10, 14 4, 10 2 C6 0, 0 8, 0 8Z" fill="#FF8FAB" opacity="0.6"/>
+  </g>
 
-  <!-- 작은 발바닥 -->
-  <g transform="translate(370, 42) scale(0.35)" opacity="0.4">
-    <circle cx="40" cy="30" r="14" fill="#FF6B35"/>
-    <circle cx="18" cy="10" r="7" fill="#FF6B35"/>
-    <circle cx="40" cy="4" r="7" fill="#FF6B35"/>
-    <circle cx="62" cy="10" r="7" fill="#FF6B35"/>
+  <!-- 작은 발바닥 장식 -->
+  <g transform="translate(406, 85)" fill="#FFB8C9" opacity="0.5">
+    <ellipse cx="8" cy="10" rx="6" ry="4.5"/>
+    <circle cx="3" cy="4" r="2.5"/>
+    <circle cx="8" cy="2" r="2.5"/>
+    <circle cx="13" cy="4" r="2.5"/>
   </g>
 </svg>
