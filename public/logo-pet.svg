@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!--
+    P.E.T Logo Mark
+    Concept: Geometric shield silhouette with negative-space paw print.
+    The shield = trust/protection. The paw = pet care. Clean, flat, Apple-level minimal.
+  -->
+
+  <!-- Shield shape - softened pointed bottom, slightly rounded top -->
+  <path d="
+    M256 28
+    C164 28 72 64 72 168
+    C72 304 224 460 248 484
+    C252 488 256 490 256 490
+    C256 490 260 488 264 484
+    C288 460 440 304 440 168
+    C440 64 348 28 256 28Z"
+    fill="#FF6B35"/>
+
+  <!-- Paw - main pad (heart-shaped bottom pad) -->
+  <path d="
+    M256 368
+    C240 368 220 348 220 320
+    C220 296 236 276 256 260
+    C276 276 292 296 292 320
+    C292 348 272 368 256 368Z"
+    fill="#FFFFFF"/>
+
+  <!-- Paw toe - top left outer -->
+  <ellipse cx="176" cy="200" rx="28" ry="36" transform="rotate(-15 176 200)" fill="#FFFFFF"/>
+
+  <!-- Paw toe - top left inner -->
+  <ellipse cx="228" cy="176" rx="26" ry="34" transform="rotate(-5 228 176)" fill="#FFFFFF"/>
+
+  <!-- Paw toe - top right inner -->
+  <ellipse cx="284" cy="176" rx="26" ry="34" transform="rotate(5 284 176)" fill="#FFFFFF"/>
+
+  <!-- Paw toe - top right outer -->
+  <ellipse cx="336" cy="200" rx="28" ry="36" transform="rotate(15 336 200)" fill="#FFFFFF"/>
+</svg>

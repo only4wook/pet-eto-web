@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    P.E.T Favicon - Simplified shield+paw for 32x32 / 16x16 clarity.
+    Fewer details, bolder shapes, same identity.
+  -->
+
+  <!-- Shield -->
+  <path d="
+    M16 1
+    C10 1 4 4 4 11
+    C4 20 14 29.5 15.5 31
+    C15.8 31.3 16 31.5 16 31.5
+    C16 31.5 16.2 31.3 16.5 31
+    C18 29.5 28 20 28 11
+    C28 4 22 1 16 1Z"
+    fill="#FF6B35"/>
+
+  <!-- Paw main pad -->
+  <ellipse cx="16" cy="21" rx="4.5" ry="5" fill="#fff"/>
+
+  <!-- Toe pads - simplified to 3 for clarity at small size -->
+  <circle cx="10" cy="12.5" r="3" fill="#fff"/>
+  <circle cx="16" cy="10.5" r="3" fill="#fff"/>
+  <circle cx="22" cy="12.5" r="3" fill="#fff"/>
+</svg>
