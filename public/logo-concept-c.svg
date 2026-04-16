@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Concept C: "P + 발바닥" — 글자 P의 볼(bowl) 안에 발바닥이 들어간 형태 -->
+  <!-- 영감: Pinterest P, Beats 'b' (글자 자체가 아이콘이 되는) -->
+  <!-- 가장 미니멀하고 확장성 높은 디자인 -->
+
+  <!-- 배경 — 부드러운 라운드 사각형 -->
+  <rect x="16" y="16" width="480" height="480" rx="108" ry="108" fill="#FF6B35"/>
+
+  <!-- P 글자 — 두껍고 둥근 기하학적 형태 -->
+  <!-- P의 세로줄기 -->
+  <rect x="128" y="100" width="52" height="312" rx="26" ry="26" fill="#FFFFFF"/>
+
+  <!-- P의 볼(bowl) — 큰 원 -->
+  <circle cx="290" cy="208" r="108" fill="#FFFFFF"/>
+
+  <!-- P 볼 안쪽 배경 (오렌지) — 발바닥이 들어갈 공간 -->
+  <circle cx="290" cy="208" r="76" fill="#FF6B35"/>
+
+  <!-- 발바닥 — P 볼 안에 (화이트) -->
+  <ellipse cx="290" cy="228" rx="28" ry="22" fill="#FFFFFF"/>
+  <circle cx="264" cy="196" r="14" fill="#FFFFFF"/>
+  <circle cx="290" cy="184" r="14" fill="#FFFFFF"/>
+  <circle cx="316" cy="196" r="14" fill="#FFFFFF"/>
+
+  <!-- P와 원의 연결부 — 자연스러운 합침 -->
+  <rect x="154" y="126" width="60" height="164" fill="#FFFFFF"/>
+
+  <!-- 고양이 귀 힌트 — P의 상단에 작은 삼각형 2개 -->
+  <path d="M120 100 L140 60 L160 100" fill="#FFFFFF"/>
+  <path d="M155 100 L175 65 L195 100" fill="#FFFFFF"/>
+
+  <!-- 귀 안쪽 (핑크) -->
+  <path d="M127 98 L140 70 L153 98" fill="#FFB8C9" opacity="0.7"/>
+  <path d="M162 98 L175 73 L188 98" fill="#FFB8C9" opacity="0.7"/>
+</svg>

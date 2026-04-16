@@ -1,73 +1,152 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>P.E.T Logo Preview</title>
+<meta charset="UTF-8">
+<title>P.E.T Logo Concepts</title>
 <style>
-  body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #f8f8f8; padding: 40px; text-align: center; }
-  h1 { color: #FF6B35; }
-  .row { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin: 30px 0; }
-  .card { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-  .card h3 { color: #666; margin-bottom: 16px; }
-  .dark { background: #1D1D1F; }
-  .sizes { display: flex; align-items: end; gap: 20px; justify-content: center; margin-top: 20px; }
-  .sizes span { font-size: 11px; color: #999; }
+  * { margin: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif; background: #F5F5F7; padding: 40px 20px; color: #1D1D1F; }
+  .container { max-width: 1000px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .sub { text-align: center; color: #888; font-size: 14px; margin-bottom: 48px; }
+  .concept { background: white; border-radius: 24px; padding: 40px; margin-bottom: 32px; box-shadow: 0 2px 20px rgba(0,0,0,0.06); }
+  .concept-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .badge { background: #FF6B35; color: white; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+  .concept h2 { font-size: 20px; font-weight: 700; }
+  .concept .desc { color: #666; font-size: 13px; margin-bottom: 24px; line-height: 1.6; }
+  .concept .ref { color: #999; font-size: 11px; margin-bottom: 20px; }
+  .preview-row { display: flex; align-items: center; justify-content: center; gap: 32px; flex-wrap: wrap; }
+  .preview-item { text-align: center; }
+  .preview-item span { display: block; font-size: 11px; color: #999; margin-top: 8px; }
+  .dark-bg { background: #1D1D1F; border-radius: 16px; padding: 24px; display: inline-block; }
+  .app-sim { display: flex; gap: 16px; justify-content: center; align-items: end; margin-top: 24px; padding-top: 24px; border-top: 1px solid #f0f0f0; }
+  .app-icon { text-align: center; }
+  .app-icon img, .app-icon div { width: 68px; height: 68px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .app-icon p { font-size: 11px; color: #555; margin-top: 6px; }
+  .vote { text-align: center; margin-top: 40px; padding: 24px; background: #FFF7ED; border-radius: 16px; }
+  .vote h3 { font-size: 16px; margin-bottom: 8px; color: #FF6B35; }
 </style>
 </head>
 <body>
-  <h1>P.E.T 펫에토 로고 v3 Preview</h1>
-  <p style="color:#888">10~30대 여성 타겟 | 통통 고양이 캐릭터 | 카카오프렌즈/몰랑 감성</p>
+<div class="container">
+  <h1>P.E.T 로고 컨셉 3종</h1>
+  <p class="sub">캐릭터 X | 기하학적 심볼 | Google/Apple 수석 디자이너 접근법</p>
 
-  <div class="row">
-    <div class="card">
-      <h3>아이콘 마크 (512x512)</h3>
-      <img src="logo-pet.svg" width="200" height="200">
+  <!-- Concept A -->
+  <div class="concept">
+    <div class="concept-header">
+      <span class="badge">A</span>
+      <h2>귀 하트 (Ear Heart)</h2>
     </div>
-    <div class="card dark">
-      <h3 style="color:#aaa">다크 배경</h3>
-      <img src="logo-pet.svg" width="200" height="200">
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="card">
-      <h3>가로형 (헤더용)</h3>
-      <img src="logo-pet-horizontal.svg" width="400">
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="card">
-      <h3>파비콘 (다양한 크기)</h3>
-      <div class="sizes">
-        <div><img src="favicon-pet.svg" width="64" height="64"><br><span>64px</span></div>
-        <div><img src="favicon-pet.svg" width="32" height="32"><br><span>32px</span></div>
-        <div><img src="favicon-pet.svg" width="16" height="16"><br><span>16px</span></div>
+    <p class="ref">영감: Airbnb (하트=소속감), Figma (기하학적 합성)</p>
+    <p class="desc">
+      고양이의 뾰족한 귀(왼쪽)와 강아지의 둥근 귀(오른쪽)가 합쳐져 <b>하트</b>를 형성합니다.<br>
+      하트 안에 발바닥이 숨어있어 "사랑으로 돌봐준다"는 의미. 한 눈에 고양이+강아지+사랑.
+    </p>
+    <div class="preview-row">
+      <div class="preview-item">
+        <img src="logo-concept-a.svg" width="180" height="180">
+        <span>밝은 배경</span>
+      </div>
+      <div class="preview-item">
+        <div class="dark-bg"><img src="logo-concept-a.svg" width="140" height="140"></div>
+        <span>어두운 배경</span>
+      </div>
+      <div class="preview-item">
+        <img src="logo-concept-a.svg" width="48" height="48">
+        <span>48px</span>
+      </div>
+      <div class="preview-item">
+        <img src="logo-concept-a.svg" width="24" height="24">
+        <span>24px</span>
       </div>
     </div>
-  </div>
-
-  <div class="row">
-    <div class="card">
-      <h3>앱 아이콘 시뮬레이션</h3>
-      <div style="display:flex; gap:16px; justify-content:center; align-items:end">
-        <div>
-          <img src="logo-pet.svg" width="80" height="80" style="border-radius:18px; box-shadow:0 2px 8px rgba(0,0,0,0.15)">
-          <p style="font-size:11px; color:#333; margin:4px 0 0">P.E.T</p>
-        </div>
-        <div>
-          <div style="width:80px;height:80px;border-radius:18px;background:#FEE500;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15)">
-            <span style="font-size:36px">💬</span>
-          </div>
-          <p style="font-size:11px; color:#333; margin:4px 0 0">카카오톡</p>
-        </div>
-        <div>
-          <div style="width:80px;height:80px;border-radius:18px;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15)">
-            <span style="font-size:36px">📷</span>
-          </div>
-          <p style="font-size:11px; color:#333; margin:4px 0 0">Instagram</p>
-        </div>
-      </div>
+    <div class="app-sim">
+      <div class="app-icon"><img src="logo-concept-a.svg"><p>P.E.T</p></div>
+      <div class="app-icon"><div style="background:#FEE500;display:flex;align-items:center;justify-content:center"><span style="font-size:30px">💬</span></div><p>카카오톡</p></div>
+      <div class="app-icon"><div style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center"><span style="font-size:30px">📷</span></div><p>Instagram</p></div>
+      <div class="app-icon"><div style="background:#25D366;display:flex;align-items:center;justify-content:center"><span style="font-size:30px">📱</span></div><p>당근마켓</p></div>
     </div>
   </div>
+
+  <!-- Concept B -->
+  <div class="concept">
+    <div class="concept-header">
+      <span class="badge">B</span>
+      <h2>마주보기 (Face to Face)</h2>
+    </div>
+    <p class="ref">영감: WWF 팬더 (네거티브 스페이스), FedEx 화살표 (숨겨진 발견)</p>
+    <p class="desc">
+      흰색 네거티브 스페이스 안에 <b>고양이(왼)와 강아지(오)가 코를 맞대는</b> 실루엣이 보입니다.<br>
+      중앙에 작은 하트. "모든 반려동물을 사랑으로 연결한다". 발견의 즐거움이 있는 로고.
+    </p>
+    <div class="preview-row">
+      <div class="preview-item">
+        <img src="logo-concept-b.svg" width="180" height="180">
+        <span>밝은 배경</span>
+      </div>
+      <div class="preview-item">
+        <div class="dark-bg"><img src="logo-concept-b.svg" width="140" height="140"></div>
+        <span>어두운 배경</span>
+      </div>
+      <div class="preview-item">
+        <img src="logo-concept-b.svg" width="48" height="48">
+        <span>48px</span>
+      </div>
+      <div class="preview-item">
+        <img src="logo-concept-b.svg" width="24" height="24">
+        <span>24px</span>
+      </div>
+    </div>
+    <div class="app-sim">
+      <div class="app-icon"><img src="logo-concept-b.svg"><p>P.E.T</p></div>
+      <div class="app-icon"><div style="background:#FEE500;display:flex;align-items:center;justify-content:center"><span style="font-size:30px">💬</span></div><p>카카오톡</p></div>
+      <div class="app-icon"><div style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center"><span style="font-size:30px">📷</span></div><p>Instagram</p></div>
+      <div class="app-icon"><div style="background:#25D366;display:flex;align-items:center;justify-content:center"><span style="font-size:30px">📱</span></div><p>당근마켓</p></div>
+    </div>
+  </div>
+
+  <!-- Concept C -->
+  <div class="concept">
+    <div class="concept-header">
+      <span class="badge">C</span>
+      <h2>P + 발바닥 (Paw in P)</h2>
+    </div>
+    <p class="ref">영감: Pinterest 'P', Beats 'b' (글자 = 아이콘), Apple 미니멀리즘</p>
+    <p class="desc">
+      글자 <b>P의 볼(둥근 부분) 안에 발바닥</b>이 들어있는 형태. P 상단에 고양이 귀 힌트.<br>
+      가장 미니멀하고 확장성 높은 디자인. 16px에서도 P인 것이 인식됨. 브랜드 확장에 최적.
+    </p>
+    <div class="preview-row">
+      <div class="preview-item">
+        <img src="logo-concept-c.svg" width="180" height="180">
+        <span>밝은 배경</span>
+      </div>
+      <div class="preview-item">
+        <div class="dark-bg"><img src="logo-concept-c.svg" width="140" height="140"></div>
+        <span>어두운 배경</span>
+      </div>
+      <div class="preview-item">
+        <img src="logo-concept-c.svg" width="48" height="48">
+        <span>48px</span>
+      </div>
+      <div class="preview-item">
+        <img src="logo-concept-c.svg" width="24" height="24">
+        <span>24px</span>
+      </div>
+    </div>
+    <div class="app-sim">
+      <div class="app-icon"><img src="logo-concept-c.svg"><p>P.E.T</p></div>
+      <div class="app-icon"><div style="background:#FEE500;display:flex;align-items:center;justify-content:center"><span style="font-size:30px">💬</span></div><p>카카오톡</p></div>
+      <div class="app-icon"><div style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center"><span style="font-size:30px">📷</span></div><p>Instagram</p></div>
+      <div class="app-icon"><div style="background:#25D366;display:flex;align-items:center;justify-content:center"><span style="font-size:30px">📱</span></div><p>당근마켓</p></div>
+    </div>
+  </div>
+
+  <div class="vote">
+    <h3>어떤 컨셉이 마음에 드세요?</h3>
+    <p style="color:#666; font-size:13px">A/B/C 중 방향을 정해주시면 그 컨셉을 완성도 있게 다듬겠습니다.<br>"A는 좋은데 색상을 바꾸고 싶어" 같은 구체적 피드백 환영!</p>
+  </div>
+</div>
 </body>
 </html>
