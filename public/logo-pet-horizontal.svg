@@ -1,95 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" width="640" height="180">
-  <!--
-    P.E.T Horizontal Logo
-    Icon mark + "P.E.T" wordmark + "Pet Ever Total" subtitle
-    For header / navigation use
-  -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120">
+  <!-- P.E.T Horizontal Logo v2 — Cute cat + rounded text -->
 
-  <!-- === Shield + Paw icon === -->
-  <g transform="translate(10, 4) scale(0.33)">
-    <path d="
-      M256 28
-      C164 28 72 64 72 168
-      C72 304 224 460 248 484
-      C252 488 256 490 256 490
-      C256 490 260 488 264 484
-      C288 460 440 304 440 168
-      C440 64 348 28 256 28Z"
-      fill="#FF6B35"/>
-    <path d="
-      M256 368
-      C240 368 220 348 220 320
-      C220 296 236 276 256 260
-      C276 276 292 296 292 320
-      C292 348 272 368 256 368Z"
-      fill="#fff"/>
-    <ellipse cx="176" cy="200" rx="28" ry="36" transform="rotate(-15 176 200)" fill="#fff"/>
-    <ellipse cx="228" cy="176" rx="26" ry="34" transform="rotate(-5 228 176)" fill="#fff"/>
-    <ellipse cx="284" cy="176" rx="26" ry="34" transform="rotate(5 284 176)" fill="#fff"/>
-    <ellipse cx="336" cy="200" rx="28" ry="36" transform="rotate(15 336 200)" fill="#fff"/>
+  <!-- === Cat Icon (scaled to fit) === -->
+  <g transform="translate(5, 2) scale(0.22)">
+    <circle cx="256" cy="256" r="240" fill="#FF6B35"/>
+    <!-- 귀 -->
+    <path d="M148 200 Q130 100 180 130 Q200 140 195 190 Z" fill="#FFF"/>
+    <path d="M364 200 Q382 100 332 130 Q312 140 317 190 Z" fill="#FFF"/>
+    <path d="M158 195 Q147 125 185 145 Q197 152 194 188 Z" fill="#FFB8C9" opacity="0.6"/>
+    <path d="M354 195 Q365 125 327 145 Q315 152 318 188 Z" fill="#FFB8C9" opacity="0.6"/>
+    <!-- 얼굴 -->
+    <circle cx="256" cy="280" r="130" fill="#FFF"/>
+    <!-- 눈 -->
+    <circle cx="210" cy="262" r="28" fill="#2D2D2D"/>
+    <circle cx="200" cy="252" r="10" fill="#FFF"/>
+    <circle cx="216" cy="268" r="5" fill="#FFF"/>
+    <circle cx="302" cy="262" r="28" fill="#2D2D2D"/>
+    <circle cx="292" cy="252" r="10" fill="#FFF"/>
+    <circle cx="308" cy="268" r="5" fill="#FFF"/>
+    <!-- 코 하트 -->
+    <path d="M256 306 C256 306 248 296 242 300 C236 304 236 312 242 316 L256 328 L270 316 C276 312 276 304 270 300 C264 296 256 306 256 306Z" fill="#FFB8C9"/>
+    <!-- 입 -->
+    <path d="M240 328 Q256 340 272 328" fill="none" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- 볼 -->
+    <circle cx="176" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
+    <circle cx="336" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
   </g>
 
-  <!-- === "P.E.T" Wordmark === -->
+  <!-- === "P.E.T" Text — Rounded, friendly font style === -->
   <g fill="#FF6B35">
     <!-- P -->
-    <path d="
-      M190,36 L190,126 L207,126 L207,92
-      L228,92
-      C250,92 260,79 260,64
-      C260,49 250,36 228,36 Z
-      M207,51 L226,51
-      C238,51 244,56 244,64
-      C244,72 238,78 226,78
-      L207,78 Z"/>
-    <!-- Dot 1 -->
-    <circle cx="274" cy="119" r="7"/>
+    <path d="M140,32 C140,32 140,88 140,88 C140,92 142,94 146,94 C150,94 152,92 152,88 L152,72 L164,72 C178,72 186,63 186,52 C186,41 178,32 164,32 Z M152,44 L162,44 C169,44 174,47 174,52 C174,57 169,60 162,60 L152,60 Z"/>
+    <!-- Dot -->
+    <circle cx="197" cy="88" r="5.5"/>
     <!-- E -->
-    <path d="
-      M296,36 L296,126 L352,126 L352,112
-      L312,112 L312,88 L344,88 L344,74
-      L312,74 L312,51 L350,51 L350,36 Z"/>
-    <!-- Dot 2 -->
-    <circle cx="366" cy="119" r="7"/>
+    <path d="M214,32 C214,32 214,88 214,88 C214,92 216,94 220,94 L252,94 C256,94 258,92 258,88 C258,84 256,82 252,82 L226,82 L226,68 L246,68 C250,68 252,66 252,62 C252,58 250,56 246,56 L226,56 L226,44 L250,44 C254,44 256,42 256,38 C256,34 254,32 250,32 Z"/>
+    <!-- Dot -->
+    <circle cx="269" cy="88" r="5.5"/>
     <!-- T -->
-    <path d="
-      M386,36 L386,51 L412,51 L412,126 L428,126 L428,51
-      L454,51 L454,36 Z"/>
+    <path d="M286,32 L324,32 C328,32 330,34 330,38 C330,42 328,44 324,44 L312,44 L312,88 C312,92 310,94 306,94 C302,94 300,92 300,88 L300,44 L288,44 C284,44 282,42 282,38 C282,34 284,32 286,32 Z"/>
   </g>
 
-  <!-- Vertical divider -->
-  <line x1="476" y1="52" x2="476" y2="120" stroke="#FF6B35" stroke-width="1.5" opacity="0.25"/>
+  <!-- "펫에토" subtitle -->
+  <text x="143" y="115" font-family="Arial, sans-serif" font-size="14" fill="#AAAAAA" letter-spacing="3">Pet Ever Total</text>
 
-  <!-- "Pet Ever Total" subtitle - clean geometric paths -->
-  <g fill="#AAAAAA" transform="translate(492, 58)">
-    <!-- P -->
-    <path d="M0,0 L0,16 L3,16 L3,10 L6.5,10 C9.5,10 11,8 11,5.5 C11,2.5 9.5,0 6.5,0Z M3,3 L6,3 C7.5,3 8,4 8,5.5 C8,7 7.5,7.5 6,7.5 L3,7.5Z"/>
-    <!-- e -->
-    <path d="M13,5 C13,2 15.5,0 18,0 C20.5,0 23,2 23,5 L23,8 L16,8 C16,10 17,11 18.5,11 C19.5,11 20.5,10.5 21,9.5 L23,10.5 C22,12 20.5,13 18.5,13 C15.5,13 13,11 13,8Z M16,6 L20,6 C20,4 19,2.5 18,2.5 C17,2.5 16,4 16,6Z" transform="translate(0,3)"/>
-    <!-- t -->
-    <path d="M26,0 L26,3 L28.5,3 L28.5,10.5 C28.5,12.5 29.5,13 31,13 L33,13 L33,10.5 L31.5,10.5 C31,10.5 31,10 31,9.5 L31,3 L33,3 L33,0 L31,0 L31,-3 L28.5,-3 L28.5,0Z" transform="translate(0,6)"/>
-  </g>
+  <!-- 하트 장식 -->
+  <path d="M350,50 C350,50 346,44 342,47 C338,50 338,56 342,59 L350,66 L358,59 C362,56 362,50 358,47 C354,44 350,50 350,50Z" fill="#FFB8C9" opacity="0.7"/>
 
-  <g fill="#AAAAAA" transform="translate(492, 82)">
-    <!-- E -->
-    <path d="M0,0 L0,16 L10,16 L10,13 L3,13 L3,9.5 L8.5,9.5 L8.5,7 L3,7 L3,3 L10,3 L10,0Z"/>
-    <!-- v -->
-    <path d="M12,3 L15.5,16 L19,3 L22,3 L17,19 L14,19 L9,3Z"/>
-    <!-- e -->
-    <path d="M23,5 C23,2 25.5,0 28,0 C30.5,0 33,2 33,5 L33,8 L26,8 C26,10 27,11 28.5,11 C29.5,11 30.5,10.5 31,9.5 L33,10.5 C32,12 30.5,13 28.5,13 C25.5,13 23,11 23,8Z M26,6 L30,6 C30,4 29,2.5 28,2.5 C27,2.5 26,4 26,6Z" transform="translate(0,3)"/>
-    <!-- r -->
-    <path d="M35,3 L35,16 L38,16 L38,8 C38,5.5 39.5,4 41,3.5 L41,0 C39.5,0 38,1.5 37,3Z" transform="translate(0,3)"/>
-  </g>
-
-  <g fill="#AAAAAA" transform="translate(492, 108)">
-    <!-- T -->
-    <path d="M0,0 L0,3 L5,3 L5,16 L8,16 L8,3 L13,3 L13,0Z"/>
-    <!-- o -->
-    <path d="M15,5 C15,2 17.5,0 20,0 C22.5,0 25,2 25,5 L25,8 C25,11 22.5,13 20,13 C17.5,13 15,11 15,8Z M18,5 L18,8 C18,9.5 19,10.5 20,10.5 C21,10.5 22,9.5 22,8 L22,5 C22,3.5 21,2.5 20,2.5 C19,2.5 18,3.5 18,5Z" transform="translate(0,3)"/>
-    <!-- t -->
-    <path d="M28,0 L28,3 L30.5,3 L30.5,10.5 C30.5,12.5 31.5,13 33,13 L35,13 L35,10.5 L33.5,10.5 C33,10.5 33,10 33,9.5 L33,3 L35,3 L35,0 L33,0 L33,-3 L30.5,-3 L30.5,0Z" transform="translate(0,6)"/>
-    <!-- a -->
-    <path d="M38,5 C38,2 40,0 42.5,0 C45,0 47,2 47,5 L47,10 C47,12 45.5,13 43,13 C41,13 39,12 39,10 L41.5,10 C41.5,11 42,11 43,11 C44,11 44.5,10.5 44.5,9.5 L44.5,9 C44,10 43,10.5 42,10.5 C40,10.5 38,9 38,7Z M41,5 L41,7 C41,8 41.5,9 42.5,9 C43.5,9 44.5,8 44.5,7 L44.5,5 C44.5,4 43.5,3 42.5,3 C41.5,3 41,4 41,5Z" transform="translate(0,3)"/>
-    <!-- l -->
-    <path d="M50,-1 L50,16 L53,16 L53,-1Z"/>
+  <!-- 작은 발바닥 -->
+  <g transform="translate(370, 42) scale(0.35)" opacity="0.4">
+    <circle cx="40" cy="30" r="14" fill="#FF6B35"/>
+    <circle cx="18" cy="10" r="7" fill="#FF6B35"/>
+    <circle cx="40" cy="4" r="7" fill="#FF6B35"/>
+    <circle cx="62" cy="10" r="7" fill="#FF6B35"/>
   </g>
 </svg>

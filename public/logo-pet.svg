@@ -1,39 +1,65 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!--
-    P.E.T Logo Mark
-    Concept: Geometric shield silhouette with negative-space paw print.
-    The shield = trust/protection. The paw = pet care. Clean, flat, Apple-level minimal.
-  -->
+  <!-- P.E.T Logo Mark v2 — Cute, Feminine, 10~30대 여성 타겟 -->
+  <!-- Concept: 귀여운 고양이 귀 실루엣 + 하트 코 + 부드러운 라운드 -->
 
-  <!-- Shield shape - softened pointed bottom, slightly rounded top -->
-  <path d="
-    M256 28
-    C164 28 72 64 72 168
-    C72 304 224 460 248 484
-    C252 488 256 490 256 490
-    C256 490 260 488 264 484
-    C288 460 440 304 440 168
-    C440 64 348 28 256 28Z"
-    fill="#FF6B35"/>
+  <!-- 배경 원 (부드러운 파스텔 그라데이션 느낌의 단색) -->
+  <circle cx="256" cy="256" r="240" fill="#FF6B35"/>
 
-  <!-- Paw - main pad (heart-shaped bottom pad) -->
-  <path d="
-    M256 368
-    C240 368 220 348 220 320
-    C220 296 236 276 256 260
-    C276 276 292 296 292 320
-    C292 348 272 368 256 368Z"
-    fill="#FFFFFF"/>
+  <!-- 고양이 얼굴 실루엣 — 둥글고 귀여움 -->
+  <!-- 왼쪽 귀 -->
+  <path d="M148 200 Q130 100 180 130 Q200 140 195 190 Z" fill="#FFFFFF"/>
+  <!-- 오른쪽 귀 -->
+  <path d="M364 200 Q382 100 332 130 Q312 140 317 190 Z" fill="#FFFFFF"/>
 
-  <!-- Paw toe - top left outer -->
-  <ellipse cx="176" cy="200" rx="28" ry="36" transform="rotate(-15 176 200)" fill="#FFFFFF"/>
+  <!-- 얼굴 원 -->
+  <circle cx="256" cy="280" r="130" fill="#FFFFFF"/>
 
-  <!-- Paw toe - top left inner -->
-  <ellipse cx="228" cy="176" rx="26" ry="34" transform="rotate(-5 228 176)" fill="#FFFFFF"/>
+  <!-- 왼쪽 눈 — 반짝이는 크고 둥근 눈 -->
+  <circle cx="210" cy="262" r="28" fill="#2D2D2D"/>
+  <circle cx="200" cy="252" r="10" fill="#FFFFFF"/>
+  <circle cx="216" cy="268" r="5" fill="#FFFFFF"/>
 
-  <!-- Paw toe - top right inner -->
-  <ellipse cx="284" cy="176" rx="26" ry="34" transform="rotate(5 284 176)" fill="#FFFFFF"/>
+  <!-- 오른쪽 눈 -->
+  <circle cx="302" cy="262" r="28" fill="#2D2D2D"/>
+  <circle cx="292" cy="252" r="10" fill="#FFFFFF"/>
+  <circle cx="308" cy="268" r="5" fill="#FFFFFF"/>
 
-  <!-- Paw toe - top right outer -->
-  <ellipse cx="336" cy="200" rx="28" ry="36" transform="rotate(15 336 200)" fill="#FFFFFF"/>
+  <!-- 코 — 작은 하트 모양 -->
+  <path d="M256 306
+    C256 306 248 296 242 300
+    C236 304 236 312 242 316
+    L256 328
+    L270 316
+    C276 312 276 304 270 300
+    C264 296 256 306 256 306Z"
+    fill="#FF8FAB"/>
+
+  <!-- 입 -->
+  <path d="M240 328 Q256 340 272 328" fill="none" stroke="#2D2D2D" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- 볼터치 — 핑크 블러쉬 -->
+  <circle cx="176" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
+  <circle cx="336" cy="300" r="22" fill="#FFB8C9" opacity="0.5"/>
+
+  <!-- 왼쪽 수염 -->
+  <line x1="120" y1="285" x2="185" y2="292" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+  <line x1="118" y1="305" x2="184" y2="305" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+  <line x1="120" y1="325" x2="185" y2="318" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 오른쪽 수염 -->
+  <line x1="392" y1="285" x2="327" y2="292" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+  <line x1="394" y1="305" x2="328" y2="305" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+  <line x1="392" y1="325" x2="327" y2="318" stroke="#D4D4D4" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 귀 안쪽 핑크 -->
+  <path d="M158 195 Q147 125 185 145 Q197 152 194 188 Z" fill="#FFB8C9" opacity="0.6"/>
+  <path d="M354 195 Q365 125 327 145 Q315 152 318 188 Z" fill="#FFB8C9" opacity="0.6"/>
+
+  <!-- 작은 발바닥 마크 (하단) -->
+  <g transform="translate(232, 388) scale(0.6)">
+    <circle cx="40" cy="30" r="18" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="14" cy="10" r="9" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="40" cy="2" r="9" fill="#FFFFFF" opacity="0.9"/>
+    <circle cx="66" cy="10" r="9" fill="#FFFFFF" opacity="0.9"/>
+  </g>
 </svg>
