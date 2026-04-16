@@ -8,6 +8,7 @@ import GradeBadge from "../../components/GradeBadge";
 import { useAppStore } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
 import { formatDate, getCategoryColor } from "../../lib/utils";
+import EventCalendar from "../../components/EventCalendar";
 import type { Post } from "../../types";
 
 function CommunityContent() {
@@ -45,7 +46,7 @@ function CommunityContent() {
 
         {/* 카테고리 탭 */}
         <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 4 }}>
-          {["전체", "질문", "일상", "후기", "가이드", "행사", "논문"].map((c) => (
+          {["전체", "질문", "일상", "후기", "가이드", "행사", "논문", "긴급"].map((c) => (
             <Link key={c} href={c === "전체" ? "/community" : `/community?cat=${c}`} style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
               background: cat === c ? "#1D1D1F" : "#F3F4F6",
@@ -63,6 +64,13 @@ function CommunityContent() {
             가이드
           </Link>
         </div>
+
+        {/* 행사 캘린더 */}
+        {cat === "행사" && (
+          <div style={{ marginBottom: 24 }}>
+            <EventCalendar />
+          </div>
+        )}
 
         {/* 게시판 테이블 */}
         <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff" }}>

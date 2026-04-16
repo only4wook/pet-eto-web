@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import AuthProvider from "../components/AuthProvider";
 import KakaoButton from "../components/KakaoButton";
@@ -58,8 +59,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
       </head>
       <body style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        {/* Google Analytics */}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-XXXXXXXXXX');`}
+        </Script>
         <AuthProvider>{children}</AuthProvider>
-        {/* KakaoButton 플로팅 제거 — 헤더에 카톡 아이콘으로 이동 */}
         <Analytics />
       </body>
     </html>

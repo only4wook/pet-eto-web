@@ -7,12 +7,13 @@ import Footer from "../../../components/Footer";
 import { useAppStore } from "../../../lib/store";
 import { supabase } from "../../../lib/supabase";
 import { formatDate, getCategoryColor } from "../../../lib/utils";
+import { COMMENTS_MAP, AI_OPINIONS } from "../../../lib/demoComments";
+import type { DemoComment } from "../../../lib/demoComments";
 
-const DEMO_COMMENTS = [
-  { id: "c1", nickname: "수의사김", content: "식욕부진이 2일 이상 지속되면 병원 방문을 권합니다. 구토나 설사 증상이 동반되면 더 빨리 가셔야 해요.", is_expert: true, time: "10:45" },
-  { id: "c2", nickname: "냥이집사", content: "저도 예전에 같은 경험 했었어요. 사료 바꿔보니까 잘 먹더라구요!", is_expert: false, time: "11:02" },
-  { id: "c3", nickname: "고양이사랑", content: "혹시 최근에 환경 변화가 있었나요? 스트레스로 안 먹는 경우도 많아요", is_expert: false, time: "11:30" },
-  { id: "c4", nickname: "반려인", content: "공감합니다 ㅠㅠ 우리 고양이도 가끔 그래요", is_expert: false, time: "12:15" },
+const DEFAULT_COMMENTS: DemoComment[] = [
+  { id: "c1", nickname: "수의사김", content: "좋은 글이네요! 궁금한 점이 있으시면 편하게 질문해주세요.", is_expert: true, time: "10:45" },
+  { id: "c2", nickname: "반려인", content: "유용한 정보 감사합니다 :)", is_expert: false, time: "11:20" },
+  { id: "c3", nickname: "집사초보", content: "저도 비슷한 경험이 있어서 공감이 많이 됩니다!", is_expert: false, time: "12:05" },
 ];
 
 export default function PostDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +29,10 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
   const isDbPost = id.length > 10 && !id.startsWith("p");
   const isOwner = user && post?.author_id === user.id;
 
+  // Get post-specific comments and AI opinion
+  const postComments = COMMENTS_MAP[id] || DEFAULT_COMMENTS;
+  const aiOpinion = AI_OPINIONS[id];
+
   const handleDelete = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
     setDeleting(true);
@@ -38,16 +43,16 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
       if (error) { alert("삭제 실패: " + error.message); setDeleting(false); return; }
     }
     alert("삭제되었습니다.");
-    router.push("/");
+    router.push("/community");
   };
 
   if (!post) {
     return (
       <>
         <Header />
-        <main style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 16px", textAlign: "center" }}>
+        <main className="container-pet" style={{ padding: "60px 16px", textAlign: "center", flex: 1 }}>
           <p style={{ color: "#888" }}>게시글을 찾을 수 없습니다.</p>
-          <Link href="/" style={{ color: "#FF6B35" }}>목록으로 돌아가기</Link>
+          <Link href="/community" style={{ color: "#FF6B35" }}>목록으로 돌아가기</Link>
         </main>
         <Footer />
       </>
@@ -57,14 +62,12 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
   return (
     <>
       <Header />
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px", flex: 1, width: "100%" }}>
-        <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 4 }}>
+      <main className="container-pet" style={{ padding: "20px 0", flex: 1 }}>
+        <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8 }}>
           {/* 글 헤더 */}
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #e0e0e0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span style={{
-                color: getCategoryColor(post.category), fontWeight: 700, fontSize: 13,
-              }}>
+              <span style={{ color: getCategoryColor(post.category), fontWeight: 700, fontSize: 13 }}>
                 [{post.category}]
               </span>
               {post.is_expert_answered && (
@@ -120,7 +123,7 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
             </div>
           )}
 
-          {/* 추천/비추 */}
+          {/* 추천 */}
           <div style={{
             display: "flex", justifyContent: "center", gap: 16, padding: "20px",
             borderBottom: "1px solid #e0e0e0",
@@ -138,12 +141,42 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
             </button>
           </div>
 
+          {/* AI 의견 */}
+          {aiOpinion && (
+            <div style={{
+              margin: "16px 20px", padding: "16px 18px",
+              background: "linear-gradient(135deg, #FFF7ED 0%, #FFF1E6 100%)",
+              borderRadius: 12, border: "1px solid #FFD6B0",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <span style={{
+                  background: "linear-gradient(135deg, #FF6B35, #FF8F5E)",
+                  color: "#fff", fontSize: 11, padding: "3px 10px", borderRadius: 20,
+                  fontWeight: 700, letterSpacing: "0.02em",
+                }}>
+                  🤖 AI 분석
+                </span>
+                <span style={{ fontWeight: 800, fontSize: 14, color: "#FF6B35" }}>P.E.T AI</span>
+                <span style={{ fontSize: 11, color: "#B0B0B0", marginLeft: "auto" }}>자동 분석</span>
+              </div>
+              <p style={{
+                margin: 0, fontSize: 13, lineHeight: 1.7, color: "#5A3E28",
+                wordBreak: "keep-all",
+              }}>
+                {aiOpinion.content}
+              </p>
+              <p style={{ margin: "8px 0 0", fontSize: 11, color: "#C08050" }}>
+                ※ AI 의견은 참고용이며, 정확한 진단은 수의사 상담을 권장합니다.
+              </p>
+            </div>
+          )}
+
           {/* 댓글 */}
           <div style={{ padding: "16px 20px" }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-              댓글 {DEMO_COMMENTS.length}개
+              댓글 {postComments.length}개
             </h3>
-            {DEMO_COMMENTS.map((c) => (
+            {postComments.map((c) => (
               <div key={c.id} style={{
                 padding: "12px 0", borderBottom: "1px solid #f0f0f0",
               }}>
@@ -195,7 +228,7 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
 
         {/* 목록 버튼 */}
         <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
-          <Link href="/" style={{
+          <Link href="/community" style={{
             border: "1px solid #ddd", padding: "8px 24px", borderRadius: 4,
             fontSize: 13, color: "#333", textDecoration: "none", background: "#fff",
           }}>
