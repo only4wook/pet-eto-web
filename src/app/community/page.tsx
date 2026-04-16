@@ -45,7 +45,7 @@ function CommunityContent() {
 
         {/* 카테고리 탭 */}
         <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 4 }}>
-          {["전체", "질문", "일상", "후기", "논문", "행사"].map((c) => (
+          {["전체", "질문", "일상", "후기", "가이드", "행사", "논문"].map((c) => (
             <Link key={c} href={c === "전체" ? "/community" : `/community?cat=${c}`} style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
               background: cat === c ? "#1D1D1F" : "#F3F4F6",

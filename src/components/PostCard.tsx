@@ -12,6 +12,7 @@ const CATEGORY_STYLE: Record<string, { bg: string; text: string; border: string 
   문의: { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },
   논문: { bg: "#FDF4FF", text: "#A21CAF", border: "#E9D5FF" },
   행사: { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0" },
+  가이드: { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },
 };
 
 export default function PostCard({ post, index }: { post: Post; index: number }) {

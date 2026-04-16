@@ -6,7 +6,7 @@ import Footer from "../../../components/Footer";
 import { supabase } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 
-const CATEGORIES = ["질문", "정보", "일상", "긴급", "후기", "문의", "논문", "행사"];
+const CATEGORIES = ["질문", "일상", "후기", "가이드", "행사", "논문", "긴급", "정보", "문의"];
 
 export default function WritePage() {
   const router = useRouter();
