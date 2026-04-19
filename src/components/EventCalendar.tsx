@@ -55,19 +55,18 @@ export default function EventCalendar() {
   const [selectedEvent, setSelectedEvent] = useState<typeof EVENTS_2026[number] | null>(null);
   const [selectedDay, setSelectedDay] = useState<{ month: number; day: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
+  // 한 달씩 좌우로 넘기는 방식 (사용자 피드백: "달력이 너무 많아, 좌우로 월별로")
+  const [viewMonth, setViewMonth] = useState<number>(TODAY_MONTH);
 
   useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 640);
-      setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
-    }
+    function handleResize() { setIsMobile(window.innerWidth < 640); }
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const columns = isMobile ? 1 : isTablet ? 2 : 3;
+  const prevMonth = () => setViewMonth((m) => (m === 1 ? 12 : m - 1));
+  const nextMonth = () => setViewMonth((m) => (m === 12 ? 1 : m + 1));
 
   function handleDayClick(month: number, day: number) {
     const events = getEventsForDay(month, day);
@@ -304,6 +303,46 @@ export default function EventCalendar() {
         </div>
       </div>
 
+      {/* 월별 네비게이션 (좌우 화살표) */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 20, marginBottom: 16,
+      }}>
+        <button onClick={prevMonth} aria-label="이전 달" style={navBtnStyle}>
+          ‹
+        </button>
+        <div style={{ textAlign: "center", minWidth: 120 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#1D1D1F", letterSpacing: "-0.02em" }}>
+            {YEAR}년 {MONTH_NAMES[viewMonth - 1]}
+          </div>
+          {viewMonth === TODAY_MONTH && (
+            <div style={{ fontSize: 11, color: "#FF6B35", fontWeight: 700, marginTop: 2 }}>
+              • 이번 달 •
+            </div>
+          )}
+        </div>
+        <button onClick={nextMonth} aria-label="다음 달" style={navBtnStyle}>
+          ›
+        </button>
+      </div>
+
+      {/* 오늘로 돌아가기 */}
+      {viewMonth !== TODAY_MONTH && (
+        <div style={{ textAlign: "center", marginBottom: 12 }}>
+          <button
+            onClick={() => setViewMonth(TODAY_MONTH)}
+            style={{
+              padding: "5px 14px", fontSize: 11, fontWeight: 700,
+              background: "#1D1D1F", color: "#fff",
+              border: "none", borderRadius: 999,
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            오늘로 돌아가기
+          </button>
+        </div>
+      )}
+
       {/* Selected event display */}
       {selectedEvent && (
         <div
@@ -365,15 +404,32 @@ export default function EventCalendar() {
         </div>
       )}
 
-      {/* Calendar grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: 12,
-        }}
-      >
-        {Array.from({ length: 12 }, (_, i) => renderMonth(i + 1))}
+      {/* 단일 월 렌더 */}
+      <div>{renderMonth(viewMonth)}</div>
+
+      {/* 이벤트 있는 월 빠른 점프 칩 */}
+      <div style={{
+        marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center",
+      }}>
+        <div style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600, width: "100%", textAlign: "center", marginBottom: 4 }}>
+          이벤트 있는 달로 바로 가기
+        </div>
+        {Array.from(new Set(EVENTS_2026.flatMap((e) => [e.startMonth, e.endMonth]))).sort((a, b) => a - b).map((m) => (
+          <button
+            key={m}
+            onClick={() => setViewMonth(m)}
+            style={{
+              padding: "5px 10px",
+              fontSize: 11, fontWeight: 700,
+              background: viewMonth === m ? "#FF6B35" : "#F3F4F6",
+              color: viewMonth === m ? "#fff" : "#4B5563",
+              border: "none", borderRadius: 999,
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            {m}월
+          </button>
+        ))}
       </div>
 
       {/* Footer */}
@@ -428,3 +484,19 @@ export default function EventCalendar() {
     </div>
   );
 }
+
+const navBtnStyle: React.CSSProperties = {
+  width: 40, height: 40,
+  borderRadius: "50%",
+  border: "1px solid #E5E7EB",
+  background: "#fff",
+  fontSize: 22, fontWeight: 700,
+  color: "#1D1D1F",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontFamily: "inherit",
+  lineHeight: 1,
+  padding: 0,
+};

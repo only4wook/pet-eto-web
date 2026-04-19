@@ -1,16 +1,28 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../lib/store";
 
-// 마이페이지용 "단골 동물병원" 카드
-// - 없을 때: 등록 폼
-// - 있을 때: 정보 + "지금 전화" + "응급 방문" 원클릭
+// 마이페이지 "단골 동물병원" 카드
+// - 등록 폼: 병원명 입력 시 카카오 로컬 API 자동 검색 → 선택하면 이름·전화·주소 자동 채움
+// - 카드: 원클릭 전화 버튼
 
 type FavoriteVet = {
   name: string;
   phone: string;
   address?: string;
+  lat?: number;
+  lng?: number;
+};
+
+type SearchResult = {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+  category: string;
+  lat: number;
+  lng: number;
 };
 
 export default function FavoriteVetCard() {
@@ -25,6 +37,47 @@ export default function FavoriteVetCard() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // 자동 검색 상태
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [searchHint, setSearchHint] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 병원명 입력 시 debounce 검색
+  useEffect(() => {
+    if (!editing) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = name.trim();
+    if (q.length < 2) { setResults([]); setShowResults(false); return; }
+
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      setSearchHint(null);
+      try {
+        const res = await fetch(`/api/vet-search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        setResults(data.results || []);
+        if (data.hint) setSearchHint(data.hint);
+        setShowResults(true);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [name, editing]);
+
+  const pickResult = (r: SearchResult) => {
+    setName(r.name);
+    setPhone(r.phone || "");
+    setAddress(r.address || "");
+    setShowResults(false);
+    setResults([]);
+  };
+
   const save = async () => {
     if (!user) return;
     if (!name.trim() || !phone.trim()) { setMsg("병원명과 전화번호는 필수예요."); return; }
@@ -35,7 +88,6 @@ export default function FavoriteVetCard() {
       .eq("id", user.id);
     setSaving(false);
     if (error) {
-      // favorite_vet 컬럼이 없는 경우
       if (error.message.includes("favorite_vet") || error.code === "42703") {
         setMsg("DB 마이그레이션이 필요합니다. 관리자에게 문의해주세요.");
       } else {
@@ -70,10 +122,89 @@ export default function FavoriteVetCard() {
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800 }}>단골 동물병원 등록</h3>
         </div>
         <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 14px", lineHeight: 1.6 }}>
-          등록하면 <b>응급 시 원클릭 전화</b>가 가능해요. 피드에 증상 올리면 우선 안내됩니다.
+          병원명 2글자만 입력하면 <b>카카오 지도 기반으로 자동 검색</b>됩니다.
+          응급 상황 시 <b>원클릭 전화</b>로 바로 연결돼요.
         </p>
 
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="병원명 (예: 고양시24시동물병원)" style={inputStyle} />
+        {/* 병원명 입력 + 자동완성 */}
+        <div style={{ position: "relative", marginBottom: 8 }}>
+          <input
+            value={name}
+            onChange={(e) => { setName(e.target.value); if (!editing) setEditing(true); }}
+            placeholder="병원명 (예: 고양시24시동물병원)"
+            style={inputStyle}
+            autoComplete="off"
+          />
+          {searching && (
+            <div style={{ position: "absolute", right: 12, top: 11, fontSize: 11, color: "#9CA3AF" }}>
+              검색중...
+            </div>
+          )}
+
+          {showResults && results.length > 0 && (
+            <ul style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0, right: 0,
+              background: "#fff",
+              border: "1px solid #E5E7EB",
+              borderRadius: 10,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+              maxHeight: 280,
+              overflowY: "auto",
+              zIndex: 20,
+              margin: 0, padding: 0, listStyle: "none",
+            }}>
+              {results.map((r) => (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => pickResult(r)}
+                    style={{
+                      width: "100%", textAlign: "left",
+                      padding: "10px 12px",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      borderBottom: "1px solid #F3F4F6",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1D1D1F" }}>
+                      🏥 {r.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>
+                      📍 {r.address}
+                    </div>
+                    {r.phone && (
+                      <div style={{ fontSize: 11, color: "#059669", marginTop: 2 }}>
+                        📞 {r.phone}
+                      </div>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {showResults && !searching && results.length === 0 && name.trim().length >= 2 && (
+            <div style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0, right: 0,
+              background: "#FAFAFA",
+              border: "1px dashed #D1D5DB",
+              borderRadius: 10,
+              padding: "10px 12px",
+              fontSize: 12, color: "#6B7280",
+              zIndex: 20,
+            }}>
+              검색 결과 없음. 아래 필드에 직접 입력하셔도 돼요.
+              {searchHint && <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 3 }}>({searchHint})</div>}
+            </div>
+          )}
+        </div>
+
         <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="전화번호 (예: 031-123-4567)" style={inputStyle} />
         <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="주소 (선택)" style={inputStyle} />
 
@@ -89,8 +220,8 @@ export default function FavoriteVetCard() {
             border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700,
             cursor: "pointer", fontFamily: "inherit",
           }}>{saving ? "저장 중..." : "저장"}</button>
-          {editing && (
-            <button onClick={() => setEditing(false)} style={{
+          {editing && favorite && (
+            <button onClick={() => { setEditing(false); setMsg(""); }} style={{
               padding: "9px 14px", background: "#fff", color: "#6B7280",
               border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 13, fontWeight: 600,
               cursor: "pointer", fontFamily: "inherit",

@@ -51,10 +51,9 @@ export function generateAnonymousNickname(seed?: string): string {
   return `${adj}${noun}${num}`;
 }
 
-// 표시용 닉네임 안전 처리 — 최소한의 방어선 (사용자가 직접 입력한 닉네임은 존중)
-// 차단 대상: 이메일·UUID·카카오/구글 OAuth ID처럼 '명확히 식별자 형태'인 것만
-// 일반 영문+숫자 닉네임(gsh941025 등)은 사용자 의도일 수 있으므로 **그대로 표시**.
-// 개인정보가 걱정되면 사용자가 /mypage에서 본인이 바꿀 수 있게 해야 함.
+// 표시용 닉네임 안전 처리 — 피드/커뮤니티에 노출되는 모든 표시 이름 필터
+// 사용자 피드백: "로그인한 아이디(이메일) 대신 회원가입 닉네임만 나오게"
+// → 이메일 형태(영문+숫자), 로그인 아이디 패턴은 자동으로 익명 닉네임으로 대체
 export function safeNickname(nickname: string | null | undefined, fallbackSeed?: string): string {
   if (!nickname) return generateAnonymousNickname(fallbackSeed);
   const n = String(nickname).trim();
@@ -74,6 +73,17 @@ export function safeNickname(nickname: string | null | undefined, fallbackSeed?:
   // 4) 너무 긴 닉네임 (36자 초과) → 차단
   if (n.length > 36) return generateAnonymousNickname(fallbackSeed);
 
-  // 그 외에는 사용자가 입력한 닉네임을 그대로 존중
+  // 5) 이메일 로그인 아이디 스타일(영문+숫자 4자리↑, 한글 없음) → 차단
+  //    예: gsh941025, kim0825, only4wook123
+  //    한글이 포함된 닉네임("멍멍이2024")은 사용자 의도이므로 통과
+  const hasHangul = /[가-힣]/.test(n);
+  if (!hasHangul) {
+    if (/^[a-z]+\d{3,}$/i.test(n)) return generateAnonymousNickname(fallbackSeed);
+    if (/^[a-z]{2,}[._-]?\d{3,}$/i.test(n)) return generateAnonymousNickname(fallbackSeed);
+  }
+
+  // 6) 순수 숫자 (6자리↑) → 차단
+  if (/^\d{6,}$/.test(n)) return generateAnonymousNickname(fallbackSeed);
+
   return n;
 }

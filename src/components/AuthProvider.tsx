@@ -78,10 +78,16 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         data = newProfile as any;
       }
 
-      // 닉네임이 완전히 비어있거나 이메일(@ 포함)만 자동 보정.
-      // 사용자가 직접 설정한 닉네임은 절대 덮어쓰지 않음.
+      // 닉네임이 "이메일 로그인 아이디"로 노출되는 경우 자동 보정:
+      //  - 비어있음
+      //  - @ 포함 (이메일 자체)
+      //  - 이메일 로컬파트(@ 앞)와 완전 일치 (ex. gsh941025@gmail.com의 'gsh941025')
+      // → 익명 닉네임으로 교체. 사용자가 /mypage에서 원하는 닉네임으로 재설정 가능.
+      const emailLocal = (data?.email || "").split("@")[0].toLowerCase();
       const nicknameNeedsFix = data && (
-        !data.nickname || String(data.nickname).includes("@")
+        !data.nickname ||
+        String(data.nickname).includes("@") ||
+        (!!emailLocal && String(data.nickname).toLowerCase() === emailLocal)
       );
       if (nicknameNeedsFix) {
         const fixed = generateAnonymousNickname(data!.id);
@@ -135,7 +141,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             data = newProfile as any;
           }
           // 비어있거나 이메일(@)만 자동 보정. 사용자 설정 닉네임은 존중.
-          const needsFix2 = data && (!data.nickname || String(data.nickname).includes("@"));
+          const emailLocal2 = (data?.email || "").split("@")[0].toLowerCase();
+          const needsFix2 = data && (
+            !data.nickname ||
+            String(data.nickname).includes("@") ||
+            (!!emailLocal2 && String(data.nickname).toLowerCase() === emailLocal2)
+          );
           if (needsFix2) {
             const fixed = generateAnonymousNickname(data!.id);
             await supabase.from("users").update({ nickname: fixed }).eq("id", data!.id);
