@@ -51,8 +51,10 @@ export function generateAnonymousNickname(seed?: string): string {
   return `${adj}${noun}${num}`;
 }
 
-// 표시용 닉네임 안전 처리 — 이메일/UUID/ID가 닉네임 자리에 들어와 있으면 익명 닉네임으로 마스킹
-// 개인정보 보호: 로그인 계정 식별자가 절대 피드/커뮤니티에 노출되지 않도록 방어선 역할
+// 표시용 닉네임 안전 처리 — 최소한의 방어선 (사용자가 직접 입력한 닉네임은 존중)
+// 차단 대상: 이메일·UUID·카카오/구글 OAuth ID처럼 '명확히 식별자 형태'인 것만
+// 일반 영문+숫자 닉네임(gsh941025 등)은 사용자 의도일 수 있으므로 **그대로 표시**.
+// 개인정보가 걱정되면 사용자가 /mypage에서 본인이 바꿀 수 있게 해야 함.
 export function safeNickname(nickname: string | null | undefined, fallbackSeed?: string): string {
   if (!nickname) return generateAnonymousNickname(fallbackSeed);
   const n = String(nickname).trim();
@@ -61,27 +63,17 @@ export function safeNickname(nickname: string | null | undefined, fallbackSeed?:
   // 1) 이메일 (@ 포함) → 차단
   if (n.includes("@")) return generateAnonymousNickname(fallbackSeed);
 
-  // 2) UUID 형식 (예: 8d2f5a...-...) → 차단
+  // 2) UUID → 차단
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(n)) {
     return generateAnonymousNickname(fallbackSeed);
   }
 
-  // 3) 순수 숫자 또는 랜덤 해시처럼 보이는 문자열 → 차단
-  if (/^\d{6,}$/.test(n)) return generateAnonymousNickname(fallbackSeed);
-  if (/^[a-f0-9]{16,}$/i.test(n)) return generateAnonymousNickname(fallbackSeed);
-
-  // 4) 카카오 OAuth ID (kakao_xxxxxxxx 형식) → 차단
+  // 3) OAuth 프로바이더 ID (kakao_123456 등) → 차단
   if (/^(kakao|google|naver)[_-]?\d+$/i.test(n)) return generateAnonymousNickname(fallbackSeed);
 
-  // 5) 지나치게 긴 닉네임 (24자 초과) → 개인정보 포함 가능성 → 차단
-  if (n.length > 24) return generateAnonymousNickname(fallbackSeed);
+  // 4) 너무 긴 닉네임 (36자 초과) → 차단
+  if (n.length > 36) return generateAnonymousNickname(fallbackSeed);
 
-  // 6) "영문+숫자4자리 이상" 패턴 (예: gsh941025, kim0825) → 이메일 로컬파트/아이디 가능성
-  //    생년월일/전화번호 끝자리 노출 위험 → 익명 닉네임으로 마스킹
-  //    단, 한글이 포함된 닉네임(예: "포메2024")은 제외 — 의도적인 영문+숫자 닉네임만 차단
-  const hasHangul = /[가-힣]/.test(n);
-  const looksLikeEmailLocal = /^[a-z]+\d{4,}$/i.test(n) || /^[a-z]{2,}[._-]?\d{4,}$/i.test(n);
-  if (!hasHangul && looksLikeEmailLocal) return generateAnonymousNickname(fallbackSeed);
-
+  // 그 외에는 사용자가 입력한 닉네임을 그대로 존중
   return n;
 }

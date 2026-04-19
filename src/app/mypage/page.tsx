@@ -11,6 +11,7 @@ import type { Pet } from "../../types";
 
 export default function MyPage() {
   const user = useAppStore((s) => s.user);
+  const setUser = useAppStore((s) => s.setUser);
   const [showExpertForm, setShowExpertForm] = useState(false);
   const [myPets, setMyPets] = useState<Pet[]>([]);
   const [myPostCount, setMyPostCount] = useState(0);
@@ -18,6 +19,36 @@ export default function MyPage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myFeeds, setMyFeeds] = useState<any[]>([]);
+  const [editingNick, setEditingNick] = useState(false);
+  const [newNick, setNewNick] = useState("");
+  const [nickSaving, setNickSaving] = useState(false);
+  const [nickMsg, setNickMsg] = useState("");
+
+  const saveNickname = async () => {
+    if (!user) return;
+    const n = newNick.trim();
+    if (n.length < 2 || n.length > 12) { setNickMsg("2~12자로 입력해주세요."); return; }
+    if (n.includes("@")) { setNickMsg("이메일은 닉네임으로 쓸 수 없어요."); return; }
+    setNickSaving(true);
+    setNickMsg("");
+
+    // 중복 확인
+    const { data: dup } = await supabase.from("users").select("id").eq("nickname", n).neq("id", user.id).maybeSingle();
+    if (dup) {
+      setNickSaving(false);
+      setNickMsg("이미 사용 중인 닉네임입니다.");
+      return;
+    }
+
+    const { error } = await supabase.from("users").update({ nickname: n }).eq("id", user.id);
+    setNickSaving(false);
+    if (error) { setNickMsg("변경 실패: " + error.message); return; }
+
+    setUser({ ...user, nickname: n });
+    setEditingNick(false);
+    setNickMsg("닉네임이 변경되었습니다.");
+    setTimeout(() => setNickMsg(""), 3000);
+  };
 
   useEffect(() => {
     if (user && user.id !== "demo-user") {
@@ -68,12 +99,52 @@ export default function MyPage() {
               }}>
                 {user?.nickname?.charAt(0) ?? "?"}
               </div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>{user?.nickname}</span>
-                  <GradeBadge points={points} role={(user as any)?.role} />
-                </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {editingNick ? (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                    <input
+                      value={newNick}
+                      onChange={(e) => setNewNick(e.target.value)}
+                      placeholder="새 닉네임 (2~12자)"
+                      maxLength={12}
+                      autoFocus
+                      style={{
+                        padding: "7px 10px", fontSize: 14, borderRadius: 6,
+                        border: "1px solid #D1D5DB", outline: "none", fontFamily: "inherit",
+                      }}
+                    />
+                    <button onClick={saveNickname} disabled={nickSaving} style={{
+                      padding: "7px 12px", fontSize: 12, fontWeight: 700,
+                      background: "#FF6B35", color: "#fff", border: "none", borderRadius: 6,
+                      cursor: "pointer", fontFamily: "inherit",
+                    }}>{nickSaving ? "저장 중..." : "저장"}</button>
+                    <button onClick={() => { setEditingNick(false); setNickMsg(""); }} style={{
+                      padding: "7px 10px", fontSize: 12, fontWeight: 600,
+                      background: "#fff", color: "#6B7280", border: "1px solid #E5E7EB", borderRadius: 6,
+                      cursor: "pointer", fontFamily: "inherit",
+                    }}>취소</button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 18, fontWeight: 700 }}>{user?.nickname}</span>
+                    <GradeBadge points={points} role={(user as any)?.role} />
+                    <button
+                      onClick={() => { setNewNick(user?.nickname || ""); setEditingNick(true); }}
+                      aria-label="닉네임 변경"
+                      style={{
+                        padding: "3px 8px", fontSize: 11, fontWeight: 600,
+                        background: "#F3F4F6", color: "#4B5563", border: "1px solid #E5E7EB", borderRadius: 999,
+                        cursor: "pointer", fontFamily: "inherit",
+                      }}
+                    >✏️ 변경</button>
+                  </div>
+                )}
                 <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>{user?.email}</div>
+                {nickMsg && (
+                  <div style={{ fontSize: 12, color: nickMsg.includes("실패") || nickMsg.includes("이미") ? "#DC2626" : "#059669", marginTop: 4 }}>
+                    {nickMsg}
+                  </div>
+                )}
               </div>
             </div>
 
