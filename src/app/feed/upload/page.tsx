@@ -173,6 +173,7 @@ export default function FeedUploadPage() {
       const ts = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
       let imageUrl = "";
+      let analysisImageFile: File | null = null;
 
       if (mediaType === "video") {
         // 동영상: 원본 업로드 + 썸네일 추출
@@ -190,6 +191,7 @@ export default function FeedUploadPage() {
           await storageClient.storage.from("feed-images").upload(thumbName, thumb, { contentType: "image/jpeg", upsert: true });
           const { data: thumbUrl } = storageClient.storage.from("feed-images").getPublicUrl(thumbName);
           imageUrl = thumbUrl.publicUrl;
+          analysisImageFile = new File([thumb], thumbName, { type: "image/jpeg" });
         } catch {
           // 썸네일 실패 시 비디오 URL 사용
           const { data: vUrl } = storageClient.storage.from("feed-images").getPublicUrl(videoName);
@@ -206,6 +208,7 @@ export default function FeedUploadPage() {
           const uploadData = await uploadRes.json();
           if (uploadRes.ok && uploadData.url) {
             imageUrl = uploadData.url;
+            analysisImageFile = mediaFile;
           } else {
             throw new Error(uploadData.error || "업로드 실패");
           }
@@ -216,15 +219,15 @@ export default function FeedUploadPage() {
         // imageUrl은 위에서 이미 설정됨
       }
 
-      // AI 분석: 이미지가 있으면 Gemini Vision, 없으면 텍스트 분석
+      // AI 분석: 이미지/영상(썸네일)이 있으면 Gemini Vision, 없으면 텍스트 분석
       setLoadingMsg("AI 분석 중...");
       let analysis: any = analyzeSymptoms(description, species); // 텍스트 기본 분석
       let aiImageAnalysis = "";
 
-      if (mediaType === "image" && mediaFile) {
+      if (analysisImageFile) {
         try {
           const aiFd = new FormData();
-          aiFd.append("file", mediaFile);
+          aiFd.append("file", analysisImageFile);
           aiFd.append("description", description);
           aiFd.append("species", species);
           const aiRes = await fetch("/api/analyze-image", { method: "POST", body: aiFd });

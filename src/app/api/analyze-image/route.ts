@@ -81,6 +81,11 @@ const IMAGE_ANALYSIS_TASK = `
 - moderate: 2~3일 내 병원 권장 (FGS 4~6)
 - urgent: 24시간 내 병원 필수 (FGS 7+)
 
+중요한 판정 규칙:
+- "normal"은 얼굴/자세/호흡/문제 부위가 충분히 선명하게 확인될 때만 사용.
+- 사진이 흐리거나 가려져서 판단이 어렵다면 normal 금지. 최소 mild 또는 moderate로 분류하고 "평가 제한(각도/화질/가림)"을 명시.
+- 침흘림·입벌림 호흡·눈/코 분비물·기립 이상·극심한 무기력 징후가 보이면 normal 금지.
+
 🏠 **지금 집에서 할 것**
 구체적 행동 3~5개. "지켜보세요" 같은 무의미한 지시 금지.
 
@@ -122,6 +127,42 @@ const IMAGE_ANALYSIS_TASK = `
 bbox 좌표는 이미지 기준 0~1 정규화 값. 문제 부위가 식별될 때만 채우고, 없으면 빈 배열 [].
 정확한 위치 모를 때는 bbox 생략해도 됨(거짓 정보 금지).
 `;
+
+const UNCERTAIN_PATTERNS = [
+  "판단이 어렵",
+  "평가 불가",
+  "확인이 어렵",
+  "화질",
+  "흐리",
+  "가려",
+  "각도",
+  "부분만",
+  "명확하지",
+  "제한적",
+  "불충분",
+];
+
+const RED_FLAG_PATTERNS = [
+  "침흘",
+  "유연",
+  "drool",
+  "입벌",
+  "mouth open",
+  "호흡",
+  "헥헥",
+  "pant",
+  "콧물",
+  "눈물",
+  "분비물",
+  "무기력",
+  "축 처",
+  "웅크",
+  "비정상 자세",
+];
+
+function includesAny(text: string, patterns: string[]) {
+  return patterns.some((p) => text.includes(p));
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -205,6 +246,21 @@ export async function POST(req: NextRequest) {
       else if (lower.includes("moderate") || rawText.includes("주의")) severity = "moderate";
       else if (lower.includes("mild") || rawText.includes("관찰")) severity = "mild";
     }
+
+    // FGS 점수 기반 강제 보정 (모델 텍스트 오판 방지)
+    if (typeof structured.fgs_total === "number") {
+      if (structured.fgs_total >= 7) severity = "urgent";
+      else if (structured.fgs_total >= 4 && severity !== "urgent") severity = "moderate";
+      else if (structured.fgs_total >= 3 && severity === "normal") severity = "mild";
+    }
+
+    // "정상 오판" 방지 가드레일: 불확실/레드플래그 단어가 있으면 정상 금지
+    const guardText = `${displayAnalysis}\n${description}`.toLowerCase();
+    const hasUncertain = includesAny(guardText, UNCERTAIN_PATTERNS);
+    const hasRedFlag = includesAny(guardText, RED_FLAG_PATTERNS);
+    if (severity === "normal" && hasRedFlag) severity = "moderate";
+    else if (severity === "normal" && hasUncertain) severity = "mild";
+    else if (severity === "mild" && hasRedFlag) severity = "moderate";
 
     return NextResponse.json({
       success: true,
