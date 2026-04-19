@@ -107,22 +107,38 @@ export default function Header() {
           display: "flex", gap: 0, whiteSpace: "nowrap", alignItems: "center",
         }}>
           {[
-            { label: "홈", href: "/" },
-            { label: "피드", href: "/feed" },
-            { label: "위키", href: "/wiki" },
-            { label: "커뮤니티", href: "/community" },
-            { label: "마이", href: "/mypage" },
+            { label: "홈", href: "/", highlight: false },
+            { label: "피드", href: "/feed", highlight: false },
+            { label: "건강체크", href: "/ai", highlight: true },
+            { label: "위키", href: "/wiki", highlight: false },
+            { label: "커뮤니티", href: "/community", highlight: false },
+            { label: "마이", href: "/mypage", highlight: false },
           ].map((item) => (
             <Link key={item.label} href={item.href} style={{
-              color: "rgba(255,255,255,0.85)", padding: "12px 16px", fontSize: 14,
-              fontWeight: 500, textDecoration: "none", display: "block", flexShrink: 0,
-              letterSpacing: "-0.01em",
+              color: item.highlight ? "#FF6B35" : "rgba(255,255,255,0.85)",
+              padding: "12px 16px", fontSize: 14,
+              fontWeight: item.highlight ? 700 : 500,
+              textDecoration: "none", display: "flex", alignItems: "center", gap: 6,
+              flexShrink: 0, letterSpacing: "-0.01em",
               transition: "color 0.15s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.85)")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = item.highlight ? "#FF8A5B" : "#fff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = item.highlight ? "#FF6B35" : "rgba(255,255,255,0.85)")}
             >
+              {item.highlight && (
+                <span aria-hidden="true" style={{
+                  width: 6, height: 6, borderRadius: "50%", background: "#FF6B35",
+                  boxShadow: "0 0 0 3px rgba(255,107,53,0.25)",
+                }} />
+              )}
               {item.label}
+              {item.highlight && (
+                <span style={{
+                  fontSize: 10, fontWeight: 800, padding: "1px 6px",
+                  borderRadius: 8, background: "rgba(255,107,53,0.18)",
+                  color: "#FFB38A", letterSpacing: "0.02em",
+                }}>AI</span>
+              )}
             </Link>
           ))}
           {/* 카톡 상담 */}
