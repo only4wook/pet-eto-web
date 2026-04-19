@@ -239,7 +239,7 @@ export default function AIResultCard({
 
             {/* 3. 24시 병원 찾기 (긴급만) */}
             {severity === "urgent" && (
-              <Link href="/#ai-chat" style={ctaSecondary}>
+              <Link href="/ai" style={ctaSecondary}>
                 <span style={{ fontSize: 18 }}>🏥</span>
                 <div style={{ flex: 1, textAlign: "left" }}>
                   <div style={{ fontSize: 13, fontWeight: 800 }}>근처 24시 동물병원 찾기</div>

@@ -41,10 +41,10 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: "AI 건강 상담",
-        short_name: "AI 상담",
+        name: "AI 건강체크",
+        short_name: "건강체크",
         description: "증상·품종·비용을 AI에게 즉시 묻기",
-        url: "/#ai-chat",
+        url: "/ai",
         icons: [{ src: "/favicon-pet.svg", sizes: "64x64" }],
       },
       {

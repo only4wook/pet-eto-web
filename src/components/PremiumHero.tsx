@@ -134,9 +134,9 @@ export default function PremiumHero() {
                 <path d="M5 12h14M13 5l7 7-7 7" />
               </svg>
             </a>
-            <a href="#ai-chat" className="btn-secondary-xl">
-              AI 건강 상담
-            </a>
+            <Link href="/ai" className="btn-secondary-xl">
+              AI 건강체크
+            </Link>
           </div>
 
           {/* 신뢰 지표 3개 — 인라인 */}

@@ -7,11 +7,12 @@ import { usePathname } from "next/navigation";
 // 요소: 큰 아이콘(26px), Active Pill, 스프링 바운스, Haptic-like press
 
 // "AI 상담" 대신 고객 입장 워딩 → "건강체크"
-// (사용자 임장: '내 아이 괜찮나?' 싶을 때 바로 누를 버튼 의미)
+// (사용자 입장: '내 아이 괜찮나?' 싶을 때 바로 누를 버튼 의미)
+// 건강체크 탭은 /ai 전용 페이지로 → 메인 스크롤 없이 AI와 즉시 대화
 const TABS = [
   { label: "홈", href: "/", icon: HomeIcon, match: (p: string) => p === "/" },
   { label: "피드", href: "/feed", icon: FeedIcon, match: (p: string) => p.startsWith("/feed") },
-  { label: "건강체크", href: "/#ai-chat", icon: CheckIcon, match: (p: string) => false /* 앵커 이동이므로 active 표시 없음 */ },
+  { label: "건강체크", href: "/ai", icon: CheckIcon, match: (p: string) => p.startsWith("/ai") },
   { label: "위키", href: "/wiki", icon: WikiIcon, match: (p: string) => p.startsWith("/wiki") },
   { label: "커뮤", href: "/community", icon: CommunityIcon, match: (p: string) => p.startsWith("/community") },
   { label: "마이", href: "/mypage", icon: MyIcon, match: (p: string) => p.startsWith("/mypage") || p.startsWith("/auth") },

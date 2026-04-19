@@ -12,7 +12,7 @@ const ITEMS = [
     emoji: "🤖",
     title: "내 아이 상태가 걱정될 때",
     body: "사진 한 장 올리면 AI가 30초 안에 건강 상태를 분석해요. FGS 통증 지수·응급도까지 숫자로.",
-    cta: { label: "지금 상담해보기", href: "/#ai-chat" },
+    cta: { label: "지금 상담해보기", href: "/ai" },
     accent: "#0EA5E9",
   },
   {
