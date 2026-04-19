@@ -20,10 +20,21 @@ function isRateLimitError(message: string) {
   return m.includes("429") || m.includes("rate limit") || m.includes("quota");
 }
 
-function computeBackoffSeconds(retryCount: number) {
-  const base = 30; // 30s
-  const exp = Math.min(Math.max(retryCount, 0), 8); // cap to avoid extreme waits
-  return Math.min(base * (2 ** exp), 3600); // max 1h
+// Gemini 무료 티어: 15 RPM / ~1500 RPD
+// 짧은 백오프는 분당 제한(RPM) 회복용, 긴 백오프는 일별 쿼터(RPD) 회복용
+// 수동 reset 없이 자연스럽게 다음 쿼터 리셋까지 대기하도록 스케줄 설계
+const RATE_LIMIT_BACKOFF_SCHEDULE_SEC = [
+  5 * 60,       // retry 1: 5분 (RPM 회복)
+  30 * 60,      // retry 2: 30분
+  2 * 60 * 60,  // retry 3: 2시간
+  6 * 60 * 60,  // retry 4: 6시간
+  12 * 60 * 60, // retry 5: 12시간
+  24 * 60 * 60, // retry 6+: 24시간 (일별 쿼터 완전 리셋 대기)
+];
+
+function computeRateLimitBackoffSeconds(retryCount: number) {
+  const idx = Math.min(Math.max(retryCount - 1, 0), RATE_LIMIT_BACKOFF_SCHEDULE_SEC.length - 1);
+  return RATE_LIMIT_BACKOFF_SCHEDULE_SEC[idx];
 }
 
 async function analyzeViaInternalApi(post: {
@@ -46,6 +57,57 @@ async function analyzeViaInternalApi(post: {
   const analyze = await analyzeRes.json();
   if (!analyzeRes.ok || !analyze?.analysis) throw new Error(analyze?.error || "analyze failed");
   return analyze;
+}
+
+// GET /api/reanalyze-queue — 큐 상태 진단 (쿼터 대기 중인지 파악용)
+export async function GET(req: NextRequest) {
+  try {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY 미설정." }, { status: 500 });
+    }
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    const expected = process.env.REANALYZE_QUEUE_TOKEN;
+    if (!expected || token !== expected) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: all, error } = await sb
+      .from("feed_reanalysis_queue")
+      .select("id, feed_post_id, status, retry_count, queued_at, last_error")
+      .order("queued_at", { ascending: true });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const rows = all || [];
+    const ready = rows.filter((r) => r.status === "pending" && r.queued_at <= nowIso);
+    const deferred = rows.filter((r) => r.status === "pending" && r.queued_at > nowIso);
+    const processing = rows.filter((r) => r.status === "processing");
+    const failed = rows.filter((r) => r.status === "failed");
+    const done = rows.filter((r) => r.status === "done");
+
+    return NextResponse.json({
+      ok: true,
+      now: nowIso,
+      summary: {
+        ready_now: ready.length,
+        deferred_future: deferred.length,
+        processing: processing.length,
+        failed: failed.length,
+        done_total: done.length,
+      },
+      deferred: deferred.map((r) => ({
+        queue_id: r.id,
+        feed_post_id: r.feed_post_id,
+        retry_count: r.retry_count,
+        next_retry_at: r.queued_at,
+        minutes_until_retry: Math.max(0, Math.round((new Date(r.queued_at).getTime() - Date.now()) / 60000)),
+        last_error: r.last_error,
+      })),
+    });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || "server error" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -133,12 +195,15 @@ export async function POST(req: NextRequest) {
 
         if (isRateLimitError(errMessage)) {
           const nextRetryCount = Number(job.retry_count || 0) + 1;
-          const waitSec = computeBackoffSeconds(nextRetryCount);
+          const waitSec = computeRateLimitBackoffSeconds(nextRetryCount);
           const nextQueuedAt = new Date(Date.now() + waitSec * 1000).toISOString();
+          // 다음 재시도 시각을 명시적으로 표시 (운영자가 이해하기 쉽게)
+          failures[failures.length - 1].reason =
+            `${errMessage} → ${Math.round(waitSec / 60)}분 뒤 자동 재시도 (${nextQueuedAt})`;
           await sb.from("feed_reanalysis_queue").update({
             status: "pending",
             retry_count: nextRetryCount,
-            last_error: errMessage,
+            last_error: `[rate_limit retry=${nextRetryCount}] ${errMessage}`,
             started_at: null,
             finished_at: null,
             queued_at: nextQueuedAt,
