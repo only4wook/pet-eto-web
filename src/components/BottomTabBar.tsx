@@ -6,9 +6,12 @@ import { usePathname } from "next/navigation";
 // 레퍼런스: iOS Tab Bar, 안드로이드 Material 3 Bottom Nav, 당근/토스/인스타
 // 요소: 큰 아이콘(26px), Active Pill, 스프링 바운스, Haptic-like press
 
+// "AI 상담" 대신 고객 입장 워딩 → "건강체크"
+// (사용자 임장: '내 아이 괜찮나?' 싶을 때 바로 누를 버튼 의미)
 const TABS = [
   { label: "홈", href: "/", icon: HomeIcon, match: (p: string) => p === "/" },
   { label: "피드", href: "/feed", icon: FeedIcon, match: (p: string) => p.startsWith("/feed") },
+  { label: "건강체크", href: "/#ai-chat", icon: CheckIcon, match: (p: string) => false /* 앵커 이동이므로 active 표시 없음 */ },
   { label: "위키", href: "/wiki", icon: WikiIcon, match: (p: string) => p.startsWith("/wiki") },
   { label: "커뮤", href: "/community", icon: CommunityIcon, match: (p: string) => p.startsWith("/community") },
   { label: "마이", href: "/mypage", icon: MyIcon, match: (p: string) => p.startsWith("/mypage") || p.startsWith("/auth") },
@@ -47,12 +50,11 @@ export default function BottomTabBar() {
           justifyContent: "space-around",
           alignItems: "center",
           height: 68,
-          // 큰 폰(아이폰 Pro Max·갤럭시 Ultra·아이패드 미니)에서도 탭이 좌측으로 몰리지 않게
-          // 화면 전체 너비를 100% 쓰되, 과도하게 퍼지지 않게 max-width로 제한 + 가운데 정렬
+          // 6탭 대응 — 모든 폰에서 균등 분포 + 데스크톱에서도 가운데 정렬
           width: "100%",
-          maxWidth: 520,
+          maxWidth: 640,
           margin: "0 auto",
-          padding: "0 6px",
+          padding: "0 4px",
           boxSizing: "border-box",
         }}
       >
@@ -89,9 +91,9 @@ export default function BottomTabBar() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 56,
-                  height: 32,
-                  borderRadius: 16,
+                  width: 44,
+                  height: 30,
+                  borderRadius: 15,
                   background: active ? "rgba(255,107,53,0.14)" : "transparent",
                   transform: active ? "translateY(-1px) scale(1)" : "scale(1)",
                   transition: "background 0.25s cubic-bezier(0.2,0.8,0.2,1), transform 0.25s cubic-bezier(0.2,0.8,0.2,1)",
@@ -103,10 +105,11 @@ export default function BottomTabBar() {
               {/* 라벨 */}
               <span
                 style={{
-                  fontSize: 11,
+                  fontSize: 10.5,
                   fontWeight: active ? 700 : 500,
-                  letterSpacing: "-0.01em",
+                  letterSpacing: "-0.02em",
                   lineHeight: 1,
+                  whiteSpace: "nowrap",
                   transition: "color 0.2s ease, font-weight 0.2s ease",
                 }}
               >
@@ -159,6 +162,24 @@ function FeedIcon({ active }: { active: boolean }) {
       <rect x="3" y="3" width="18" height="18" rx="3" />
       <circle cx="8.5" cy="10" r="1.8" fill="#8E8E93" stroke="none" />
       <path d="m3 17 5-5 4 4 4-4 5 5" />
+    </svg>
+  );
+}
+
+function CheckIcon({ active }: { active: boolean }) {
+  // "건강체크" — 청진기/하트+체크 모티프 (피드·위키 사이의 핵심 진입점)
+  if (active) {
+    return (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="#FF6B35" aria-hidden="true">
+        <path d="M12 2.1 3 9.5V21a1 1 0 0 0 1 1h5v-7h6v7h5a1 1 0 0 0 1-1V9.5L12 2.1z" opacity="0" />
+        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm4.3 7.3-4.9 4.9a1 1 0 0 1-1.4 0L7.7 11.9a1 1 0 0 1 1.4-1.4l1.6 1.6 4.2-4.2a1 1 0 0 1 1.4 1.4z" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <path d="m8 12 3 3 5-6" />
     </svg>
   );
 }

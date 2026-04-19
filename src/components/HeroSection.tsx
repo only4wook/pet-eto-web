@@ -492,39 +492,28 @@ export default function HeroSection() {
 
   return (
     <section id="ai-chat" className="hero-section" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* ── 상단 CTA 스트립 (5%) ── */}
+      {/* ── 상단 CTA 스트립 — 중복 배지 제거 (이미 신뢰 그리드에서 설명) ── */}
       <div className="hero-cta" style={{
         background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB",
-        padding: "16px 20px",
+        padding: "14px 20px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         flexWrap: "wrap", gap: 12,
       }}>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#1D1D1F", margin: 0, letterSpacing: "-0.03em" }}>
-            우리 아이를 안전하게 연결해드려요
+          <h1 style={{ fontSize: 16, fontWeight: 800, color: "#1D1D1F", margin: 0, letterSpacing: "-0.02em" }}>
+            펫 전문가 1:1 매칭 상담
           </h1>
-          <p style={{ fontSize: 13, color: "#6B7280", margin: "4px 0 0" }}>
-            검증된 펫시터 · AI 건강 분석 · 안전 결제
+          <p style={{ fontSize: 12, color: "#6B7280", margin: "3px 0 0" }}>
+            카톡으로 문의 → 매니저가 10분 내 응답
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          {["3단계 검증", "AI 분석", "실시간 보고", "안전 결제"].map((label) => (
-            <span key={label} style={{
-              fontSize: 12, color: "#6B7280", background: "#F9FAFB",
-              border: "1px solid #E5E7EB", borderRadius: 20, padding: "5px 14px",
-              fontWeight: 500, whiteSpace: "nowrap",
-            }} className="pc-only">
-              {label}
-            </span>
-          ))}
-          <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
-            background: "#1D1D1F", color: "#fff", padding: "8px 18px",
-            borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
-            whiteSpace: "nowrap",
-          }}>
-            매칭 요청
-          </a>
-        </div>
+        <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
+          background: "#1D1D1F", color: "#fff", padding: "8px 18px",
+          borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
+          whiteSpace: "nowrap", flexShrink: 0,
+        }}>
+          매칭 요청
+        </a>
       </div>
 
       {/* ── AI 채팅 (80%) ── */}
