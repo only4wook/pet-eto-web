@@ -17,7 +17,14 @@ export default function Header() {
   };
 
   return (
-    <header style={{ background: "#fff", borderBottom: "1px solid #E5E7EB" }}>
+    <header style={{
+      background: "#fff",
+      borderBottom: "1px solid #E5E7EB",
+      paddingTop: "env(safe-area-inset-top, 0)",
+      position: "sticky",
+      top: 0,
+      zIndex: 30,
+    }}>
       {/* PC 상단 바 */}
       <div className="container-pet" style={{ padding: "0 16px" }}>
         <div className="pc-only" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 40 }}>

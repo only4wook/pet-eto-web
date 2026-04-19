@@ -81,6 +81,17 @@
 
   * { box-sizing: border-box; }
 
+  /* Safe Area 전역 변수 — 아이폰 노치·다이나믹아일랜드·홈인디케이터·안드로이드 제스처 바 */
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    /* 하단 탭바 높이 상수 (safe area 제외, safe area는 별도로 더함) */
+    --tabbar-height: 68px;
+    --tabbar-total: calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+
   body {
     background: var(--color-bg);
     color: var(--color-text);
@@ -91,8 +102,11 @@
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* 모바일 가로 스크롤 방지 — 어떤 자식이 overflow 해도 body는 잠근다 */
+    /* 모바일 가로 스크롤 방지 */
     overflow-x: hidden;
+    /* 가로 방향 safe area (아이폰 가로모드 노치 쪽) */
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
   }
   html { overflow-x: hidden; }
 
@@ -245,8 +259,20 @@
   .sidebar-hide-mobile { display: none !important; }
   .mobile-only { display: flex !important; }
 
-  /* 하단 탭바 + 플로팅 버튼 공간 확보 (탭바 68 + safe-area) */
-  body { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0)) !important; }
+  /* 하단 탭바 + 플로팅 버튼 공간 확보 (탭바 68 + safe-area-bottom) */
+  body { padding-bottom: var(--tabbar-total) !important; }
+
+  /* PWA standalone 모드(홈 화면에서 실행) — 상단 safe area 확보 + 선택 방지 */
+  html, body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* 텍스트 영역은 선택 가능해야 함 */
+  input, textarea, [contenteditable], p, article, h1, h2, h3, h4, h5, h6, span.selectable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 
   /* 터치 타겟 최적화 — 300ms 딜레이 제거 + 피드백 */
   button, a {
