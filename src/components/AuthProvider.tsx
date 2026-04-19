@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAppStore } from "../lib/store";
+import { generateAnonymousNickname } from "../lib/utils";
 
 // 한국 시간(KST) 기준 오늘 날짜 (YYYY-MM-DD)
 function getKSTDate(): string {
@@ -55,16 +56,42 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       // 소셜 로그인 시 users 테이블에 프로필이 없으면 자동 생성
       if (!data) {
         const u = session.user;
+        // OAuth 제공자가 준 닉네임만 허용 (kakao: nickname, google: full_name/name).
+        // 이메일 앞부분은 아이디 노출 위험이 있어 사용하지 않고, 대신 익명 닉네임을 생성.
+        const oauthName =
+          u.user_metadata?.nickname ||
+          u.user_metadata?.full_name ||
+          u.user_metadata?.name ||
+          u.user_metadata?.user_name;
+        const safeName = oauthName && !String(oauthName).includes("@")
+          ? String(oauthName)
+          : generateAnonymousNickname(u.id);
         const newProfile = {
           id: u.id,
           email: u.email || "",
-          nickname: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "유저",
+          nickname: safeName,
           avatar_url: u.user_metadata?.avatar_url || null,
           points: 100,
           created_at: new Date().toISOString(),
         };
         await supabase.from("users").insert(newProfile);
         data = newProfile as any;
+      }
+
+      // 기존 유저 닉네임 자동 보정:
+      // 1) 비어있음 or @ 포함 (이메일이 닉네임으로 저장된 경우)
+      // 2) 이메일 로컬파트(@ 앞부분)와 동일한 경우 — 예: gsh941025@gmail.com → nickname "gsh941025"
+      //    개인정보(생년월일, 아이디) 노출 위험 → 익명 닉네임으로 일회성 교체
+      const emailLocal = (data?.email || "").split("@")[0].toLowerCase();
+      const nicknameNeedsFix = data && (
+        !data.nickname ||
+        String(data.nickname).includes("@") ||
+        (emailLocal && String(data.nickname).toLowerCase() === emailLocal)
+      );
+      if (nicknameNeedsFix) {
+        const fixed = generateAnonymousNickname(data!.id);
+        await supabase.from("users").update({ nickname: fixed }).eq("id", data!.id);
+        data = { ...data!, nickname: fixed };
       }
 
       setUser(data);
@@ -93,16 +120,36 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           // 소셜 로그인 시 자동 프로필 생성
           if (!data) {
             const u = session.user;
+            const oauthName =
+              u.user_metadata?.nickname ||
+              u.user_metadata?.full_name ||
+              u.user_metadata?.name ||
+              u.user_metadata?.user_name;
+            const safeName = oauthName && !String(oauthName).includes("@")
+              ? String(oauthName)
+              : generateAnonymousNickname(u.id);
             const newProfile = {
               id: u.id,
               email: u.email || "",
-              nickname: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "유저",
+              nickname: safeName,
               avatar_url: u.user_metadata?.avatar_url || null,
               points: 100,
               created_at: new Date().toISOString(),
             };
             await supabase.from("users").insert(newProfile);
             data = newProfile as any;
+          }
+          // 닉네임 자동 보정: 비어있음 / @포함 / 이메일 로컬파트와 동일
+          const emailLocal2 = (data?.email || "").split("@")[0].toLowerCase();
+          const needsFix2 = data && (
+            !data.nickname ||
+            String(data.nickname).includes("@") ||
+            (emailLocal2 && String(data.nickname).toLowerCase() === emailLocal2)
+          );
+          if (needsFix2) {
+            const fixed = generateAnonymousNickname(data!.id);
+            await supabase.from("users").update({ nickname: fixed }).eq("id", data!.id);
+            data = { ...data!, nickname: fixed };
           }
           if (data) setUser(data);
         } else {

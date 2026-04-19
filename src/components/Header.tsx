@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import GradeBadge from "./GradeBadge";
+import { safeNickname } from "../lib/utils";
 
 export default function Header() {
   const user = useAppStore((s) => s.user);
@@ -28,7 +29,7 @@ export default function Header() {
           <div style={{ display: "flex", gap: 8, fontSize: 12, alignItems: "center" }}>
             {user ? (
               <>
-                <span style={{ color: "#FF6B35", fontWeight: 700 }}>{user.nickname}</span>
+                <span style={{ color: "#FF6B35", fontWeight: 700 }}>{safeNickname(user.nickname, user.id)}</span>
                 <GradeBadge points={user.points} role={(user as any).role} />
                 <span style={{ color: "#2EC4B6", fontWeight: 600 }}>{user.points}P</span>
                 <span style={{ color: "#ddd" }}>|</span>
@@ -74,7 +75,7 @@ export default function Header() {
               background: user ? "#FF6B35" : "#ddd", display: "flex", alignItems: "center", justifyContent: "center",
               color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none",
             }}>
-              {user ? user.nickname.charAt(0) : "?"}
+              {user ? safeNickname(user.nickname, user.id).charAt(0) : "?"}
             </Link>
             {user && (
               <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} style={{

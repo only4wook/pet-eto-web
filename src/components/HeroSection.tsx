@@ -64,7 +64,7 @@ function findArea(q: string): string | null {
   return null;
 }
 
-// AI 응답 생성
+// AI 응답 생성 (룰 기반 폴백) — Gemini API 실패 시에만 사용
 function generateAIResponse(query: string): string {
   const q = query.toLowerCase().replace(/\s+/g, " ");
   const allBreeds = [...CAT_DATA.breeds, ...DOG_DATA.breeds];
@@ -86,7 +86,70 @@ function generateAIResponse(query: string): string {
     }
   }
 
-  // 0. 증상 상세 가이드 (최우선)
+  // 0.0 고양이 ↔ 강아지 싸움/갈등 (다종 합사 고빈도 질문) — findSymptomGuide 이전에 처리
+  //     findSymptomGuide의 텍스트 풀백이 "고양이/강아지" 단어만으로 엉뚱한 가이드를 잡는 문제 방지
+  {
+    const qq = cleanedQ || q;
+    const hasCat = qq.includes("고양이") || qq.includes("냥") || qq.includes("캣");
+    const hasDog = qq.includes("강아지") || qq.includes("멍") || qq.includes("댕") || /(?:^|\s)개(?:$|\s|가|랑|와|를|의)/.test(qq);
+    const hasConflict =
+      qq.includes("싸우") || qq.includes("싸운") || qq.includes("싸움") || qq.includes("싸웠") ||
+      qq.includes("다툼") || qq.includes("공격") || qq.includes("덤벼") || qq.includes("하악") ||
+      qq.includes("쫓") || qq.includes("할퀴") || qq.includes("으르렁") || qq.includes("짖");
+    if (hasCat && hasDog && hasConflict) {
+      return "🐱🐶 고양이와 강아지 싸움 — 단계별 해결\n\n놀라셨겠어요. 다행히 대부분 해결 가능한 상황이에요.\n\n⚠️ 심각도 먼저 판단\n• 피·상처 O → 즉시 분리 + 수의사 방문\n• 하악/으르렁/꼬리털 곤두섬 → 긴장 단계 (재설정 필요)\n• 강아지 추격·고양이 도망 → 놀이 오해 가능성 (위험)\n• 식사/수면 거부·숨기만 함 → 고양이 만성 스트레스\n\n📌 주요 원인 5가지\n1. 소통 방식 충돌 — 강아지 꼬리 흔들기 = 흥분, 고양이엔 위협 신호\n2. 자원 경쟁 — 밥·물·화장실·보호자 관심\n3. 강아지 포식 놀이 본능(프레이 드라이브) — 작게 움직이면 쫓는 본능\n4. 공간 부족 — 고양이는 수직 피난처(높은 곳) 필수\n5. 서열 스트레스 — 늦게 들어온 쪽이 보통 스트레스 큼\n\n🏠 오늘 바로 할 것\n1. 완전 분리 72시간 — 각자 다른 방, 시야 차단\n2. 고양이 수직 공간 — 캣타워/책장 위 피난처 확보 (강아지 접근 불가)\n3. 자원 분리 — 밥·물·화장실 전부 강아지 접근 불가 위치\n4. 페로몬 동시 사용 — Feliway(고양이용) + Adaptil(강아지용) 2주 이상\n5. 강아지 에너지 해소 — 산책 2회/일, 지치게 → 고양이 안 쫓음\n\n📅 단계적 재합사 (2~4주)\n1주차: 수건으로 냄새 교환, 문 사이로 서로 간식\n2주차: 베이비게이트 너머 시각 접촉, 긍정 연결\n3주차: 강아지 리드줄 + 고양이 탈출구 확보한 짧은 만남 (5분)\n4주차: 만남 시간 늘리기, 둘 다 편안하면 성공\n\n⛔ 절대 금지\n• 억지로 대면시키기 — 각인된 공포는 수개월 간다\n• 한쪽만 혼내기 — 서로 연관 짓기 학습 (더 악화)\n• 분무기 체벌 — 신뢰 파괴, 스트레스 2배\n\n🏥 전문가 기준\n• 피·상처 O → 동물병원 (검진 3~8만원)\n• 1개월 이상 호전 X → 반려동물 행동학 전문가\n• 행동상담 비용: 회당 10~20만원 (방문은 20~40만원)\n\n💡 혹시 이 아이들의 나이·중성화 여부·합사 시작 시점 알려주시면 더 정밀하게 조언드릴게요!";
+    }
+  }
+
+  // 0.1 독성 음식(초콜릿·자일리톨·포도·양파 등) 우선 — 증상 가이드보다 먼저 처리
+  //     "고양이가 초콜릿 먹었어" 같은 질문이 "이물질 삼킴"으로 잘못 매칭되는 문제 방지
+  const toxicFoodKeywords = ["초콜릿","자일리톨","포도","건포도","양파","마늘","파 ","카페인","알코올","술","아보카도","마카다미아","코코아","과자","사탕"];
+  if (toxicFoodKeywords.some((k) => q.includes(k))) {
+    const food = findFood(q);
+    if (food) return formatFoodResponse(food, query);
+  }
+
+  // 0.15 화상(인덕션·스토브·히터·뜨거운 물)
+  const isBurn = (q.includes("데였") || q.includes("데인") || q.includes("화상") || q.includes("뜨거운 물") || q.includes("끓는 물")) ||
+    ((q.includes("인덕션") || q.includes("전기레인지") || q.includes("난로") || q.includes("히터") || q.includes("스토브") || q.includes("가스레인지")) && (q.includes("데") || q.includes("올라") || q.includes("밟") || q.includes("닿")));
+  if (isBurn) {
+    const animal = q.includes("강아지") || q.includes("멍") ? "강아지" : "고양이";
+    return `🔥 ${animal} 화상 응급 대처\n\n놀라셨겠어요. 지금 당장 할 것부터 알려드릴게요.\n\n⚠️ 화상 정도 판단 (지금 확인)\n1. 1도 — 발바닥/피부 빨갛고 열감만 (집에서 처치 가능)\n2. 2도 — 수포(물집), 털 눌어붙음 (병원 필수)\n3. 3도 — 까맣게 변함, 흰색 두꺼운 딱지 (즉시 응급, 피부 이식 가능성)\n\n🏠 지금 당장 할 것\n1. 흐르는 찬물 10분 이상 — 미지근한 물 X, 얼음 X (혈관 수축으로 악화)\n2. 발을 들어 공기 접촉 줄이기 (통증↓)\n3. 연고·소독약 금지 (병원에서 딱지·감염 확인 방해)\n4. 넥카라 착용 — 핥으면 세균 감염\n5. 사진 찍어 병원에 보여주기\n\n🏥 병원 기준\n• 즉시: 수포·까만 부위·걷기 거부·떨림\n• 24시간 내: 붉기 지속, 밥 안 먹음\n• 예상 비용: 초진 3~5만원 + 소독·연고 2~5만원. 2도 이상이면 붕대·재진료 포함 15~30만원\n\n⛔ 재발 방지\n• 인덕션: 사용 직후 덮개/가드 설치\n• 조리 중 주방 출입 금지 게이트\n• 뜨거운 물 끓일 땐 뚜껑 덮기\n\n💡 ${animal}의 나이·체중과 어느 부위가 데였는지 알려주시면 더 정밀한 대처를 안내드릴게요.`;
+  }
+
+  // 0.16 염색/미용 화학 제품 문의
+  if ((q.includes("염색") || q.includes("탈색") || q.includes("펌") || q.includes("매니큐어") || q.includes("향수")) &&
+      (q.includes("되") || q.includes("가능") || q.includes("해도") || q.includes("시켜도") || q.includes("해볼") || q.includes("하고 싶"))) {
+    const animal = q.includes("강아지") || q.includes("멍") ? "강아지" : "고양이";
+    return `❌ ${animal} 염색/화학 미용 — 절대 금지\n\n결론부터 말씀드리면, 안 됩니다.\n\n⚠️ 의학적 이유 3가지\n1. 그루밍 시 화학물질 섭취 — ${animal}는 하루 수시간 털을 핥음. 사람용 염색약의 암모니아·과산화수소는 급성 중독(구토·간부전·사망 사례 다수)\n2. ${animal}의 피부는 사람의 1/5 두께 — 화학 화상·알레르기 쇼크 위험\n3. 스트레스성 심장 합병증 — 과한 자극만으로도 고양이는 심장마비 사례 보고 (국내 미용실 사망 사례 있음)\n\n⚖️ 법적 이슈\n동물보호법 제10조 — 외형 변형 미용은 학대로 분류될 수 있음. SNS 업로드는 신고 대상.\n\n✅ 안전한 대안\n1. 펫 전용 천연 컬러 스프레이 (식용 성분, 24시간 자연 소멸)\n2. 사진 앱 필터로 디지털 염색\n3. 옷·스카프·목줄로 스타일링\n\n💡 어떤 행사·상황에 쓰시려는지 알려주시면 맞춤 대안을 더 드릴게요.`;
+  }
+
+  // 0.165 식분증(자기 똥/다른 동물 똥 먹기 — Coprophagia)
+  const isCoprophagia = (q.includes("똥") || q.includes("대변") || q.includes("분변") || q.includes("변을") || q.includes("배설물")) &&
+    (q.includes("먹") || q.includes("삼키") || q.includes("핥") || q.includes("먹어") || q.includes("먹는"));
+  if (isCoprophagia) {
+    const animal = q.includes("강아지") || q.includes("멍") || q.includes("댕") ? "강아지" : "고양이";
+    return `🔍 ${animal} 식분증 (Coprophagia)\n\n당황스러우시죠. 흔한 행동이라 해결법이 있어요.\n\n⚠️ 심각도: 주의 — 건강 신호일 수 있어서 원인 파악이 중요\n\n📌 주요 원인 5가지\n1. 영양 흡수 장애 — 췌장염·장염으로 소화 못 한 영양소가 대변에 남아 다시 먹음 (가장 흔함)\n2. 사료 영양 부족 — 저품질 사료·비타민/효소 결핍\n3. 스트레스·불안 — 화장실 환경 나쁨, 다묘/다견 갈등, 집사 부재, 이사 등\n4. 학습된 행동 — 과거 배변 실수로 혼난 기억 → 증거 없애려고 먹음 / 관심 끌기\n5. 어린 개체·모견 본능 — 생후 6개월 미만은 정상 범위. 어미가 새끼 똥 치우는 본능\n\n🏠 오늘부터 할 것 (우선순위 순)\n1. **즉시 치우기 루틴** — 배변 후 3초 내 치우기. 기회 차단이 가장 효과적\n2. **사료 재점검** — 소화율 높은 프리미엄 사료로 교체 (원료 1순위가 고기인지 확인)\n3. **프로바이오틱스 + 소화효소 보충** — 약국·펫샵 (월 1~3만원)\n4. **놀이·산책 20~30분 추가** — 스트레스·지루함 감소\n5. **파인애플/호박 소량 급여 (강아지)** — 대변 맛을 쓰게 만듦 (고양이는 효과 약함)\n6. **혼내기 금지** — 관심을 주면 강화됨. 무반응으로 치우기만\n\n🏥 병원 기준\n• 체중 감소 동반 → 위장·췌장 검사 필수 (혈액검사 5~15만원, 분변검사 3~5만원)\n• 구토/설사 동반 → 즉시 병원\n• 1개월 이상 지속 → 행동 전문가 상담 (회당 10~20만원)\n\n⛔ 절대 하지 말 것\n• 입에서 억지로 빼기 (문 채로 달아남 → 학습)\n• 분무기·고함 (공포만 학습, 행동 고착)\n• 체벌 — 배변 자체를 숨기는 행동으로 악화\n\n💡 몇 살인지, 언제부터 시작했는지, 자기 똥인지 다른 동물 똥인지 알려주시면 더 정밀하게 원인을 좁혀드릴게요.`;
+  }
+
+  // 0.166 배변 실수 (소변·대변을 화장실 외 장소에)
+  const isPottyAccident = (q.includes("배변 실수") || q.includes("실수") || q.includes("아무데") || q.includes("아무데나") || q.includes("침대") || q.includes("이불") || q.includes("소파") || q.includes("카펫")) &&
+    (q.includes("소변") || q.includes("오줌") || q.includes("쉬") || q.includes("싸") || q.includes("대변") || q.includes("똥") || q.includes("용변"));
+  if (isPottyAccident && !isCoprophagia) {
+    const animal = q.includes("강아지") || q.includes("멍") ? "강아지" : "고양이";
+    return `🚽 ${animal} 배변 실수 — 원인별 접근\n\n걱정되시죠. 대부분 환경·건강 이슈로 해결 가능해요.\n\n⚠️ 심각도: 주의 — 의학적 원인 먼저 배제\n\n📌 우선 배제할 의학 원인\n1. 방광염·요도염 — 고양이 특히 흔함. 소변 자주/조금씩, 피 섞임\n2. 요로결석 — 수컷 고양이는 24시간 내 응급 가능\n3. 신장질환 — 노령동물에서 물 많이 마심 + 소변 많음\n4. 당뇨병 — 갈증·다뇨 동반\n5. 관절염 — 화장실 턱이 높아서 못 넘음 (시니어)\n\n→ 우선 병원에서 소변검사 (2~5만원) 권장\n\n📌 행동·환경 원인\n1. **화장실 자체 문제** — 너무 좁다·뚜껑 답답·냄새 남음·모래 이상\n2. **화장실 수 부족** — 고양이는 마릿수+1개가 기본 (2묘 = 3개)\n3. **위치 불량** — 시끄럽거나 개/사람 지나다니는 곳\n4. **스트레스 표출** — 이사·새 가족·가구 변경 등\n5. **영역 표시 (마킹)** — 중성화 안 한 수컷 / 집밖 동물 보고\n6. **노령견 인지장애** — 치매 초기 증상 가능\n\n🏠 이번 주 바로 실행\n1. 병원 소변검사 먼저 (의학 원인 O/X 판단)\n2. 화장실 추가 설치 + 모래 종류 바꿔보기 (2종 동시 비교)\n3. 실수한 자리 → 효소 세제로 완전 냄새 제거 (같은 곳에 또 함)\n4. 고양이: 페로몬(Feliway) 2주 / 강아지: Adaptil\n5. 강아지는 배변 성공 시 3초 내 간식 보상\n\n⛔ 금지\n• 코 박기·혼내기 — 보호자 앞에서 배변 거부로 악화\n• 실수한 자리 일반 세제 청소 — 효소 세제만 냄새 완전 제거\n\n💰 예상 비용\n• 소변검사: 2~5만원 / 혈액검사: 5~15만원\n• 방광염 치료: 5~20만원 (1~2주)\n• 요로결석 수술: 50~200만원 (남묘는 특히 주의)\n\n💡 언제부터, 어느 장소에, 소변인지 대변인지 알려주시면 원인을 더 좁혀드릴게요.`;
+  }
+
+  // 0.17 햄스터·조류·파충류 등 소형동물과 고양이/강아지 동거
+  const isSmallAnimalCohab = (q.includes("햄스터") || q.includes("기니피그") || q.includes("토끼") || q.includes("새") || q.includes("앵무") || q.includes("도마뱀") || q.includes("거북")) &&
+    (q.includes("같이") || q.includes("함께") || q.includes("키울") || q.includes("기르") || q.includes("합사") || q.includes("입양") || q.includes("들이"));
+  if (isSmallAnimalCohab) {
+    const target = q.includes("햄스터") ? "햄스터" : q.includes("기니피그") ? "기니피그" : q.includes("토끼") ? "토끼" : q.includes("앵무") ? "앵무새" : q.includes("새") ? "새" : "소형동물";
+    const predator = q.includes("고양이") ? "고양이" : q.includes("강아지") ? "강아지" : "반려동물";
+    return `⚠️ ${predator} + ${target} 동거 — 매우 신중해야 합니다\n\n질문 주셔서 다행이에요 — 들이기 전 상담이 제일 중요합니다.\n\n🚨 결론: 같은 공간에서의 자유 합사는 불가능에 가깝습니다\n\n📌 이유 (${predator}의 본능)\n1. ${target}의 크기·움직임·체온·소리는 ${predator} 사냥 본능을 95% 자극\n2. ${predator} 반응속도 0.1초 — 보호자 눈앞에서도 케이지를 덮치는 사례 보고\n3. ${target}은 스트레스만으로 쇼크사 가능 (${predator} 냄새·시선 자체가 치명적)\n4. 케이지 이중 잠금에도 사고 사례 다수\n\n🏠 정말 같이 키우고 싶다면\n1. 완전 분리 방 — ${predator}가 절대 들어올 수 없는 독립 공간\n2. 유리 케이지 + 이중 뚜껑 고정 (플라스틱은 부숨)\n3. ${target} 방 출입 시 ${predator} 다른 방에 격리\n4. 환기·위생으로 냄새 교차 최소화\n\n✅ 더 안전한 대안\n1. 다른 ${predator} (같은 종 합사가 가장 안전)\n2. 대형 거북이·도마뱀 (반응 없음)\n3. 수조 속 관상어 — ${predator}에게 자극만 주고 사고 위험 낮음\n\n💡 ${target}를 원하시는 이유(자녀 교육·관찰·저비용)를 알려주시면 상황별 최선안을 제안해드릴게요.`;
+  }
+
+  // 0. 증상 상세 가이드
   const symptomGuide = findSymptomGuide(cleanedQ || q);
   if (symptomGuide) {
     return formatSymptomResponse(symptomGuide, query);
@@ -269,7 +332,18 @@ function generateAIResponse(query: string): string {
   if (q.includes("물어") && (q.includes("뜯") || q.includes("가구") || q.includes("신발") || q.includes("소파") || q.includes("전선") || q.includes("벽"))) return "🦷 물어뜯기/파괴 행동\n\n원인:\n• 이갈이 (강아지 3~6개월): 가렵고 아파서 뜯음\n• 에너지 과잉: 운동 부족\n• 분리불안: 혼자 있을 때 파괴\n• 지루함/스트레스\n\n해결법:\n• 이갈이: 냉동 장난감, 치아 발달 간식 제공\n• 씹어도 되는 것 vs 안 되는 것 구분 훈련\n• 외출 시 콩(노즈워크 장난감)에 간식 채워주기\n• 전선 커버, 쓴맛 스프레이 활용\n• 하루 1~2시간 충분한 산책";
   if (q.includes("배변") && (q.includes("훈련") || q.includes("교육") || q.includes("가르") || q.includes("실수"))) return "🚽 배변 훈련\n\n🐶 강아지:\n1. 식후, 기상 후, 놀이 후 → 배변 장소로 유도\n2. 성공하면 즉시 칭찬+간식 (3초 이내!)\n3. 실수해도 혼내지 말기 (역효과)\n4. 냄새 제거 완벽히 (같은 곳에 또 함)\n5. 배변패드→야외 순서로 전환\n\n🐱 고양이:\n• 대부분 본능적으로 화장실 사용\n• 실수한다면: 화장실 위치/개수/모래 종류 점검\n• 화장실 수 = 고양이 수 + 1\n• 조용하고 프라이빗한 위치에 배치";
   if (q.includes("밤에") || q.includes("새벽") || q.includes("잠을 안") || q.includes("안 자") || q.includes("잠 안") || q.includes("야행성") || q.includes("뛰어다") || q.includes("운동회")) return "🌙 밤에 안 자는 문제\n\n🐱 고양이:\n• 정상: 고양이는 새벽 활동(던·더스크 활동)이 본능\n• '새벽 운동회'는 에너지 발산 행동\n• 해결: 자기 전 15~20분 격렬한 놀이 → 간식 → 수면 루틴\n• 놀아달라 울면: 반응하지 않기 (강화 방지)\n\n🐶 강아지:\n• 새끼 강아지: 적응 기간 (1~2주) 필요\n• 자기 전 산책+배변으로 에너지 소진\n• 크레이트 트레이닝으로 수면 공간 확립";
-  if (q.includes("합사") || q.includes("새 고양이") || q.includes("새고양이") || q.includes("새 강아지") || q.includes("새강아지") || q.includes("다묘") || q.includes("다견") || q.includes("합류") || q.includes("싸워") || q.includes("서열")) return "🤝 합사/새 동물 소개\n\n🐱 고양이 합사:\n1. 격리 기간: 최소 1~2주 (별도 방)\n2. 냄새 교환: 수건 교환, 문 사이로 간식\n3. 시각 접촉: 문 살짝 열기, 펜스 사용\n4. 직접 만남: 짧게 시작, 점차 늘리기\n5. 절대 서두르지 않기! 2~4주 걸릴 수 있음\n\n🐶 강아지 합사:\n1. 중립 지역(공원 등)에서 첫 만남\n2. 리드줄 착용한 채로\n3. 간식으로 긍정 연결\n4. 자원(밥그릇, 장난감) 분리";
+  // 고양이 ↔ 강아지 싸움/갈등 (가장 흔한 다종 합사 문제) — 합사 일반 핸들러보다 먼저 매칭
+  const catDogFighting =
+    (q.includes("고양이") || q.includes("냥") || q.includes("캣")) &&
+    (q.includes("강아지") || q.includes("멍") || q.includes("개") || q.includes("댕")) &&
+    (q.includes("싸우") || q.includes("싸운") || q.includes("싸움") || q.includes("다툼") ||
+     q.includes("공격") || q.includes("덤벼") || q.includes("하악") || q.includes("쫓") ||
+     q.includes("물어") || q.includes("할퀴") || q.includes("으르렁") || q.includes("짖"));
+  if (catDogFighting) {
+    return "🐱🐶 고양이와 강아지 싸움 — 단계별 해결\n\n놀라셨겠어요. 다행히 대부분 해결 가능한 상황이에요.\n\n⚠️ 심각도 먼저 판단\n• 피·상처 O → 즉시 분리 + 수의사 방문\n• 하악/으르렁/꼬리털 곤두섬 → 긴장 단계 (재설정 필요)\n• 강아지 추격·고양이 도망 → 놀이 오해 가능성 (위험)\n• 식사/수면 거부·숨기만 함 → 고양이 만성 스트레스\n\n📌 주요 원인 5가지\n1. 소통 방식 충돌 — 강아지 꼬리 흔들기 = 흥분, 고양이엔 위협 신호\n2. 자원 경쟁 — 밥·물·화장실·보호자 관심\n3. 강아지 포식 놀이 본능(프레이 드라이브) — 작게 움직이면 쫓는 본능\n4. 공간 부족 — 고양이는 수직 피난처(높은 곳) 필수\n5. 서열 스트레스 — 늦게 들어온 쪽이 보통 스트레스 큼\n\n🏠 오늘 바로 할 것\n1. 완전 분리 72시간 — 각자 다른 방, 시야 차단\n2. 고양이 수직 공간 — 캣타워/책장 위 피난처 확보 (강아지 접근 불가)\n3. 자원 분리 — 밥·물·화장실 전부 강아지 접근 불가 위치\n4. 페로몬 동시 사용 — Feliway(고양이용) + Adaptil(강아지용) 2주 이상\n5. 강아지 에너지 해소 — 산책 2회/일, 지치게 → 고양이 안 쫓음\n\n📅 단계적 재합사 (2~4주)\n1주차: 수건으로 냄새 교환, 문 사이로 서로 간식\n2주차: 베이비게이트 너머 시각 접촉, 긍정 연결\n3주차: 강아지 리드줄 + 고양이 탈출구 확보한 짧은 만남 (5분)\n4주차: 만남 시간 늘리기, 둘 다 편안하면 성공\n\n⛔ 절대 금지\n• 억지로 대면시키기 — 각인된 공포는 수개월 간다\n• 한쪽만 혼내기 — 서로 연관 짓기 학습 (더 악화)\n• 분무기 체벌 — 신뢰 파괴, 스트레스 2배\n\n🏥 전문가 기준\n• 피·상처 O → 동물병원 (검진 3~8만원)\n• 1개월 이상 호전 X → 반려동물 행동학 전문가\n• 행동상담 비용: 회당 10~20만원 (방문은 20~40만원)\n\n💡 혹시 이 아이들의 나이·중성화 여부·합사 시작 시점 알려주시면 더 정밀하게 조언드릴게요!";
+  }
+
+  if (q.includes("합사") || q.includes("새 고양이") || q.includes("새고양이") || q.includes("새 강아지") || q.includes("새강아지") || q.includes("다묘") || q.includes("다견") || q.includes("합류") || q.includes("싸워") || q.includes("싸운") || q.includes("싸움") || q.includes("서열")) return "🤝 합사/새 동물 소개\n\n🐱 고양이 합사:\n1. 격리 기간: 최소 1~2주 (별도 방)\n2. 냄새 교환: 수건 교환, 문 사이로 간식\n3. 시각 접촉: 문 살짝 열기, 펜스 사용\n4. 직접 만남: 짧게 시작, 점차 늘리기\n5. 절대 서두르지 않기! 2~4주 걸릴 수 있음\n\n🐶 강아지 합사:\n1. 중립 지역(공원 등)에서 첫 만남\n2. 리드줄 착용한 채로\n3. 간식으로 긍정 연결\n4. 자원(밥그릇, 장난감) 분리";
   if (q.includes("나이") || q.includes("몇 살") || q.includes("사람 나이") || q.includes("환산") || q.includes("수명")) return "📅 반려동물 나이 환산\n\n🐶 강아지 → 사람 나이:\n• 1살 = 약 15세\n• 2살 = 약 24세\n• 3살~ = 매년 +4~5세\n• 소형견 10살 ≈ 56세\n• 대형견 10살 ≈ 66세 (대형견이 더 빨리 노화)\n\n🐱 고양이 → 사람 나이:\n• 1살 = 약 15세\n• 2살 = 약 24세\n• 3살~ = 매년 +4세\n• 10살 ≈ 56세\n• 15살 ≈ 76세\n\n💡 7세 이상은 '시니어'로 연 2회 건강검진 권장";
   if (q.includes("등록") || q.includes("동물등록") || q.includes("마이크로칩") || q.includes("칩")) return "📋 동물등록 (의무!)\n\n⚖️ 2개월 이상 강아지는 동물등록 의무!\n미등록 시 과태료 100만원 이하\n\n방법:\n1. 내장형 칩 (권장): 동물병원에서 삽입, 1~3만원\n2. 외장형 인식표: 목걸이 부착\n\n등록처: 가까운 동물병원 또는 지자체\n확인: animal.go.kr\n\n💡 고양이는 의무는 아니지만 분실 대비 강력 권장!";
 
@@ -363,49 +437,57 @@ export default function HeroSection() {
     setSubmitted(true);
   }
 
-  function handleChat(e: React.FormEvent) {
+  async function handleChat(e: React.FormEvent) {
     e.preventDefault();
     if (!chatInput.trim()) return;
     const userMsg = chatInput.trim();
     setChatInput("");
     setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
     setThinking(true);
-    setTimeout(() => {
-      const qLower = userMsg.toLowerCase();
 
-      // 피드백 감지: "틀렸어", "아니야", "그게 아니라" 등
-      const isCorrection = ["틀렸","아니야","아닌데","그게 아니","이게 아니","잘못","다시","제대로","엉뚱","딴소리","헛소리","뭔소리","말도 안"].some((w) => qLower.includes(w));
-      if (isCorrection) {
-        // 이전 대화 맥락에서 원래 질문 찾기
-        const prevUserMsgs = messages.filter((m) => m.role === "user").map((m) => m.text);
-        const lastQ = prevUserMsgs[prevUserMsgs.length - 1] || "";
-        const reply = `죄송해요! 다시 분석해볼게요 🔄\n\n이전 질문: "${lastQ}"\n\n좀 더 구체적으로 말씀해주시면 정확한 답변을 드릴 수 있어요.\n\n예시:\n• "동작구 동물병원 알려줘"\n• "고양이가 구토를 해요"\n• "말티즈 슬개골 비용"\n\n💬 또는 카카오톡으로 직접 상담해보세요!`;
-        setMessages((prev) => [...prev, { role: "ai", text: reply }]);
+    const qLower = userMsg.toLowerCase();
+
+    // Gemini 우선 호출 — 모든 질문은 C-level 수의사 페르소나가 응답.
+    // 네트워크·API 키·쿼터 문제로 실패했을 때만 룰 기반 폴백이 작동.
+    try {
+      const res = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMsg,
+          history: messages.slice(-8),
+          pets: userPets.map((p) => ({ name: p.name, species: p.species, breed: p.breed })),
+        }),
+      });
+      const data = await res.json();
+
+      if (data.success && data.reply) {
+        setMessages((prev) => [...prev, { role: "ai", text: data.reply }]);
         setThinking(false);
         return;
       }
 
-      // 이전 대화 맥락 활용 (후속 질문)
+      // Gemini 실패 원인을 관리자 진단용으로 로깅 (사용자에겐 매끄럽게 폴백)
+      if (data.fallback) {
+        console.warn("[P.E.T AI] Gemini 폴백 모드 진입:", data.error || "unknown");
+      }
+
+      // Gemini 실패 → 룰 기반 폴백 (후속 질문 맥락 결합)
       const prevMsgs = messages.filter((m) => m.role === "user");
       const context = prevMsgs.length > 0 ? prevMsgs[prevMsgs.length - 1].text : "";
-
-      // "거기", "그 근처", "더 알려줘" 등 후속 질문 처리
       let enrichedQuery = userMsg;
       if (["거기","그 근처","그쪽","더 알려","자세히","추가로"].some((w) => qLower.includes(w)) && context) {
         enrichedQuery = context + " " + userMsg;
       }
-
-      let reply = generateAIResponse(enrichedQuery);
-      // 등록 반려동물 맥락 추가
-      if (userPets.length > 0) {
-        const petContext = userPets.map((p) =>
-          `${p.name}(${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}·${p.breed})`
-        ).join(", ");
-        reply += `\n\n🐾 등록된 반려동물: ${petContext}`;
-      }
+      const reply = generateAIResponse(enrichedQuery);
       setMessages((prev) => [...prev, { role: "ai", text: reply }]);
       setThinking(false);
-    }, 600);
+    } catch (err) {
+      // 네트워크 완전 차단 시에도 룰 기반 폴백
+      const reply = generateAIResponse(userMsg);
+      setMessages((prev) => [...prev, { role: "ai", text: reply }]);
+      setThinking(false);
+    }
   }
 
   return (

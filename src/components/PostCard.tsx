@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Post } from "../types";
-import { formatDate } from "../lib/utils";
+import { formatDate, safeNickname } from "../lib/utils";
 import GradeBadge from "./GradeBadge";
 
 const CATEGORY_STYLE: Record<string, { bg: string; text: string; border: string }> = {
@@ -69,7 +69,7 @@ export default function PostCard({ post, index }: { post: Post; index: number })
               marginTop: 6, fontSize: 12, color: "#9CA3AF",
             }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                {post.author?.nickname ?? "익명"}
+                {safeNickname(post.author?.nickname, (post.author as any)?.id)}
                 <GradeBadge points={post.author?.points ?? 0} role={(post.author as any)?.role} showLabel={false} />
               </span>
               <span>·</span>

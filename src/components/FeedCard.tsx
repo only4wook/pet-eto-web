@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import GradeBadge from "./GradeBadge";
-import { formatDate } from "../lib/utils";
+import { formatDate, safeNickname } from "../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../lib/symptomAnalyzer";
 import type { FeedPost } from "../types";
 
 export default function FeedCard({ post }: { post: FeedPost }) {
   const analysis = post.analysis_result;
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
+  const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
 
   return (
     <div style={{
@@ -21,11 +22,11 @@ export default function FeedCard({ post }: { post: FeedPost }) {
           display: "flex", alignItems: "center", justifyContent: "center",
           color: "#fff", fontSize: 14, fontWeight: 700, flexShrink: 0,
         }}>
-          {post.author?.nickname?.charAt(0) ?? "?"}
+          {displayNickname.charAt(0)}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>{post.author?.nickname ?? "익명"}</span>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{displayNickname}</span>
             <GradeBadge points={post.author?.points ?? 0} role={(post.author as any)?.role} showLabel={false} />
           </div>
           <div style={{ fontSize: 11, color: "#aaa" }}>
@@ -82,7 +83,7 @@ export default function FeedCard({ post }: { post: FeedPost }) {
         <div style={{ padding: "8px 16px 12px" }}>
           {/* 사용자 설명 */}
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "#333" }}>
-            <b style={{ marginRight: 6 }}>{post.author?.nickname}</b>
+            <b style={{ marginRight: 6 }}>{displayNickname}</b>
             {(post.description?.split("---")[0] || post.description || "").slice(0, 120)}
             {(post.description?.length || 0) > 120 ? "..." : ""}
           </p>

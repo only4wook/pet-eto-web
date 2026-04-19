@@ -930,36 +930,32 @@ export function findSymptomGuide(query: string): SymptomGuide | null {
 
   if (bestGuide) return bestGuide;
 
-  // 유사도 fallback 1: 4글자 이상 키워드 앞부분 매칭
-  for (const guide of SYMPTOM_GUIDES) {
-    for (const kw of guide.keywords) {
-      if (kw.length >= 4 && q.includes(kw.slice(0, 4))) {
-        return guide;
-      }
-    }
-  }
-
-  // 유사도 fallback 2: 가이드 title + 원인 텍스트에서 검색
-  const words = q.split(/\s+/).filter((w) => w.length >= 2);
+  // 유사도 fallback: 키워드 본문 검색 — 일반 명사("고양이"/"강아지"/"우리") 제외하고 증상 단어만 카운트
+  // 기존 로직은 "고양이"라는 단어만 있으면 엉뚱한 가이드를 매칭시키는 문제가 있었음.
+  const GENERIC_WORDS = new Set([
+    "고양이","강아지","반려동물","반려견","반려묘","우리","우리집","우리가","저희","저희집",
+    "냥이","멍멍","우리아기","우리집에","집에","집에서","저는","제가","그게","그런",
+    "있어요","있어","있나요","같아요","같아","돼요","되나요","해도","하나요","가능","가능해",
+    "어떻게","왜","무엇","뭐예요","뭐에요","뭐야",
+  ]);
+  const words = q.split(/\s+/).filter((w) => w.length >= 2 && !GENERIC_WORDS.has(w));
   if (words.length > 0) {
     let bestFallback: SymptomGuide | null = null;
     let bestFallbackScore = 0;
     for (const guide of SYMPTOM_GUIDES) {
-      const allText = [
-        guide.title,
-        ...guide.catCauses, ...guide.dogCauses, ...guide.commonCauses,
-        ...guide.homecare, guide.warning, guide.hospital,
-      ].join(" ").toLowerCase();
+      // 키워드에 힌트가 있을 때만 fallback 허용 (아예 무관한 가이드 매칭 방지)
+      const keywordText = guide.keywords.join(" ");
       let score = 0;
       for (const w of words) {
-        if (allText.includes(w)) score += w.length;
+        if (keywordText.includes(w)) score += w.length * 2; // 키워드 매칭은 2배 가중
       }
       if (score > bestFallbackScore) {
         bestFallbackScore = score;
         bestFallback = guide;
       }
     }
-    if (bestFallback && bestFallbackScore >= 4) return bestFallback;
+    // 최소 score를 훨씬 높게 (6 → 즉 3글자 단어 1개 + 알파 필요)
+    if (bestFallback && bestFallbackScore >= 6) return bestFallback;
   }
 
   return null;

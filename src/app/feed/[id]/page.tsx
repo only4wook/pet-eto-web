@@ -9,7 +9,7 @@ import VetClinicList from "../../../components/VetClinicList";
 import { supabase } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 import { DEMO_FEED } from "../../../lib/demoFeed";
-import { formatDate } from "../../../lib/utils";
+import { formatDate, safeNickname } from "../../../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../../../lib/symptomAnalyzer";
 import type { FeedPost, FeedComment } from "../../../types";
 
@@ -85,6 +85,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
 
   const analysis = post.analysis_result;
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
+  const authorNick = safeNickname(post.author?.nickname, (post.author as any)?.id);
 
   return (
     <>
@@ -98,11 +99,11 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "#fff", fontSize: 16, fontWeight: 700,
             }}>
-              {post.author?.nickname?.charAt(0) ?? "?"}
+              {authorNick.charAt(0)}
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <b style={{ fontSize: 14 }}>{post.author?.nickname}</b>
+                <b style={{ fontSize: 14 }}>{authorNick}</b>
                 <GradeBadge points={post.author?.points ?? 0} role={(post.author as any)?.role} />
               </div>
               <div style={{ fontSize: 11, color: "#aaa" }}>
@@ -136,7 +137,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
 
           {/* 설명 */}
           <div style={{ padding: "0 16px 12px", fontSize: 14, lineHeight: 1.7 }}>
-            <b>{post.author?.nickname}</b> {post.description}
+            <b>{authorNick}</b> {post.description}
           </div>
 
           {/* AI 분석 결과 — 모든 등급 표시 */}
@@ -199,7 +200,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#888" }}>댓글 {comments.length}개</div>
             {comments.map((c) => (
               <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid #f8f8f8" }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{c.author?.nickname}</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{safeNickname(c.author?.nickname, (c.author as any)?.id)}</span>
                 <span style={{ fontSize: 13, color: "#333", marginLeft: 8 }}>{c.content}</span>
                 <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>{formatDate(c.created_at)}</div>
               </div>

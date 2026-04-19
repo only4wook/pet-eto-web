@@ -7,7 +7,7 @@ import Footer from "../../components/Footer";
 import { supabase } from "../../lib/supabase";
 import { useAppStore } from "../../lib/store";
 import { CAT_DATA, DOG_DATA } from "../../lib/wikiData";
-import { formatDate } from "../../lib/utils";
+import { formatDate, safeNickname } from "../../lib/utils";
 import type { Post, FeedPost } from "../../types";
 
 export default function SearchPage() {
@@ -114,7 +114,7 @@ function SearchContent() {
                     <span style={{ fontSize: 14, fontWeight: 600, color: "#1F2937" }}>{p.title}</span>
                   </div>
                   <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
-                    {p.author?.nickname || "익명"} · {formatDate(p.created_at)} · 👁 {p.view_count}
+                    {safeNickname(p.author?.nickname, (p.author as any)?.id)} · {formatDate(p.created_at)} · 👁 {p.view_count}
                   </div>
                 </div>
               </Link>
@@ -136,7 +136,7 @@ function SearchContent() {
                     {f.description.slice(0, 100)}...
                   </div>
                   <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
-                    {f.author?.nickname || "익명"} · {formatDate(f.created_at)}
+                    {safeNickname(f.author?.nickname, (f.author as any)?.id)} · {formatDate(f.created_at)}
                   </div>
                 </div>
               </Link>

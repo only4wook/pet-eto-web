@@ -7,7 +7,7 @@ import Footer from "../../components/Footer";
 import GradeBadge from "../../components/GradeBadge";
 import { useAppStore } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
-import { formatDate, getCategoryColor } from "../../lib/utils";
+import { formatDate, getCategoryColor, safeNickname } from "../../lib/utils";
 import EventCalendar from "../../components/EventCalendar";
 import type { Post } from "../../types";
 
@@ -45,7 +45,7 @@ function CommunityContent() {
         </div>
 
         {/* 카테고리 탭 */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 4 }}>
+        <div className="cat-tabs" style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
           {["전체", "질문", "일상", "후기", "가이드", "행사", "논문", "긴급"].map((c) => (
             <Link key={c} href={c === "전체" ? "/community" : `/community?cat=${c}`} style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
@@ -73,7 +73,7 @@ function CommunityContent() {
         )}
 
         {/* 게시판 테이블 */}
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", tableLayout: "fixed" }}>
           <thead>
             <tr style={{ background: "#f8f8f8", borderBottom: "1px solid #e0e0e0" }}>
               <th style={{ ...th, width: 60 }}>번호</th>
@@ -98,16 +98,20 @@ function CommunityContent() {
                     [{post.category}]
                   </span>
                 </td>
-                <td style={{ ...td, textAlign: "left" }}>
-                  <Link href={`/community/${post.id}`} style={{ color: "#333", textDecoration: "none" }}>
-                    <span style={{ fontWeight: post.category === "긴급" ? 700 : 400 }}>{post.title}</span>
+                <td style={{ ...td, textAlign: "left", overflow: "hidden" }}>
+                  <Link href={`/community/${post.id}`} style={{ color: "#333", textDecoration: "none", display: "block", overflow: "hidden" }}>
+                    <span style={{
+                      fontWeight: post.category === "긴급" ? 700 : 400,
+                      display: "inline-block", maxWidth: "100%",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", verticalAlign: "middle",
+                    }}>{post.title}</span>
                     {post.comment_count > 0 && <span style={{ color: "#FF6B35", fontSize: 11, marginLeft: 4, fontWeight: 700 }}>[{post.comment_count}]</span>}
                     {post.is_expert_answered && <span style={{ background: "#2EC4B6", color: "#fff", fontSize: 10, padding: "1px 4px", borderRadius: 2, marginLeft: 6, fontWeight: 600 }}>전문가답변</span>}
                   </Link>
                 </td>
                 <td style={td}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                    <span>{post.author?.nickname ?? "익명"}</span>
+                    <span>{safeNickname(post.author?.nickname, (post.author as any)?.id)}</span>
                     <GradeBadge points={post.author?.points ?? 0} role={(post.author as any)?.role} showLabel={false} />
                   </div>
                 </td>

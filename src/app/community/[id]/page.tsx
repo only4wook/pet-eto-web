@@ -6,7 +6,7 @@ import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { useAppStore } from "../../../lib/store";
 import { supabase } from "../../../lib/supabase";
-import { formatDate, getCategoryColor } from "../../../lib/utils";
+import { formatDate, getCategoryColor, safeNickname } from "../../../lib/utils";
 import { COMMENTS_MAP, AI_OPINIONS } from "../../../lib/demoComments";
 import type { DemoComment } from "../../../lib/demoComments";
 
@@ -86,7 +86,7 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
               display: "flex", gap: 16, marginTop: 10, fontSize: 12, color: "#888",
               flexWrap: "wrap", alignItems: "center",
             }}>
-              <span><b style={{ color: "#333" }}>{post.author?.nickname}</b></span>
+              <span><b style={{ color: "#333" }}>{safeNickname(post.author?.nickname, (post.author as any)?.id)}</b></span>
               <span>{formatDate(post.created_at)}</span>
               <span>조회 {post.view_count}</span>
               <span>추천 {post.like_count}</span>
@@ -181,7 +181,7 @@ export default function PostDetail({ params }: { params: Promise<{ id: string }>
                 padding: "12px 0", borderBottom: "1px solid #f0f0f0",
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontWeight: 700, fontSize: 13, color: "#333" }}>{c.nickname}</span>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: "#333" }}>{safeNickname(c.nickname, c.id)}</span>
                   {c.is_expert && (
                     <span style={{
                       background: "#2EC4B6", color: "#fff", fontSize: 10,
