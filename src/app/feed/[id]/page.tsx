@@ -11,7 +11,20 @@ import { useAppStore } from "../../../lib/store";
 import { DEMO_FEED } from "../../../lib/demoFeed";
 import { formatDate, safeNickname } from "../../../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../../../lib/symptomAnalyzer";
-import type { FeedPost, FeedComment } from "../../../types";
+import type { FeedPost, FeedComment, ExpertAnswer, UserRole } from "../../../types";
+
+const ROLE_LABEL: Record<string, string> = {
+  vet: "🩺 수의사",
+  vet_student: "🎓 수의학 전공",
+  vet_clinic: "🏥 동물병원",
+  behaviorist: "🐾 행동 전문가",
+  petshop: "🏪 펫샵",
+  admin: "⚙️ 운영자",
+};
+
+function canAnswerAsExpert(role?: UserRole | null) {
+  return !!role && ["vet", "vet_student", "vet_clinic", "behaviorist", "admin"].includes(role);
+}
 
 export default function FeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -22,6 +35,11 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
   const [newComment, setNewComment] = useState("");
   const [showVets, setShowVets] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [expertAnswers, setExpertAnswers] = useState<ExpertAnswer[]>([]);
+  const [expertAnswer, setExpertAnswer] = useState("");
+  const [expertSeverity, setExpertSeverity] = useState<"normal" | "mild" | "moderate" | "urgent">("mild");
+  const [expertFollowUp, setExpertFollowUp] = useState(false);
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
@@ -60,7 +78,43 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
       .eq("feed_post_id", id)
       .order("created_at", { ascending: true })
       .then(({ data }) => { if (data) setComments(data); });
+
+    // 전문가 답변 로드 (테이블 미존재 시 조용히 무시)
+    supabase.from("expert_answers")
+      .select("*, expert:users(id, nickname, role, clinic_name, license_no, school_name, specialty, points)")
+      .eq("feed_post_id", id)
+      .order("created_at", { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data) setExpertAnswers(data as ExpertAnswer[]);
+      });
   }, [id]);
+
+  const handleExpertAnswer = async () => {
+    if (!expertAnswer.trim() || !user) return;
+    if (!canAnswerAsExpert(user.role)) { alert("전문가 계정만 답변할 수 있습니다."); return; }
+    setSubmittingAnswer(true);
+    const { data, error } = await supabase.from("expert_answers").insert({
+      feed_post_id: id,
+      expert_id: user.id,
+      content: expertAnswer.trim(),
+      expert_role: user.role,
+      expert_name: user.nickname,
+      expert_clinic: user.clinic_name ?? null,
+      expert_license: user.license_no ?? null,
+      severity_opinion: expertSeverity,
+      follow_up_recommended: expertFollowUp,
+    }).select("*, expert:users(id, nickname, role, clinic_name, license_no, school_name, specialty, points)").single();
+    setSubmittingAnswer(false);
+    if (error) {
+      alert("답변 저장 실패: " + error.message + "\n(Supabase 마이그레이션이 실행됐는지 확인해주세요)");
+      return;
+    }
+    if (data) {
+      setExpertAnswers((prev) => [...prev, data as ExpertAnswer]);
+      setExpertAnswer("");
+      setExpertFollowUp(false);
+    }
+  };
 
   const handleComment = async () => {
     if (!newComment.trim() || !user || user.id === "demo-user") return;
@@ -194,6 +248,161 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           )}
+
+          {/* ── 전문가 답변 섹션 ── */}
+          <div style={{ margin: "0 16px 16px" }}>
+            {/* 요청 상태 배지 */}
+            {post.request_expert && (
+              <div style={{
+                background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 8,
+                padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "#9A3412",
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
+                <span style={{ fontSize: 16 }}>👨‍⚕️</span>
+                <div style={{ flex: 1, lineHeight: 1.5 }}>
+                  <b>전문가 답변 요청 중</b>
+                  {post.expert_target && ` · 대상: ${post.expert_target === "vet" ? "수의사" : post.expert_target === "vet_clinic" ? "동물병원" : "행동 전문가"}`}
+                </div>
+                {post.expert_status === "answered" && (
+                  <span style={{ background: "#059669", color: "#fff", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 700 }}>
+                    답변 완료
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* 전문가 답변 목록 */}
+            {expertAnswers.map((a) => {
+              const sv = a.severity_opinion;
+              const svColor = sv === "urgent" ? "#DC2626" : sv === "moderate" ? "#D97706" : sv === "mild" ? "#0369A1" : sv === "normal" ? "#059669" : "#6B7280";
+              return (
+                <div key={a.id} style={{
+                  background: "#fff", border: "2px solid #FDBA74",
+                  borderRadius: 12, padding: 16, marginBottom: 10,
+                  boxShadow: "0 2px 8px rgba(255,107,53,0.08)",
+                }}>
+                  {/* 전문가 뱃지 헤더 */}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: "linear-gradient(135deg, #FF6B35, #F59E0B)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#fff", fontSize: 18, fontWeight: 800, flexShrink: 0,
+                    }}>✓</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700,
+                          background: "#1D1D1F", color: "#fff", padding: "2px 8px", borderRadius: 4,
+                        }}>
+                          {ROLE_LABEL[a.expert_role] || "전문가"}
+                        </span>
+                        <b style={{ fontSize: 14 }}>{a.expert_name || safeNickname(a.expert?.nickname, a.expert_id)}</b>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>
+                        {a.expert_clinic && <span>{a.expert_clinic} · </span>}
+                        {a.expert_license && <span>면허 {a.expert_license.slice(0, 4)}••• · </span>}
+                        <span>{formatDate(a.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 심각도 의견 */}
+                  {sv && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700,
+                        background: svColor + "15", color: svColor,
+                        padding: "3px 10px", borderRadius: 999,
+                      }}>
+                        {sv === "urgent" ? "🚨 긴급" : sv === "moderate" ? "⚠️ 주의" : sv === "mild" ? "💡 관찰" : "✅ 정상"}
+                      </span>
+                      {a.follow_up_recommended && (
+                        <span style={{ fontSize: 11, color: "#6B7280", fontWeight: 600 }}>
+                          내원 권장
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 본문 */}
+                  <div style={{ fontSize: 14, color: "#1D1D1F", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                    {a.content}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* 전문가 답변 삽입 폼 (전문가 계정만) */}
+            {user && canAnswerAsExpert(user.role) && !id.startsWith("df") && (
+              <div style={{
+                background: "#F9FAFB", border: "1px dashed #D1D5DB",
+                borderRadius: 10, padding: 14, marginBottom: 10,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#1D1D1F", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700,
+                    background: "#1D1D1F", color: "#fff", padding: "2px 6px", borderRadius: 4,
+                  }}>
+                    {ROLE_LABEL[user.role || "user"]}
+                  </span>
+                  <span>전문가로 답변하기</span>
+                </div>
+                <textarea
+                  value={expertAnswer}
+                  onChange={(e) => setExpertAnswer(e.target.value)}
+                  placeholder="진료 소견·처방·예상 비용까지 상세히 답변해주세요. (200~600자 권장)"
+                  style={{
+                    width: "100%", minHeight: 100, padding: "10px 12px",
+                    border: "1px solid #D1D5DB", borderRadius: 8, fontSize: 13, lineHeight: 1.6,
+                    outline: "none", fontFamily: "inherit", resize: "vertical",
+                  }}
+                />
+                <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                  {(["normal","mild","moderate","urgent"] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setExpertSeverity(s)}
+                      style={{
+                        padding: "6px 12px", borderRadius: 999,
+                        border: `1.5px solid ${expertSeverity === s ? "#FF6B35" : "#E5E7EB"}`,
+                        background: expertSeverity === s ? "#FFF7ED" : "#fff",
+                        color: expertSeverity === s ? "#C2410C" : "#4B5563",
+                        fontSize: 11, fontWeight: expertSeverity === s ? 700 : 500,
+                        cursor: "pointer", fontFamily: "inherit",
+                      }}
+                    >
+                      {s === "urgent" ? "🚨 긴급" : s === "moderate" ? "⚠️ 주의" : s === "mild" ? "💡 관찰" : "✅ 정상"}
+                    </button>
+                  ))}
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 12, color: "#4B5563", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={expertFollowUp}
+                    onChange={(e) => setExpertFollowUp(e.target.checked)}
+                    style={{ width: 14, height: 14, accentColor: "#FF6B35" }}
+                  />
+                  내원(병원 방문) 권장
+                </label>
+                <button
+                  onClick={handleExpertAnswer}
+                  disabled={submittingAnswer || !expertAnswer.trim()}
+                  style={{
+                    marginTop: 10, padding: "10px 16px",
+                    background: submittingAnswer || !expertAnswer.trim() ? "#D1D5DB" : "#FF6B35",
+                    color: "#fff", border: "none", borderRadius: 8,
+                    fontSize: 13, fontWeight: 700,
+                    cursor: submittingAnswer || !expertAnswer.trim() ? "default" : "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {submittingAnswer ? "등록 중..." : "전문가 답변 등록"}
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* 댓글 */}
           <div style={{ padding: "0 16px 16px" }}>

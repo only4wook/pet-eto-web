@@ -1,3 +1,5 @@
+export type UserRole = "user" | "vet" | "vet_student" | "vet_clinic" | "behaviorist" | "petshop" | "admin";
+
 export interface User {
   id: string;
   email: string;
@@ -5,6 +7,11 @@ export interface User {
   avatar_url: string | null;
   points: number;
   created_at: string;
+  role?: UserRole;
+  clinic_name?: string | null;
+  license_no?: string | null;
+  school_name?: string | null;
+  specialty?: string | null;
 }
 
 export interface Pet {
@@ -50,6 +57,9 @@ export interface Comment {
 }
 
 // 숏폼 피드
+export type ExpertTarget = "vet" | "vet_clinic" | "behaviorist";
+export type ExpertStatus = "none" | "pending" | "answered";
+
 export interface FeedPost {
   id: string;
   author_id: string;
@@ -62,6 +72,10 @@ export interface FeedPost {
   comment_count: number;
   created_at: string;
   author?: User;
+  // 전문가 답변 요청 메타 (2026-04-19 추가)
+  request_expert?: boolean;
+  expert_target?: ExpertTarget | null;
+  expert_status?: ExpertStatus;
 }
 
 export interface AnalysisResult {
@@ -78,6 +92,44 @@ export interface FeedComment {
   content: string;
   created_at: string;
   author?: User;
+}
+
+// 전문가 답변
+export interface ExpertAnswer {
+  id: string;
+  feed_post_id: string;
+  expert_id: string;
+  content: string;
+  expert_role: UserRole;
+  expert_name: string | null;
+  expert_clinic: string | null;
+  expert_license: string | null;
+  severity_opinion: "normal" | "mild" | "moderate" | "urgent" | null;
+  follow_up_recommended: boolean;
+  created_at: string;
+  expert?: User;
+}
+
+// 전문가 계정 신청
+export interface ExpertApplication {
+  id: string;
+  user_id: string;
+  requested_role: UserRole;
+  real_name: string;
+  clinic_name: string | null;
+  license_no: string | null;
+  school_name: string | null;
+  specialty: string | null;
+  experience_years: number | null;
+  license_doc_url: string | null;
+  intro: string | null;
+  phone: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewer_id: string | null;
+  reviewer_note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  user?: User;
 }
 
 export interface VetClinic {

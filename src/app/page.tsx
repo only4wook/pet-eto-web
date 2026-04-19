@@ -5,13 +5,15 @@ import PremiumHero from "../components/PremiumHero";
 import PremiumTrustGrid from "../components/PremiumTrustGrid";
 import HowItWorks from "../components/HowItWorks";
 import HeroSection from "../components/HeroSection";
+import FeedPreviewStream from "../components/FeedPreviewStream";
 
-// P.E.T 홈 — Awwwards급 리디자인 (Warm Trust × Premium Motion)
-// 섹션 순서 (핵심 서비스 = AI 챗을 히어로 바로 아래로 승격):
-//   1. PremiumHero — 대범한 헤드라인 + 라이브 소셜 프루프 + CTA
-//   2. AI Chat (HeroSection) — 핵심 서비스, 즉시 써볼 수 있게 상단 배치
-//   3. PremiumTrustGrid — 6가지 신뢰 시그널
-//   4. HowItWorks — 3단계 절차 (전환 CTA)
+// P.E.T 홈 — 핵심 서비스 = "피드 + 전문가 답변"으로 재구성
+// 섹션 순서:
+//   1. PremiumHero — 대범한 헤드라인 + CTA
+//   2. FeedPreviewStream — 실시간 피드 스트림 (메인 서비스)
+//   3. AI Chat (HeroSection) — 즉시 써볼 수 있는 AI 상담
+//   4. PremiumTrustGrid — 신뢰 시그널 6가지
+//   5. HowItWorks — 3단계 이용 절차
 
 export default function Home() {
   return (
@@ -20,12 +22,15 @@ export default function Home() {
       <main style={{ flex: 1 }}>
         <PremiumHero />
 
-        {/* ── AI 채팅 섹션 — 메인 서비스, 히어로 바로 아래 ── */}
+        {/* ── 메인 = 피드 스트림 ── */}
+        <FeedPreviewStream />
+
+        {/* ── AI 챗 섹션 ── */}
         <section
           id="ai-chat-section"
           style={{
             padding: "clamp(24px, 4vw, 48px) 0 clamp(48px, 7vw, 80px)",
-            background: "#FAFAFA",
+            background: "#fff",
           }}
         >
           <div
@@ -35,7 +40,7 @@ export default function Home() {
               textAlign: "center",
             }}
           >
-            <span className="eyebrow">지금 바로 AI에게 물어보세요</span>
+            <span className="eyebrow">즉시 AI 상담</span>
             <h2 className="text-display-md" style={{ margin: "14px 0 8px" }}>
               증상·품종·비용, <span className="text-accent-grad">30초 안에 전문 답변</span>
             </h2>
@@ -48,7 +53,8 @@ export default function Home() {
                 margin: "0 auto",
               }}
             >
-              서울대 수의대 출신 전문가 수준의 AI가 기다리고 있어요.
+              서울대 수의대 출신 전문가 수준의 AI가 기다리고 있어요. 자세한 진단은 피드에 올려
+              수의사 답변을 받아보세요.
             </p>
           </div>
           <div className="container-pet">

@@ -100,6 +100,8 @@ export default function FeedUploadPage() {
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("");
   const [alertData, setAlertData] = useState<AnalysisResult | null>(null);
+  const [requestExpert, setRequestExpert] = useState(false);
+  const [expertTarget, setExpertTarget] = useState<"vet" | "vet_clinic" | "behaviorist">("vet");
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -223,16 +225,31 @@ export default function FeedUploadPage() {
         } catch { /* Gemini 실패 시 텍스트 분석 유지 */ }
       }
 
-      // DB 저장
+      // DB 저장 (전문가 요청 시 request_expert 및 expert_status 'pending')
       setLoadingMsg("저장 중...");
-      const { error: insertError } = await supabase.from("feed_posts").insert({
+      const baseInsert: Record<string, any> = {
         author_id: user.id,
         image_url: imageUrl,
         description: description.trim() + (aiImageAnalysis ? "\n\n---\n🤖 AI 이미지 분석:\n" + aiImageAnalysis : ""),
         pet_name: petName.trim(),
         pet_species: species,
         analysis_result: analysis,
-      });
+      };
+      if (requestExpert) {
+        baseInsert.request_expert = true;
+        baseInsert.expert_target = expertTarget;
+        baseInsert.expert_status = "pending";
+      }
+      let { error: insertError } = await supabase.from("feed_posts").insert(baseInsert);
+      // DB에 request_expert 컬럼이 아직 없을 경우(마이그레이션 전) → 메타 제거하고 재시도
+      if (insertError && requestExpert && /column.*request_expert|expert_target|expert_status/i.test(insertError.message)) {
+        const fallback = { ...baseInsert };
+        delete fallback.request_expert;
+        delete fallback.expert_target;
+        delete fallback.expert_status;
+        const retry = await supabase.from("feed_posts").insert(fallback);
+        insertError = retry.error;
+      }
 
       if (insertError) { alert("저장 실패: " + insertError.message); setLoading(false); return; }
 
@@ -381,12 +398,77 @@ export default function FeedUploadPage() {
             {/* AI 분석 안내 */}
             <div style={{
               background: "#F0F9FF", border: "1px solid #BAE6FD", borderRadius: 8,
-              padding: "12px 14px", marginBottom: 16, fontSize: 12, color: "#0369A1", lineHeight: 1.6,
+              padding: "12px 14px", marginBottom: 12, fontSize: 12, color: "#0369A1", lineHeight: 1.6,
             }}>
               🤖 <b>AI 자동 건강 분석</b><br />
               작성하신 설명을 AI가 분석하여 건강 상태를 체크합니다.
               {mediaType === "video" && " 동영상은 썸네일을 자동 생성하여 피드에 표시합니다."}
               {" "}증상이 감지되면 주변 동물병원 정보도 함께 안내해드립니다.
+            </div>
+
+            {/* 전문가 답변 요청 체크박스 — 핵심 차별점 */}
+            <div style={{
+              background: requestExpert ? "#FFF7ED" : "#FAFAFA",
+              border: `1px solid ${requestExpert ? "#FDBA74" : "#E5E7EB"}`,
+              borderRadius: 10,
+              padding: "14px 16px",
+              marginBottom: 16,
+              transition: "all 0.15s",
+            }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={requestExpert}
+                  onChange={(e) => setRequestExpert(e.target.checked)}
+                  style={{ marginTop: 2, width: 18, height: 18, accentColor: "#FF6B35", cursor: "pointer" }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1D1D1F", lineHeight: 1.4 }}>
+                    👨‍⚕️ 전문가(수의사·동물병원·행동 전문가) 답변 요청
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4, lineHeight: 1.5 }}>
+                    체크하면 펫에토에 등록된 검증된 전문가가 <b>진료·약 처방·예상 비용</b>까지 직접 답변해드립니다.
+                    답변은 "○○ 동물병원 ○○ 수의사" 형식으로 신원이 공개됩니다.
+                  </div>
+                </div>
+              </label>
+
+              {requestExpert && (
+                <div style={{ marginTop: 14, paddingLeft: 28 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1D1D1F", marginBottom: 6 }}>
+                    답변 받고 싶은 전문가 유형
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {[
+                      { v: "vet", label: "🩺 수의사 (진료·처방)" },
+                      { v: "vet_clinic", label: "🏥 동물병원 (내원 상담)" },
+                      { v: "behaviorist", label: "🐾 행동 전문가 (훈련·심리)" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setExpertTarget(opt.v as any)}
+                        style={{
+                          padding: "7px 12px",
+                          borderRadius: 999,
+                          border: `1.5px solid ${expertTarget === opt.v ? "#FF6B35" : "#E5E7EB"}`,
+                          background: expertTarget === opt.v ? "#FFF7ED" : "#fff",
+                          color: expertTarget === opt.v ? "#C2410C" : "#4B5563",
+                          fontSize: 12,
+                          fontWeight: expertTarget === opt.v ? 700 : 500,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 8, lineHeight: 1.5 }}>
+                    ℹ️ 전문가 답변 평균 대기시간: 2~24시간 · 업체 제휴 추가 중
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 버튼 */}

@@ -7,7 +7,7 @@ import { CAT_DATA, DOG_DATA } from "../../lib/wikiData";
 import { getGrade } from "../../lib/grades";
 import type { User } from "../../types";
 
-type Tab = "users" | "posts" | "pages" | "analytics" | "images";
+type Tab = "users" | "posts" | "experts" | "pages" | "analytics" | "images";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -51,6 +51,7 @@ export default function AdminPage() {
           {[
             { key: "users" as Tab, label: "유저 관리" },
             { key: "posts" as Tab, label: "글 관리" },
+            { key: "experts" as Tab, label: "👨‍⚕️ 전문가 승인" },
             { key: "pages" as Tab, label: "📄 페이지 편집" },
             { key: "analytics" as Tab, label: "📊 사업 분석" },
             { key: "images" as Tab, label: "위키 이미지" },
@@ -66,6 +67,7 @@ export default function AdminPage() {
 
         {tab === "users" && <UserManagement />}
         {tab === "posts" && <PostManagement />}
+        {tab === "experts" && <ExpertManagement />}
         {tab === "pages" && <PageEditor />}
         {tab === "analytics" && <AnalyticsDashboard />}
         {tab === "images" && <ImageManagement />}
@@ -801,3 +803,142 @@ const btnStyle = (bg: string): React.CSSProperties => ({
   padding: "3px 8px", background: bg, color: "#fff", border: "none",
   borderRadius: 3, fontSize: 11, cursor: "pointer", fontWeight: 600,
 });
+
+// ============ 전문가 승인 탭 ============
+function ExpertManagement() {
+  const [apps, setApps] = useState<any[]>([]);
+  const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    let query = supabase.from("expert_applications")
+      .select("*, user:users(id, nickname, email, role, points)")
+      .order("created_at", { ascending: false });
+    if (filter !== "all") query = query.eq("status", filter);
+    const { data, error } = await query;
+    if (!error && data) setApps(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [filter]);
+
+  const updateStatus = async (app: any, newStatus: "approved" | "rejected") => {
+    const note = newStatus === "rejected" ? prompt("반려 사유 (선택):") : null;
+    const { error } = await supabase.from("expert_applications").update({
+      status: newStatus,
+      reviewer_note: note,
+      reviewed_at: new Date().toISOString(),
+    }).eq("id", app.id);
+
+    if (error) { alert("상태 변경 실패: " + error.message); return; }
+
+    // DB 트리거가 없을 경우 대비 — 승인이면 users.role 수동 업데이트
+    if (newStatus === "approved") {
+      await supabase.from("users").update({
+        role: app.requested_role,
+        clinic_name: app.clinic_name,
+        license_no: app.license_no,
+        school_name: app.school_name,
+        specialty: app.specialty,
+      }).eq("id", app.user_id);
+    }
+
+    alert(`${newStatus === "approved" ? "승인" : "반려"} 완료`);
+    load();
+  };
+
+  const roleLabel = (r: string) => ({
+    vet: "🩺 수의사", vet_clinic: "🏥 동물병원",
+    behaviorist: "🐾 행동 전문가", vet_student: "🎓 수의학 전공", petshop: "🏪 펫샵",
+  } as any)[r] || r;
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 8, padding: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>전문가 등록 신청 관리</h3>
+        <div style={{ display: "flex", gap: 4 }}>
+          {(["pending","approved","rejected","all"] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} style={{
+              padding: "5px 12px", fontSize: 12, fontWeight: 600,
+              borderRadius: 6, border: "1px solid #E5E7EB",
+              background: filter === f ? "#FF6B35" : "#fff",
+              color: filter === f ? "#fff" : "#4B5563",
+              cursor: "pointer",
+            }}>
+              {f === "pending" ? "대기" : f === "approved" ? "승인" : f === "rejected" ? "반려" : "전체"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: "#9CA3AF" }}>불러오는 중...</div>
+      ) : apps.length === 0 ? (
+        <div style={{
+          textAlign: "center", padding: 40, color: "#9CA3AF",
+          background: "#F9FAFB", borderRadius: 8,
+        }}>
+          {filter === "pending" ? "대기 중인 신청이 없습니다." : "결과 없음"}
+          <div style={{ fontSize: 11, marginTop: 8 }}>
+            (expert_applications 테이블이 없으면 Supabase 마이그레이션 실행 필요)
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {apps.map((a) => (
+            <div key={a.id} style={{
+              border: "1px solid #E5E7EB", borderRadius: 10, padding: 14,
+              background: a.status === "pending" ? "#FFFBEB" : a.status === "approved" ? "#F0FDF4" : "#FEF2F2",
+            }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1D1D1F", marginBottom: 2 }}>
+                    {roleLabel(a.requested_role)} · {a.real_name}
+                    <span style={{ marginLeft: 8, fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "#fff", color: "#6B7280", border: "1px solid #E5E7EB" }}>
+                      {a.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6B7280" }}>
+                    신청자 닉네임: {a.user?.nickname || "-"} / 이메일: {a.user?.email || "-"}
+                  </div>
+                </div>
+                {a.status === "pending" && (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button onClick={() => updateStatus(a, "approved")} style={btnStyle("#059669")}>승인</button>
+                    <button onClick={() => updateStatus(a, "rejected")} style={btnStyle("#DC2626")}>반려</button>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ fontSize: 12, color: "#374151", lineHeight: 1.7, marginTop: 6 }}>
+                {a.clinic_name && <div>• 기관: {a.clinic_name}</div>}
+                {a.license_no && <div>• 면허번호: {a.license_no}</div>}
+                {a.school_name && <div>• 학교: {a.school_name}</div>}
+                {a.specialty && <div>• 전공/전문 분야: {a.specialty}</div>}
+                {a.experience_years != null && <div>• 경력: {a.experience_years}년</div>}
+                {a.phone && <div>• 연락처: {a.phone}</div>}
+                {a.license_doc_url && (
+                  <div>• 증빙: <a href={a.license_doc_url} target="_blank" rel="noopener noreferrer" style={{ color: "#2563EB", textDecoration: "underline" }}>문서 보기</a></div>
+                )}
+                {a.intro && (
+                  <div style={{ marginTop: 8, padding: 10, background: "#fff", borderRadius: 6, whiteSpace: "pre-wrap" }}>
+                    {a.intro}
+                  </div>
+                )}
+                {a.reviewer_note && (
+                  <div style={{ marginTop: 8, color: "#DC2626", fontSize: 11 }}>
+                    반려 사유: {a.reviewer_note}
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 8 }}>
+                신청일: {new Date(a.created_at).toLocaleString("ko-KR")}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
