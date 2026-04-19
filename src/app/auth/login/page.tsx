@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
@@ -10,8 +10,18 @@ import { useAppStore } from "../../../lib/store";
 const REMEMBER_EMAIL_KEY = "pet_remember_email";
 const REMEMBER_EMAIL_ENABLED_KEY = "pet_remember_email_enabled";
 
+// Suspense 경계로 감싸기 — useSearchParams는 정적 프리렌더에서 Suspense 요구
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<><Header /><main style={{ padding: 40, textAlign: "center", color: "#9CA3AF" }}>로딩 중...</main><Footer /></>}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setUser = useAppStore((s) => s.setUser);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -75,6 +85,11 @@ export default function LoginPage() {
     }
 
     setLoading(false);
+    const nextPath = searchParams.get("next");
+    if (nextPath && nextPath.startsWith("/")) {
+      window.location.href = nextPath;
+      return;
+    }
     window.location.href = "/";
   };
 

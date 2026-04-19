@@ -12,6 +12,8 @@ export interface User {
   license_no?: string | null;
   school_name?: string | null;
   specialty?: string | null;
+  // 닉네임을 사용자가 직접 설정했는지 (true면 자동 덮어쓰기 금지)
+  nickname_set_by_user?: boolean;
 }
 
 export interface Pet {

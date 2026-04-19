@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
@@ -8,6 +8,7 @@ import { supabase, storageClient } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 import { analyzeSymptoms } from "../../../lib/symptomAnalyzer";
 import type { AnalysisResult } from "../../../types";
+import { trackEvent } from "../../../lib/analytics";
 
 const SPECIES = [
   { value: "cat", label: "🐱 고양이" },
@@ -88,6 +89,8 @@ type MediaType = "image" | "video";
 export default function FeedUploadPage() {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const albumRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -102,6 +105,21 @@ export default function FeedUploadPage() {
   const [alertData, setAlertData] = useState<AnalysisResult | null>(null);
   const [requestExpert, setRequestExpert] = useState(false);
   const [expertTarget, setExpertTarget] = useState<"vet" | "vet_clinic" | "behaviorist">("vet");
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      const hasSession = Boolean(data.session?.user);
+      setIsLoggedIn(hasSession);
+      setAuthChecked(true);
+      if (!hasSession) {
+        trackEvent("feed_upload_blocked_not_logged_in", { source: "feed_upload_page" });
+        router.replace("/auth/login?next=/feed/upload");
+      }
+    });
+    return () => { mounted = false; };
+  }, [router]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -147,6 +165,7 @@ export default function FeedUploadPage() {
     if (!mediaFile) { alert("사진 또는 동영상을 선택해주세요."); return; }
     if (!description.trim()) { alert("설명을 입력해주세요."); return; }
     if (!user || user.id === "demo-user") { alert("로그인 후 이용 가능합니다."); router.push("/auth/login"); return; }
+    trackEvent("feed_upload_submit_attempt", { media_type: mediaType, request_expert: requestExpert });
 
     setLoading(true);
 
@@ -254,6 +273,7 @@ export default function FeedUploadPage() {
       }
 
       if (insertError) { alert("저장 실패: " + insertError.message); setLoading(false); return; }
+      trackEvent("feed_upload_success", { media_type: mediaType, request_expert: requestExpert });
 
       // 포인트 +10P (첫 피드 +100P 보너스)
       let feedPts = 10;
@@ -286,6 +306,35 @@ export default function FeedUploadPage() {
   return (
     <>
       <Header />
+      {!authChecked ? (
+        <main style={{ maxWidth: 500, margin: "0 auto", padding: "48px 16px", flex: 1, width: "100%" }}>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, textAlign: "center" }}>
+            <div style={{ fontSize: 34, marginBottom: 8 }}>🔒</div>
+            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#1D1D1F" }}>접근 확인 중</h2>
+            <p style={{ margin: 0, color: "#6B7280", fontSize: 14 }}>업로드 권한을 확인하고 있어요.</p>
+          </div>
+        </main>
+      ) : !isLoggedIn ? (
+        <main style={{ maxWidth: 500, margin: "0 auto", padding: "48px 16px", flex: 1, width: "100%" }}>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, textAlign: "center" }}>
+            <div style={{ fontSize: 34, marginBottom: 8 }}>🛡️</div>
+            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#1D1D1F" }}>회원 전용 업로드</h2>
+            <p style={{ margin: "0 0 16px", color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
+              피드 신뢰도를 위해 사진/동영상 업로드는 회원가입 후 이용할 수 있습니다.
+            </p>
+            <button
+              onClick={() => router.push("/auth/login?next=/feed/upload")}
+              style={{
+                border: "none", background: "#FF6B35", color: "#fff",
+                padding: "10px 18px", borderRadius: 8, fontWeight: 700, cursor: "pointer",
+                fontSize: 14, fontFamily: "inherit",
+              }}
+            >
+              로그인하고 업로드하기
+            </button>
+          </div>
+        </main>
+      ) : (
       <main style={{ maxWidth: 500, margin: "0 auto", padding: "20px 16px", flex: 1, width: "100%" }}>
         <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 12 }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid #e0e0e0", fontSize: 16, fontWeight: 700 }}>
@@ -490,6 +539,7 @@ export default function FeedUploadPage() {
           </div>
         </div>
       </main>
+      )}
       <Footer />
 
       {alertData && (

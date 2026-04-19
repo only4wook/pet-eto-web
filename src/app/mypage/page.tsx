@@ -42,7 +42,8 @@ export default function MyPage() {
       return;
     }
 
-    const { error } = await supabase.from("users").update({ nickname: n }).eq("id", user.id);
+    // 사용자가 직접 변경 → 자동 덮어쓰기 금지 플래그 true
+    const { error } = await supabase.from("users").update({ nickname: n, nickname_set_by_user: true }).eq("id", user.id);
     setNickSaving(false);
     if (error) { setNickMsg("변경 실패: " + error.message); return; }
 

@@ -56,43 +56,48 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       // 소셜 로그인 시 users 테이블에 프로필이 없으면 자동 생성
       if (!data) {
         const u = session.user;
-        // OAuth 제공자가 준 닉네임만 허용 (kakao: nickname, google: full_name/name).
-        // 이메일 앞부분은 아이디 노출 위험이 있어 사용하지 않고, 대신 익명 닉네임을 생성.
+        // OAuth 제공자가 준 닉네임이 있으면 "사용자 설정"으로 간주 (본인 구글/카카오 이름)
+        // 없으면 시스템이 익명 닉네임 생성 (자동 생성 상태 → 추후 재마킹 가능)
         const oauthName =
           u.user_metadata?.nickname ||
           u.user_metadata?.full_name ||
           u.user_metadata?.name ||
           u.user_metadata?.user_name;
-        const safeName = oauthName && !String(oauthName).includes("@")
-          ? String(oauthName)
-          : generateAnonymousNickname(u.id);
+        const providedByUser = !!oauthName && !String(oauthName).includes("@");
+        const safeName = providedByUser ? String(oauthName) : generateAnonymousNickname(u.id);
         const newProfile = {
           id: u.id,
           email: u.email || "",
           nickname: safeName,
           avatar_url: u.user_metadata?.avatar_url || null,
           points: 100,
+          // OAuth가 준 이름이면 사용자 설정으로 인정 · 익명 자동생성이면 true로 표시 (추후 자동 재설정 금지)
+          nickname_set_by_user: true,
           created_at: new Date().toISOString(),
         };
         await supabase.from("users").insert(newProfile);
         data = newProfile as any;
       }
 
-      // 닉네임이 "이메일 로그인 아이디"로 노출되는 경우 자동 보정:
-      //  - 비어있음
-      //  - @ 포함 (이메일 자체)
+      // 닉네임 자동 보정 — 사용자가 직접 설정한 닉네임은 절대 건드리지 않음.
+      //
+      // 대상 (nickname_set_by_user !== true 일 때만):
+      //  - 비어있음 / @ 포함 (이메일 자체)
       //  - 이메일 로컬파트(@ 앞)와 완전 일치 (ex. gsh941025@gmail.com의 'gsh941025')
-      // → 익명 닉네임으로 교체. 사용자가 /mypage에서 원하는 닉네임으로 재설정 가능.
+      // → 익명 닉네임으로 교체 + nickname_set_by_user=true로 마킹하여 이후 덮어쓰기 방지
       const emailLocal = (data?.email || "").split("@")[0].toLowerCase();
-      const nicknameNeedsFix = data && (
+      const alreadyOwned = Boolean((data as any)?.nickname_set_by_user);
+      const nicknameNeedsFix = data && !alreadyOwned && (
         !data.nickname ||
         String(data.nickname).includes("@") ||
         (!!emailLocal && String(data.nickname).toLowerCase() === emailLocal)
       );
       if (nicknameNeedsFix) {
         const fixed = generateAnonymousNickname(data!.id);
-        await supabase.from("users").update({ nickname: fixed }).eq("id", data!.id);
-        data = { ...data!, nickname: fixed };
+        await supabase.from("users")
+          .update({ nickname: fixed, nickname_set_by_user: true })
+          .eq("id", data!.id);
+        data = { ...data!, nickname: fixed, nickname_set_by_user: true };
       }
 
       setUser(data);
@@ -135,6 +140,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
               nickname: safeName,
               avatar_url: u.user_metadata?.avatar_url || null,
               points: 100,
+              nickname_set_by_user: true,
               created_at: new Date().toISOString(),
             };
             await supabase.from("users").insert(newProfile);
@@ -142,15 +148,18 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           }
           // 비어있거나 이메일(@)만 자동 보정. 사용자 설정 닉네임은 존중.
           const emailLocal2 = (data?.email || "").split("@")[0].toLowerCase();
-          const needsFix2 = data && (
+          const alreadyOwned2 = Boolean((data as any)?.nickname_set_by_user);
+          const needsFix2 = data && !alreadyOwned2 && (
             !data.nickname ||
             String(data.nickname).includes("@") ||
             (!!emailLocal2 && String(data.nickname).toLowerCase() === emailLocal2)
           );
           if (needsFix2) {
             const fixed = generateAnonymousNickname(data!.id);
-            await supabase.from("users").update({ nickname: fixed }).eq("id", data!.id);
-            data = { ...data!, nickname: fixed };
+            await supabase.from("users")
+              .update({ nickname: fixed, nickname_set_by_user: true })
+              .eq("id", data!.id);
+            data = { ...data!, nickname: fixed, nickname_set_by_user: true };
           }
           if (data) setUser(data);
         } else {

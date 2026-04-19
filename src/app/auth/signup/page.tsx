@@ -57,7 +57,8 @@ export default function SignupPage() {
     if (authError) { setError(authError.message); setLoading(false); return; }
 
     if (data.user) {
-      const profile = { id: data.user.id, email: email.trim(), nickname, points: 100, avatar_url: null, created_at: new Date().toISOString() };
+      // nickname_set_by_user: true — 사용자가 직접 입력한 닉네임은 절대 자동 덮어쓰기 금지
+      const profile = { id: data.user.id, email: email.trim(), nickname, points: 100, avatar_url: null, nickname_set_by_user: true, created_at: new Date().toISOString() };
       await supabase.from("users").insert(profile);
 
       // 세션이 있으면 (Confirm email OFF) 바로 로그인 처리
