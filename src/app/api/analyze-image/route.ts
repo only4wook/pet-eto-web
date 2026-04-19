@@ -94,6 +94,33 @@ const IMAGE_ANALYSIS_TASK = `
 "혹시 ~ 알려주시면 더 정밀하게 조언드릴게요" 형식으로 대화 계속 유도
 
 ⚠️ 꼭 마지막 줄에 추가: "이 분석은 AI 참고 의견입니다. 확진은 수의사만 가능해요."
+
+---
+
+## 📐 구조화 데이터 — 답변 맨 끝에 반드시 추가 (JSON 블록)
+
+사람이 읽는 답변 끝에, UI가 파싱할 수 있도록 아래 JSON을 \`\`\`json ... \`\`\` 코드블록으로 출력하세요:
+
+\`\`\`json
+{
+  "fgs_total": 0~10 숫자 (고양이 얼굴 분석 가능할 때만, 아니면 null),
+  "fgs_breakdown": {
+    "ear": 0~2 or null,
+    "orbital": 0~2 or null,
+    "muzzle": 0~2 or null,
+    "whiskers": 0~2 or null,
+    "head": 0~2 or null
+  },
+  "severity": "normal" | "mild" | "moderate" | "urgent",
+  "severity_score": 0~10 숫자 (전반적 심각도 수치),
+  "bboxes": [
+    {"label":"문제 부위 이름(예: 피부 발적)","x":0~1,"y":0~1,"w":0~1,"h":0~1}
+  ]
+}
+\`\`\`
+
+bbox 좌표는 이미지 기준 0~1 정규화 값. 문제 부위가 식별될 때만 채우고, 없으면 빈 배열 [].
+정확한 위치 모를 때는 bbox 생략해도 됨(거짓 정보 금지).
 `;
 
 export async function POST(req: NextRequest) {
@@ -147,19 +174,47 @@ export async function POST(req: NextRequest) {
     }
 
     const geminiData = await geminiRes.json();
-    const analysisText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "분석 결과를 가져올 수 없습니다.";
+    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "분석 결과를 가져올 수 없습니다.";
 
-    // 심각도 추출 (프롬프트에서 명시한 4단계 중 하나를 반드시 포함)
-    let severity: "normal" | "mild" | "moderate" | "urgent" = "normal";
-    const lower = analysisText.toLowerCase();
-    if (lower.includes("urgent") || analysisText.includes("긴급")) severity = "urgent";
-    else if (lower.includes("moderate") || analysisText.includes("주의")) severity = "moderate";
-    else if (lower.includes("mild") || analysisText.includes("관찰")) severity = "mild";
+    // ── 구조화 JSON 블록 파싱 (\`\`\`json ... \`\`\`) ──
+    let structured: {
+      fgs_total?: number | null;
+      fgs_breakdown?: Record<string, number | null>;
+      severity?: "normal" | "mild" | "moderate" | "urgent";
+      severity_score?: number | null;
+      bboxes?: { label: string; x: number; y: number; w: number; h: number }[];
+    } = {};
+    let displayAnalysis = rawText;
+
+    const jsonMatch = rawText.match(/```json\s*([\s\S]*?)\s*```/i);
+    if (jsonMatch) {
+      try {
+        structured = JSON.parse(jsonMatch[1].trim());
+        // 사용자에게는 JSON 블록을 제거한 텍스트만 노출
+        displayAnalysis = rawText.replace(jsonMatch[0], "").trim();
+      } catch {
+        // JSON 파싱 실패 시 원문 그대로
+      }
+    }
+
+    // 심각도 결정 (구조화 JSON 우선, 없으면 텍스트 fallback)
+    let severity: "normal" | "mild" | "moderate" | "urgent" = structured.severity ?? "normal";
+    if (!structured.severity) {
+      const lower = rawText.toLowerCase();
+      if (lower.includes("urgent") || rawText.includes("긴급")) severity = "urgent";
+      else if (lower.includes("moderate") || rawText.includes("주의")) severity = "moderate";
+      else if (lower.includes("mild") || rawText.includes("관찰")) severity = "mild";
+    }
 
     return NextResponse.json({
       success: true,
-      analysis: analysisText,
+      analysis: displayAnalysis,
       severity,
+      // 구조화 필드
+      fgs_total: structured.fgs_total ?? null,
+      fgs_breakdown: structured.fgs_breakdown ?? null,
+      severity_score: structured.severity_score ?? null,
+      bboxes: structured.bboxes ?? [],
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "서버 오류" }, { status: 500 });

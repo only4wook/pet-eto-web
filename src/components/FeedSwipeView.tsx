@@ -88,7 +88,8 @@ export default function FeedSwipeView({ posts }: { posts: FeedPost[] }) {
 function SwipeCard({ post, idx, active }: { post: FeedPost; idx: number; active: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
-  const isVideo = post.image_url?.endsWith(".mp4");
+  const mediaUrl = (post.image_url || "").split("?")[0].toLowerCase();
+  const isVideo = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") || mediaUrl.endsWith(".mov");
   const analysis = post.analysis_result;
   const sev = analysis?.severity;
   const [showDetail, setShowDetail] = useState(false);
@@ -201,8 +202,8 @@ function SwipeCard({ post, idx, active }: { post: FeedPost; idx: number; active:
         zIndex: 2,
         alignItems: "center",
       }}>
-        <ActionBtn icon="❤️" label={String(post.like_count)} />
-        <ActionBtn icon="💬" label={String(post.comment_count)} href={`/feed/${post.id}`} />
+        <ActionBtn icon="❤️" label={String(post.like_count)} ariaLabel="좋아요 수" />
+        <ActionBtn icon="💬" label={String(post.comment_count)} href={`/feed/${post.id}`} ariaLabel="댓글 보기" />
         <ActionBtn icon="📤" label="공유" onClick={async () => {
           if (navigator.share) {
             try { await navigator.share({ title: "P.E.T 펫에토 피드", url: `${window.location.origin}/feed/${post.id}` }); } catch {}
@@ -212,7 +213,7 @@ function SwipeCard({ post, idx, active }: { post: FeedPost; idx: number; active:
               alert("링크가 복사되었어요!");
             } catch {}
           }
-        }} />
+        }} ariaLabel="피드 공유하기" />
       </div>
 
       {/* 하단 정보 오버레이 (그라디언트 아래에) */}
@@ -330,7 +331,7 @@ function SwipeCard({ post, idx, active }: { post: FeedPost; idx: number; active:
   );
 }
 
-function ActionBtn({ icon, label, href, onClick }: { icon: string; label: string; href?: string; onClick?: () => void }) {
+function ActionBtn({ icon, label, href, onClick, ariaLabel }: { icon: string; label: string; href?: string; onClick?: () => void; ariaLabel?: string }) {
   const content = (
     <>
       <div style={{
@@ -347,7 +348,7 @@ function ActionBtn({ icon, label, href, onClick }: { icon: string; label: string
   );
   if (href) {
     return (
-      <Link href={href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textDecoration: "none" }}>
+      <Link href={href} aria-label={ariaLabel || label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textDecoration: "none" }}>
         {content}
       </Link>
     );
@@ -355,6 +356,7 @@ function ActionBtn({ icon, label, href, onClick }: { icon: string; label: string
   return (
     <button
       onClick={onClick}
+      aria-label={ariaLabel || label}
       style={{
         display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
         background: "none", border: "none", cursor: "pointer", padding: 0,

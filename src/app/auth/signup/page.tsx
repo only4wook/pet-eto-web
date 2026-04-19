@@ -127,7 +127,7 @@ export default function SignupPage() {
             {/* 닉네임 + 중복확인 */}
             <label style={labelStyle}>닉네임</label>
             <div style={{ display: "flex", gap: 8 }}>
-              <input type="text" value={nickname}
+              <input type="text" name="nickname" autoComplete="nickname" value={nickname}
                 onChange={(e) => { setNickname(e.target.value); setNicknameChecked(false); setNicknameMsg(""); }}
                 placeholder="2~12자" maxLength={12}
                 style={{ ...inputStyle, flex: 1 }} />
@@ -145,14 +145,14 @@ export default function SignupPage() {
             )}
 
             <label style={labelStyle}>이메일</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" style={inputStyle} />
+            <input type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" style={inputStyle} />
             <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>실제 사용하는 이메일을 입력하세요. 인증 메일이 발송됩니다.</div>
 
             <label style={labelStyle}>비밀번호</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6자 이상" style={inputStyle} />
+            <input type="password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6자 이상" style={inputStyle} />
 
             <label style={labelStyle}>비밀번호 확인</label>
-            <input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="비밀번호 다시 입력" style={inputStyle} />
+            <input type="password" name="password-confirm" autoComplete="new-password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="비밀번호 다시 입력" style={inputStyle} />
 
             <button type="submit" disabled={loading} style={{
               width: "100%", padding: "12px", background: loading ? "#ccc" : "#FF6B35",

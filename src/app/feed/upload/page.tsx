@@ -212,15 +212,17 @@ export default function FeedUploadPage() {
           const aiData = await aiRes.json();
           if (aiRes.ok && aiData.analysis) {
             aiImageAnalysis = aiData.analysis;
-            // Gemini 분석 결과로 심각도 업데이트
-            if (aiData.severity !== "normal") {
-              analysis = {
-                severity: aiData.severity,
-                symptoms: [aiData.severity === "urgent" ? "긴급" : aiData.severity === "moderate" ? "주의" : "관찰"],
-                summary: aiImageAnalysis.slice(0, 300),
-                recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
-              };
-            }
+            // Gemini 분석 결과로 심각도 + 구조화 필드 업데이트
+            analysis = {
+              severity: aiData.severity,
+              symptoms: [aiData.severity === "urgent" ? "긴급" : aiData.severity === "moderate" ? "주의" : aiData.severity === "mild" ? "관찰" : "정상"],
+              summary: aiImageAnalysis.slice(0, 300),
+              recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
+              fgs_total: aiData.fgs_total ?? null,
+              fgs_breakdown: aiData.fgs_breakdown ?? null,
+              severity_score: aiData.severity_score ?? null,
+              bboxes: aiData.bboxes ?? [],
+            };
           }
         } catch { /* Gemini 실패 시 텍스트 분석 유지 */ }
       }

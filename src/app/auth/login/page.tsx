@@ -8,20 +8,24 @@ import { supabase } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 
 const REMEMBER_EMAIL_KEY = "pet_remember_email";
+const REMEMBER_EMAIL_ENABLED_KEY = "pet_remember_email_enabled";
 
 export default function LoginPage() {
   const router = useRouter();
   const setUser = useAppStore((s) => s.setUser);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(true);
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // 이메일 기억하기 로드
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem(REMEMBER_EMAIL_KEY) : null;
-    if (saved) {
+    const enabled = typeof window !== "undefined"
+      ? localStorage.getItem(REMEMBER_EMAIL_ENABLED_KEY) === "1"
+      : false;
+    if (saved && enabled) {
       setEmail(saved);
       setRemember(true);
     }
@@ -41,8 +45,13 @@ export default function LoginPage() {
 
     // 이메일 기억하기 저장/삭제
     if (typeof window !== "undefined") {
-      if (remember) localStorage.setItem(REMEMBER_EMAIL_KEY, email.trim());
-      else localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      if (remember) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, email.trim());
+        localStorage.setItem(REMEMBER_EMAIL_ENABLED_KEY, "1");
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        localStorage.removeItem(REMEMBER_EMAIL_ENABLED_KEY);
+      }
     }
 
     if (data.user) {
@@ -100,7 +109,7 @@ export default function LoginPage() {
             <label style={labelStyle}>비밀번호</label>
             <input
               type="password"
-              name="current-password"
+              name="password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

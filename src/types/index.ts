@@ -83,6 +83,25 @@ export interface AnalysisResult {
   symptoms: string[];
   summary: string;
   recommendation: string;
+  // 구조화된 AI 분석 (2026-04-19)
+  fgs_total?: number | null;          // 0~10 (고양이 FGS 통증 지수)
+  fgs_breakdown?: {
+    ear?: number | null;
+    orbital?: number | null;
+    muzzle?: number | null;
+    whiskers?: number | null;
+    head?: number | null;
+  } | null;
+  severity_score?: number | null;     // 0~10
+  bboxes?: BBox[];                    // 이미지 부위 마킹
+}
+
+export interface BBox {
+  label: string;
+  x: number;   // 0~1 normalized
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface FeedComment {
