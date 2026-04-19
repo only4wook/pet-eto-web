@@ -91,7 +91,9 @@ function SwipeCard({ post, idx, active }: { post: FeedPost; idx: number; active:
   const mediaUrl = (post.image_url || "").split("?")[0].toLowerCase();
   const isVideo = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") || mediaUrl.endsWith(".mov");
   const analysis = post.analysis_result;
-  const sev = analysis?.severity;
+  const sev = analysis?.severity === "normal" && post.expert_status === "answered"
+    ? "moderate"
+    : analysis?.severity;
   const [showDetail, setShowDetail] = useState(false);
 
   // 현재 활성 카드만 영상 재생

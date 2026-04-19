@@ -149,7 +149,10 @@ export default function FeedPreviewStream() {
 
 function FeedCardMini({ post, delayClass }: { post: FeedPost; delayClass: string }) {
   const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
-  const sev = post.analysis_result?.severity;
+  const originalSeverity = post.analysis_result?.severity;
+  const sev = originalSeverity === "normal" && post.expert_status === "answered"
+    ? "moderate"
+    : originalSeverity;
   const sevBadge = sev === "urgent"
     ? { label: "🚨 긴급", bg: "#FEF2F2", color: "#B91C1C", border: "#FCA5A5", strong: true }
     : sev === "moderate"

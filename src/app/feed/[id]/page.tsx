@@ -27,6 +27,15 @@ function canAnswerAsExpert(role?: UserRole | null) {
   return !!role && ["vet", "vet_student", "vet_clinic", "behaviorist", "admin"].includes(role);
 }
 
+function getSafeDisplaySeverity(
+  base?: "normal" | "mild" | "moderate" | "urgent",
+  expertStatus?: string
+): "normal" | "mild" | "moderate" | "urgent" | undefined {
+  if (!base) return base;
+  if (base === "normal" && expertStatus === "answered") return "moderate";
+  return base;
+}
+
 export default function FeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -202,7 +211,12 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
     </main><Footer /></>);
   }
 
-  const analysis = post.analysis_result;
+  const analysis = post.analysis_result
+    ? {
+        ...post.analysis_result,
+        severity: getSafeDisplaySeverity(post.analysis_result.severity, post.expert_status) || post.analysis_result.severity,
+      }
+    : null;
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
   const authorNick = safeNickname(post.author?.nickname, (post.author as any)?.id);
 
