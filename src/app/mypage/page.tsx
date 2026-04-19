@@ -358,7 +358,7 @@ export default function MyPage() {
             <div style={{ marginTop: 20, borderTop: "1px solid #F3F4F6", paddingTop: 16 }}>
               <h3 style={{ fontSize: 14, margin: "0 0 8px", color: "#111827" }}>💰 포인트 사용/출금</h3>
               <div style={{ fontSize: 12, color: "#4B5563", lineHeight: 1.6, marginBottom: 10 }}>
-                - 돌봄/펫택시 결제 시 포인트를 할인으로 사용할 수 있도록 백엔드 함수(`use_points_for_service`)를 추가했습니다.<br />
+                - 돌봄/펫택시 결제 시 포인트를 할인으로 사용할 수 있습니다.<br />
                 - 전문가 답변 채택 시 작성자 포인트가 지급되고, 7일 미채택 시 자동 보상이 진행됩니다.<br />
                 - 5,000P 이상이면 출금 신청이 가능합니다.
               </div>

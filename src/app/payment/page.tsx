@@ -36,7 +36,7 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
 
   const ownedPoints = user?.points ?? 0;
-  const maxPointDiscount = Math.min(ownedPoints, Math.floor(amount * 0.1)); // 최대 10%
+  const maxPointDiscount = ownedPoints; // 보유 포인트 전액 사용 가능
   const safeUsePoints = Math.max(0, Math.min(usePoints, maxPointDiscount));
   const finalPay = Math.max(0, amount - safeUsePoints);
 
