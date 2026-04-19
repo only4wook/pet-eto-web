@@ -93,7 +93,7 @@ export default function PremiumHero() {
           {/* 헤드라인 — 대범한 타이포 */}
           <h1
             id="hero-headline"
-            className="text-display-xl reveal delay-1"
+            className="text-display-xl reveal delay-1 headline-balance"
             style={{ margin: "0 0 18px" }}
           >
             혼자 둘 수 없는 순간,
@@ -103,20 +103,19 @@ export default function PremiumHero() {
 
           {/* 서브카피 */}
           <p
-            className="reveal delay-2"
+            className="reveal delay-2 readable-kor"
             style={{
               fontSize: "clamp(15px, 1.4vw, 18px)",
               color: "#4B5563",
-              lineHeight: 1.65,
+              lineHeight: 1.75,
               maxWidth: 560,
               margin: "0 0 32px",
               letterSpacing: "-0.01em",
             }}
           >
-            접수 후 전담 매니저가 아이 상태·시간·위치를 확인하고,
-            <br />
-            조건이 맞는 3단계 검증 펫시터를 우선순위로 매칭해드립니다.
-            <br />
+            접수 후 전담 매니저가 아이 상태·시간·위치를 확인하고, 조건이 맞는 3단계 검증 펫시터를
+            우선순위로 매칭해드립니다.
+            <br /><br />
             AI 건강 분석 · 실시간 사진 보고 · 안전 결제 · 사고 시 최대 1억 보장까지.
           </p>
 

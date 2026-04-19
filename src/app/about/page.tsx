@@ -6,20 +6,20 @@ export default function AboutPage() {
   return (
     <>
       <Header />
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px", flex: 1 }}>
+      <main style={{ maxWidth: 920, margin: "0 auto", padding: "24px 16px 40px", flex: 1 }}>
         {/* 히어로 */}
         <section style={{
           background: "linear-gradient(135deg, #FF6B35, #FB923C)", borderRadius: 16,
           padding: "40px 28px", color: "#fff", textAlign: "center", marginBottom: 32,
         }}>
-          <h1 style={{ fontSize: 28, fontWeight: 900, margin: "0 0 8px" }}>P.E.T 펫에토 팀</h1>
-          <p style={{ fontSize: 15, opacity: 0.9, margin: 0 }}>Pet Ever Total — 반려동물 생애주기 맞춤형 O2O 플랫폼</p>
+          <h1 className="headline-balance" style={{ fontSize: 28, fontWeight: 900, margin: "0 0 8px" }}>P.E.T 펫에토 팀</h1>
+          <p className="readable-kor" style={{ fontSize: 15, opacity: 0.9, margin: 0 }}>Pet Ever Total — 반려동물 생애주기 맞춤형 O2O 플랫폼</p>
         </section>
 
         {/* 미션 */}
         <section style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", marginBottom: 24, border: "1px solid #F3F4F6" }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1F2937", margin: "0 0 12px" }}>우리가 만드는 이유</h2>
-          <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.8, margin: 0 }}>
+          <p className="readable-kor" style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>
             반려동물 인구 1,500만 시대. 하지만 갑자기 야근이 잡히거나, 출장을 가야 할 때, 반려동물을 안전하게 맡길 곳을 찾는 건 여전히 어렵습니다.
             특히 1~2인 가구 반려인은 긴급 상황에서 믿을 수 있는 돌봄 서비스를 찾기 위해 불안한 시간을 보냅니다.
             <br /><br />
@@ -52,7 +52,7 @@ export default function AboutPage() {
                   }}>{badge}</span>
                 ))}
               </div>
-              <p style={{ fontSize: 13, color: "#6B7280", margin: "12px 0 0", lineHeight: 1.7 }}>
+              <p className="readable-kor" style={{ fontSize: 13, color: "#6B7280", margin: "12px 0 0" }}>
                 반려동물을 키우면서 느낀 긴급 돌봄의 불편함을 직접 해결하기 위해 P.E.T를 시작했습니다.
                 파트너 검증부터 고객 상담, 서비스 기획까지 모든 것을 직접 담당하고 있습니다.
                 반려동물관리사 자격을 취득하며 전문성도 갖춰가고 있습니다.
@@ -64,7 +64,7 @@ export default function AboutPage() {
         {/* 파트너 검증 프로세스 */}
         <section style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", marginBottom: 24, border: "1px solid #F3F4F6" }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1F2937", margin: "0 0 20px" }}>P.E.T 파트너 3단계 검증</h2>
-          <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 16px", lineHeight: 1.6 }}>
+          <p className="readable-kor" style={{ fontSize: 13, color: "#6B7280", margin: "0 0 16px" }}>
             우리 아이를 맡기는 서비스인 만큼, 파트너 선정에 가장 엄격한 기준을 적용합니다.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
@@ -110,7 +110,7 @@ export default function AboutPage() {
         {/* 자문위원 / 전문가 네트워크 */}
         <section style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", marginBottom: 24, border: "1px solid #F3F4F6" }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1F2937", margin: "0 0 8px" }}>전문가 자문단 & 파트너 네트워크</h2>
-          <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 20px", lineHeight: 1.6 }}>
+          <p className="readable-kor" style={{ fontSize: 13, color: "#6B7280", margin: "0 0 20px" }}>
             P.E.T는 수의학·행동학 전문가의 감수를 받아 서비스 품질을 보장합니다.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 20 }}>

@@ -97,7 +97,7 @@
     color: var(--color-text);
     font-family: var(--font-family);
     font-size: var(--text-body);
-    line-height: 1.5;
+    line-height: 1.6;
     margin: 0;
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
@@ -121,6 +121,21 @@
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
+}
+
+/* Korean readability helpers */
+.readable-kor {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.72;
+  letter-spacing: -0.01em;
+}
+
+.headline-balance {
+  word-break: keep-all;
+  text-wrap: balance;
+  letter-spacing: -0.03em;
+  line-height: 1.24;
 }
 
 /* ============================================
@@ -397,7 +412,7 @@
   .cat-tabs::-webkit-scrollbar { display: none; }
   .cat-tabs > * { scroll-snap-align: start; }
 
-  .container-pet { width: 100%; padding-left: 12px; padding-right: 12px; }
+  .container-pet { width: 100%; padding-left: 14px; padding-right: 14px; }
 
   /* 헤더 상단 nav의 "카톡 상담" 버튼이 모바일에서 가려지지 않도록 */
   header nav { padding-right: 8px; }

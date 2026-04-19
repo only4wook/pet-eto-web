@@ -60,11 +60,12 @@ export default function ServiceSummary() {
       <div className="container-pet">
         <div className="reveal" style={{ textAlign: "center", maxWidth: 680, margin: "0 auto clamp(32px, 5vw, 56px)" }}>
           <span className="eyebrow">P.E.T는 정확히 무엇을 해드리나요?</span>
-          <h2 id="summary-headline" className="text-display-md" style={{ margin: "14px 0 10px" }}>
+          <h2 id="summary-headline" className="text-display-md headline-balance" style={{ margin: "14px 0 10px" }}>
             반려동물에게 생기는 <span className="text-accent-grad">모든 상황</span>을 한 번에
           </h2>
-          <p style={{ fontSize: "clamp(14px, 1.2vw, 16px)", color: "#6B7280", lineHeight: 1.7 }}>
-            AI 분석 → 전문가 답변 → 실제 돌봄까지.<br/>
+          <p className="readable-kor" style={{ fontSize: "clamp(14px, 1.2vw, 16px)", color: "#6B7280" }}>
+            AI 분석 → 전문가 답변 → 실제 돌봄까지.
+            <br />
             다른 서비스들이 따로 해주던 것을, 한 플랫폼에서 연결합니다.
           </p>
         </div>
@@ -109,14 +110,14 @@ export default function ServiceSummary() {
                 background: `${it.accent}15`, marginBottom: 6,
               }}>{it.emoji}</div>
 
-              <h3 style={{
+              <h3 className="headline-balance" style={{
                 margin: 0, fontSize: "clamp(16px, 1.4vw, 19px)", fontWeight: 800,
                 color: "#1D1D1F", letterSpacing: "-0.02em", lineHeight: 1.35,
               }}>
                 {it.title}
               </h3>
 
-              <p style={{
+              <p className="readable-kor" style={{
                 margin: 0, fontSize: 14, color: "#4B5563", lineHeight: 1.65,
               }}>
                 {it.body}

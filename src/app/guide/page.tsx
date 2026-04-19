@@ -10,32 +10,34 @@ export default function GuidePage() {
   return (
     <>
       <Header />
-      <main style={{ maxWidth: 800, margin: "0 auto", padding: "20px 20px 40px", flex: 1, width: "100%" }}>
+      <main style={{ maxWidth: 840, margin: "0 auto", padding: "24px 16px 44px", flex: 1, width: "100%" }}>
         {/* 히어로 */}
         <section style={{
           background: "linear-gradient(135deg, #FF6B35, #FB923C)", borderRadius: 20,
           padding: "36px 28px", color: "#fff", textAlign: "center", marginBottom: 22,
           boxShadow: "0 8px 24px rgba(255,107,53,0.22)",
         }}>
-          <h1 style={{ fontSize: "clamp(22px, 3vw, 28px)", fontWeight: 900, margin: "0 0 8px", letterSpacing: "-0.03em" }}>
+          <h1 className="headline-balance" style={{ fontSize: "clamp(22px, 3vw, 28px)", fontWeight: 900, margin: "0 0 8px", letterSpacing: "-0.03em" }}>
             P.E.T 이용 가이드
           </h1>
-          <p style={{ fontSize: 14, opacity: 0.95, margin: 0, lineHeight: 1.6, wordBreak: "keep-all" }}>
+          <p className="readable-kor" style={{ fontSize: 14, opacity: 0.95, margin: 0 }}>
             안심하고 맡기세요.<br />모든 과정이 투명합니다.
           </p>
         </section>
 
         {/* 고객/파트너 탭 전환 */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 20, borderRadius: 12, overflow: "hidden", border: "1px solid #E5E7EB" }}>
+        <div style={{ display: "flex", gap: 0, marginBottom: 20, borderRadius: 14, overflow: "hidden", border: "1px solid #E5E7EB", background: "#fff" }}>
           <button onClick={() => setTab("customer")} style={{
-            flex: 1, padding: "14px", fontSize: 15, fontWeight: 700, cursor: "pointer", border: "none",
+            flex: 1, padding: "14px 12px", fontSize: 15, fontWeight: 700, cursor: "pointer", border: "none",
             background: tab === "customer" ? "#FF6B35" : "#fff",
             color: tab === "customer" ? "#fff" : "#6B7280",
+            fontFamily: "inherit",
           }}>🐾 고객 이용 안내</button>
           <button onClick={() => setTab("partner")} style={{
-            flex: 1, padding: "14px", fontSize: 15, fontWeight: 700, cursor: "pointer", border: "none",
+            flex: 1, padding: "14px 12px", fontSize: 15, fontWeight: 700, cursor: "pointer", border: "none",
             background: tab === "partner" ? "#FF6B35" : "#fff",
             color: tab === "partner" ? "#fff" : "#6B7280",
+            fontFamily: "inherit",
           }}>🤝 파트너 안내</button>
         </div>
 
