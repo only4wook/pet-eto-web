@@ -3,10 +3,14 @@ import Link from "next/link";
 import GradeBadge from "./GradeBadge";
 import { formatDate, safeNickname } from "../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../lib/symptomAnalyzer";
+import { withSafeAnalysis } from "../lib/analysisSafety";
 import type { FeedPost } from "../types";
 
 export default function FeedCard({ post }: { post: FeedPost }) {
-  const analysis = post.analysis_result;
+  const analysis = withSafeAnalysis(post.analysis_result, {
+    request_expert: post.request_expert,
+    expert_status: post.expert_status,
+  });
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
   const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
 

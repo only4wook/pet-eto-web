@@ -12,6 +12,7 @@ import { DEMO_FEED } from "../../../lib/demoFeed";
 import { formatDate, safeNickname } from "../../../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../../../lib/symptomAnalyzer";
 import AIResultCard from "../../../components/AIResultCard";
+import { withSafeAnalysis } from "../../../lib/analysisSafety";
 import type { FeedPost, FeedComment, ExpertAnswer, UserRole } from "../../../types";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -25,15 +26,6 @@ const ROLE_LABEL: Record<string, string> = {
 
 function canAnswerAsExpert(role?: UserRole | null) {
   return !!role && ["vet", "vet_student", "vet_clinic", "behaviorist", "admin"].includes(role);
-}
-
-function getSafeDisplaySeverity(
-  base?: "normal" | "mild" | "moderate" | "urgent",
-  expertStatus?: string
-): "normal" | "mild" | "moderate" | "urgent" | undefined {
-  if (!base) return base;
-  if (base === "normal" && expertStatus === "answered") return "moderate";
-  return base;
 }
 
 export default function FeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -211,12 +203,10 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
     </main><Footer /></>);
   }
 
-  const analysis = post.analysis_result
-    ? {
-        ...post.analysis_result,
-        severity: getSafeDisplaySeverity(post.analysis_result.severity, post.expert_status) || post.analysis_result.severity,
-      }
-    : null;
+  const analysis = withSafeAnalysis(post.analysis_result, {
+    request_expert: post.request_expert,
+    expert_status: post.expert_status,
+  });
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
   const authorNick = safeNickname(post.author?.nickname, (post.author as any)?.id);
 

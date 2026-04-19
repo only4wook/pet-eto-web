@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "../lib/supabase";
 import { DEMO_FEED } from "../lib/demoFeed";
 import { formatDate, safeNickname } from "../lib/utils";
+import { getSafeSeverity } from "../lib/analysisSafety";
 import type { FeedPost } from "../types";
 
 // 홈 페이지용 피드 미리보기 스트림
@@ -149,10 +150,10 @@ export default function FeedPreviewStream() {
 
 function FeedCardMini({ post, delayClass }: { post: FeedPost; delayClass: string }) {
   const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
-  const originalSeverity = post.analysis_result?.severity;
-  const sev = originalSeverity === "normal" && post.expert_status === "answered"
-    ? "moderate"
-    : originalSeverity;
+  const sev = getSafeSeverity(post.analysis_result, {
+    request_expert: post.request_expert,
+    expert_status: post.expert_status,
+  });
   const sevBadge = sev === "urgent"
     ? { label: "🚨 긴급", bg: "#FEF2F2", color: "#B91C1C", border: "#FCA5A5", strong: true }
     : sev === "moderate"

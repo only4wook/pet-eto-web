@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDate, safeNickname } from "../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../lib/symptomAnalyzer";
+import { getSafeSeverity } from "../lib/analysisSafety";
 import type { FeedPost } from "../types";
 
 // 틱톡/릴스 스타일 풀스크린 세로 스와이프 피드
@@ -91,9 +92,10 @@ function SwipeCard({ post, idx, active }: { post: FeedPost; idx: number; active:
   const mediaUrl = (post.image_url || "").split("?")[0].toLowerCase();
   const isVideo = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") || mediaUrl.endsWith(".mov");
   const analysis = post.analysis_result;
-  const sev = analysis?.severity === "normal" && post.expert_status === "answered"
-    ? "moderate"
-    : analysis?.severity;
+  const sev = getSafeSeverity(analysis, {
+    request_expert: post.request_expert,
+    expert_status: post.expert_status,
+  });
   const [showDetail, setShowDetail] = useState(false);
 
   // 현재 활성 카드만 영상 재생
