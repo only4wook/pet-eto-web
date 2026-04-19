@@ -86,8 +86,8 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 네비게이션 — 모던/미니멀 */}
-      <nav style={{ background: "#1D1D1F", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      {/* 네비게이션 — PC 전용. 모바일은 BottomTabBar로 대체 */}
+      <nav className="pc-only" style={{ background: "#1D1D1F", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <div className="container-pet" style={{
           padding: "0",
           display: "flex", gap: 0, whiteSpace: "nowrap", alignItems: "center",
@@ -121,6 +121,35 @@ export default function Header() {
           </a>
         </div>
       </nav>
+
+      {/* 카톡 상담 — 모바일 플로팅 버튼 (하단 탭바 위에 노출) */}
+      <a
+        href="https://pf.kakao.com/_giedX/chat"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mobile-only kakao-fab"
+        aria-label="카카오톡 상담"
+        style={{
+          display: "none",
+          position: "fixed",
+          right: 16,
+          bottom: "calc(74px + env(safe-area-inset-bottom, 0))",
+          zIndex: 45,
+          width: 54,
+          height: 54,
+          borderRadius: "50%",
+          background: "#FEE500",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+          textDecoration: "none",
+          fontSize: 20,
+          fontWeight: 800,
+          color: "#3C1E1E",
+        }}
+      >
+        💬
+      </a>
     </header>
   );
 }

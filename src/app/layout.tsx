@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import AuthProvider from "../components/AuthProvider";
 import KakaoButton from "../components/KakaoButton";
+import BottomTabBar from "../components/BottomTabBar";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gtag('config', 'G-XXXXXXXXXX');`}
         </Script>
         <AuthProvider>{children}</AuthProvider>
+        <BottomTabBar />
         <Analytics />
       </body>
     </html>

@@ -491,15 +491,15 @@ export default function HeroSection() {
   }
 
   return (
-    <section id="ai-chat" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <section id="ai-chat" className="hero-section" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* ── 상단 CTA 스트립 (5%) ── */}
-      <div style={{
+      <div className="hero-cta" style={{
         background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB",
-        padding: "16px 24px",
+        padding: "16px 20px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         flexWrap: "wrap", gap: 12,
       }}>
-        <div>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#1D1D1F", margin: 0, letterSpacing: "-0.03em" }}>
             우리 아이를 안전하게 연결해드려요
           </h1>
@@ -507,7 +507,7 @@ export default function HeroSection() {
             검증된 펫시터 · AI 건강 분석 · 안전 결제
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           {["3단계 검증", "AI 분석", "실시간 보고", "안전 결제"].map((label) => (
             <span key={label} style={{
               fontSize: 12, color: "#6B7280", background: "#F9FAFB",
@@ -528,7 +528,7 @@ export default function HeroSection() {
       </div>
 
       {/* ── AI 채팅 (80%) ── */}
-      <div style={{
+      <div className="hero-chat" style={{
         background: "#1D1D1F", borderRadius: 20, overflow: "hidden",
         display: "flex", flexDirection: "column",
         minHeight: "calc(100vh - 250px)",
@@ -591,9 +591,11 @@ export default function HeroSection() {
         </div>
 
         {/* 빠른 질문 */}
-        <div style={{
-          padding: "10px 24px", display: "flex", gap: 8,
+        <div className="hero-quick-q" style={{
+          padding: "10px 20px", display: "flex", gap: 8,
           overflowX: "auto", borderTop: "1px solid rgba(255,255,255,0.06)",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
         }}>
           {["말티즈 특징", "구토 증상", "중성화 비용", "서울 병원", "처음 키우기", "슬개골 수술비"].map((q) => (
             <button key={q} onClick={() => { setChatInput(q); }}
@@ -602,6 +604,7 @@ export default function HeroSection() {
                 border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20,
                 padding: "6px 14px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap",
                 transition: "all 0.15s",
+                fontFamily: "inherit",
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
@@ -612,25 +615,26 @@ export default function HeroSection() {
         </div>
 
         {/* 입력 */}
-        <form onSubmit={handleChat} style={{
-          padding: "16px 24px", borderTop: "1px solid rgba(255,255,255,0.06)",
-          display: "flex", gap: 10,
+        <form onSubmit={handleChat} className="hero-input-form" style={{
+          padding: "14px 20px", borderTop: "1px solid rgba(255,255,255,0.06)",
+          display: "flex", gap: 8,
         }}>
           <input
             value={chatInput} onChange={(e) => setChatInput(e.target.value)}
-            placeholder="증상, 품종, 비용 등 무엇이든 물어보세요..."
+            placeholder="증상·품종·비용 무엇이든..."
             style={{
               flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12, padding: "12px 18px", color: "#fff",
+              borderRadius: 12, padding: "12px 16px", color: "#fff",
               fontSize: 15, outline: "none", minWidth: 0,
               fontFamily: "inherit",
             }}
           />
           <button type="submit" disabled={thinking} style={{
             background: "linear-gradient(135deg, #FF6B35, #F59E0B)", color: "#fff", border: "none",
-            borderRadius: 12, padding: "12px 20px", fontSize: 15,
+            borderRadius: 12, padding: "0 18px", fontSize: 14,
             fontWeight: 700, cursor: "pointer", flexShrink: 0,
             letterSpacing: "-0.01em",
+            fontFamily: "inherit",
           }}>
             전송
           </button>

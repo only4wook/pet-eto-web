@@ -245,11 +245,42 @@
   .sidebar-hide-mobile { display: none !important; }
   .mobile-only { display: flex !important; }
 
+  /* 하단 탭바 + 플로팅 버튼 공간 확보 (탭바 58 + safe-area) */
+  body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)) !important; }
+
+  /* 본문 터치 타겟 최적화 */
+  button, a { -webkit-tap-highlight-color: rgba(255,107,53,0.15); }
+
   .hero-flex { flex-direction: column !important; padding: var(--space-5) var(--space-4) !important; }
   .hero-image-area { display: none !important; }
   .hero-title { font-size: var(--text-h3) !important; }
   .hero-form { flex-direction: column !important; max-width: 100% !important; }
   .hero-ai-area { min-height: 300px !important; }
+
+  /* ── 히어로 섹션 모바일 재구성 ── */
+  .hero-section { gap: 10px !important; }
+  .hero-cta { padding: 12px 14px !important; border-radius: 12px !important; gap: 8px !important; }
+  .hero-cta h1 { font-size: 16px !important; line-height: 1.35 !important; }
+  .hero-cta p { font-size: 12px !important; }
+  .hero-chat {
+    min-height: calc(100vh - 260px) !important;
+    border-radius: 14px !important;
+  }
+  .hero-chat > div:first-child { padding: 12px 14px !important; } /* AI 헤더 */
+  .hero-quick-q { padding: 8px 14px !important; }
+  .hero-quick-q::-webkit-scrollbar { display: none; }
+  .hero-input-form { padding: 10px 12px !important; gap: 6px !important; }
+  .hero-input-form input {
+    padding: 11px 14px !important;
+    font-size: 14px !important;
+  }
+  .hero-input-form button {
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    min-width: 58px !important;
+  }
+  /* 채팅 메시지 영역 여백 조정 */
+  .hero-chat > div:nth-child(2) { padding: 14px 14px !important; }
 
   .trust-grid { grid-template-columns: repeat(2, 1fr) !important; }
 
