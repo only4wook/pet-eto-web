@@ -35,25 +35,22 @@ function CommunityContent() {
     <>
       <Header />
       <main className="container-pet" style={{ padding: "20px 0", flex: 1, maxWidth: 900, marginLeft: "auto", marginRight: "auto" }}>
-        {/* 헤더 + 글쓰기 (중앙 정렬) */}
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          marginBottom: 18, gap: 12,
-        }}>
-          <div>
-            <span className="eyebrow">보호자 커뮤니티</span>
-            <h2 style={{
-              margin: "8px 0 0", fontSize: "clamp(20px, 2.4vw, 26px)",
-              fontWeight: 900, color: "#1D1D1F", letterSpacing: "-0.03em",
-              lineHeight: 1.2,
-            }}>
-              서로 묻고, 공유하고, <span className="text-accent-grad">함께 해요</span>
-            </h2>
-          </div>
+        {/* 헤더 — 중앙 정렬 + 글쓰기 버튼은 아래 */}
+        <div style={{ textAlign: "center", marginBottom: 22 }}>
+          <span className="eyebrow">보호자 커뮤니티</span>
+          <h2 style={{
+            margin: "10px 0 12px", fontSize: "clamp(20px, 2.4vw, 28px)",
+            fontWeight: 900, color: "#1D1D1F", letterSpacing: "-0.03em",
+            lineHeight: 1.25,
+            wordBreak: "keep-all",
+          }}>
+            서로 묻고, 공유하고, <span className="text-accent-grad">함께 해요</span>
+          </h2>
           <Link href="/community/write" style={{
-            padding: "9px 20px", background: "#1D1D1F", color: "#fff", borderRadius: 10,
+            display: "inline-block",
+            padding: "9px 22px", background: "#1D1D1F", color: "#fff", borderRadius: 999,
             fontSize: 13, fontWeight: 700, textDecoration: "none",
-            whiteSpace: "nowrap", flexShrink: 0,
+            whiteSpace: "nowrap",
           }}>+ 글쓰기</Link>
         </div>
 
