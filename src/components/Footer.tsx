@@ -12,7 +12,7 @@ export default function Footer() {
               한양대학교 창업동아리 펫에토 | 경기도 고양시
             </p>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
             <div>
               <p style={{ fontWeight: 700, color: "#D1D5DB", marginBottom: 8 }}>서비스</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -23,12 +23,22 @@ export default function Footer() {
               </div>
             </div>
             <div>
+              <p style={{ fontWeight: 700, color: "#D1D5DB", marginBottom: 8 }}>파트너</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <Link href="/partner/transport" style={{ color: "#9CA3AF" }}>이동 서비스</Link>
+                <Link href="/partner/hotel" style={{ color: "#9CA3AF" }}>호텔링</Link>
+                <Link href="/partner/sitter" style={{ color: "#9CA3AF" }}>방문 돌봄</Link>
+                <Link href="/for-vets" style={{ color: "#9CA3AF" }}>수의사·병원</Link>
+              </div>
+            </div>
+            <div>
               <p style={{ fontWeight: 700, color: "#D1D5DB", marginBottom: 8 }}>회사</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <Link href="/about" style={{ color: "#9CA3AF" }}>팀 소개</Link>
+                <Link href="/pricing" style={{ color: "#9CA3AF" }}>요금·수수료</Link>
+                <Link href="/verification" style={{ color: "#9CA3AF" }}>3단계 검증</Link>
                 <Link href="/terms" style={{ color: "#9CA3AF" }}>이용약관</Link>
                 <Link href="/privacy" style={{ color: "#9CA3AF" }}>개인정보처리방침</Link>
-                <Link href="/partner" style={{ color: "#9CA3AF" }}>파트너 신청</Link>
               </div>
             </div>
           </div>

@@ -83,6 +83,33 @@ export default function PartnerPage() {
     <>
       <Header />
       <main style={{ maxWidth: 700, margin: "0 auto", padding: "20px 16px", flex: 1 }}>
+        {/* 서비스 유형별 빠른 진입 — 2026-04-19 추가 */}
+        <section style={{
+          background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14,
+          padding: 16, marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#1D1D1F", marginBottom: 10 }}>
+            🎯 원하는 서비스 유형으로 바로 가기
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            <a href="/partner/transport" style={quickCardStyle}>
+              <div style={{ fontSize: 24 }}>🚕</div>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>이동 서비스</div>
+            </a>
+            <a href="/partner/hotel" style={quickCardStyle}>
+              <div style={{ fontSize: 24 }}>🏨</div>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>호텔링</div>
+            </a>
+            <a href="/partner/sitter" style={quickCardStyle}>
+              <div style={{ fontSize: 24 }}>🏠</div>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>방문 돌봄</div>
+            </a>
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 11, color: "#9CA3AF", textAlign: "center" }}>
+            보호자 신청·업체 등록 둘 다 가능해요
+          </p>
+        </section>
+
         {/* 히어로 */}
         <section style={{
           background: "linear-gradient(135deg, #FF6B35, #FB923C)", borderRadius: 16,
@@ -271,3 +298,9 @@ export default function PartnerPage() {
 
 const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 4, color: "#374151" };
 const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 14, outline: "none" };
+const quickCardStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+  padding: "14px 8px", background: "#FAFAFA", border: "1px solid #E5E7EB",
+  borderRadius: 10, textDecoration: "none", color: "#1D1D1F",
+  transition: "all 0.15s",
+};

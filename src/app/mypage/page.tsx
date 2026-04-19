@@ -4,6 +4,7 @@ import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import GradeBadge from "../../components/GradeBadge";
+import FavoriteVetCard from "../../components/FavoriteVetCard";
 import { useAppStore } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
 import { getGrade, getNextGrade, GRADE_REQUIREMENTS, POINT_RULES, ROLE_TABLE } from "../../lib/grades";
@@ -147,6 +148,9 @@ export default function MyPage() {
                 )}
               </div>
             </div>
+
+            {/* 단골 동물병원 (응급 원클릭) */}
+            <FavoriteVetCard />
 
             {/* 등급 진행도 */}
             <div style={{ background: "#FAFAFA", borderRadius: 8, padding: 16, marginBottom: 20 }}>
