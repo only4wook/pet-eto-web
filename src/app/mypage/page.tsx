@@ -9,7 +9,7 @@ import HealthTimeline from "../../components/HealthTimeline";
 import { useAppStore } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
 import { getGrade, getNextGrade, GRADE_REQUIREMENTS, POINT_RULES, ROLE_TABLE } from "../../lib/grades";
-import type { Pet } from "../../types";
+import type { Pet, NotificationItem } from "../../types";
 
 export default function MyPage() {
   const user = useAppStore((s) => s.user);
@@ -25,6 +25,12 @@ export default function MyPage() {
   const [newNick, setNewNick] = useState("");
   const [nickSaving, setNickSaving] = useState(false);
   const [nickMsg, setNickMsg] = useState("");
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [withdrawPoints, setWithdrawPoints] = useState(5000);
+  const [withdrawBank, setWithdrawBank] = useState("");
+  const [withdrawAccount, setWithdrawAccount] = useState("");
+  const [withdrawHolder, setWithdrawHolder] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const saveNickname = async () => {
     if (!user) return;
@@ -64,8 +70,45 @@ export default function MyPage() {
       supabase.from("feed_posts").select("id", { count: "exact", head: true })
         .eq("author_id", user.id)
         .then(({ count }) => { if (count) setMyFeedCount(count); });
+      supabase.from("notifications")
+        .select("id,user_id,type,title,body,link,is_read,created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(8)
+        .then(({ data }) => { if (data) setNotifications(data as NotificationItem[]); });
     }
   }, [user]);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const markAllNotificationsRead = async () => {
+    if (!user) return;
+    await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+  };
+
+  const requestWithdraw = async () => {
+    if (!user) return;
+    if (withdrawPoints < 5000) {
+      alert("출금은 최소 5,000P부터 가능합니다.");
+      return;
+    }
+    setWithdrawing(true);
+    const { error } = await supabase.rpc("request_point_withdrawal", {
+      p_points: withdrawPoints,
+      p_bank_name: withdrawBank,
+      p_account_no: withdrawAccount,
+      p_account_holder: withdrawHolder,
+    });
+    setWithdrawing(false);
+    if (error) {
+      alert("출금 신청 실패: " + error.message);
+      return;
+    }
+    const { data: refreshedUser } = await supabase.from("users").select("*").eq("id", user.id).single();
+    if (refreshedUser) setUser(refreshedUser as any);
+    alert("출금 신청이 접수되었습니다. 관리자 확인 후 처리됩니다.");
+  };
 
   const loadMyPosts = async () => {
     if (!user) return;
@@ -94,6 +137,43 @@ export default function MyPage() {
             마이페이지
           </div>
           <div style={{ padding: 20 }}>
+            {/* 알림 박스 */}
+            <div style={{
+              marginBottom: 16,
+              border: "1px solid #E5E7EB",
+              borderRadius: 10,
+              padding: 12,
+              background: unreadCount > 0 ? "#FFF7ED" : "#FAFAFA",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <b style={{ fontSize: 13 }}>🔔 알림 {unreadCount > 0 ? `(${unreadCount}개 미확인)` : ""}</b>
+                {unreadCount > 0 && (
+                  <button onClick={markAllNotificationsRead} style={{
+                    border: "1px solid #FED7AA", background: "#fff", color: "#9A3412",
+                    fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "4px 10px", cursor: "pointer",
+                  }}>모두 읽음</button>
+                )}
+              </div>
+              {notifications.length === 0 ? (
+                <div style={{ fontSize: 12, color: "#9CA3AF" }}>새 알림이 없습니다.</div>
+              ) : (
+                notifications.map((n) => (
+                  <Link key={n.id} href={n.link || "/mypage"} style={{
+                    display: "block",
+                    textDecoration: "none",
+                    padding: "7px 8px",
+                    borderRadius: 8,
+                    background: n.is_read ? "#fff" : "#FFEDD5",
+                    marginBottom: 6,
+                    border: "1px solid #F3F4F6",
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#1F2937" }}>{n.title}</div>
+                    {n.body && <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>{n.body}</div>}
+                  </Link>
+                ))
+              )}
+            </div>
+
             <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 20, borderBottom: "1px solid #f0f0f0", marginBottom: 20 }}>
               <div style={{
                 width: 64, height: 64, borderRadius: "50%", background: "#FF6B35",
@@ -272,6 +352,37 @@ export default function MyPage() {
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* 포인트 사용/출금 */}
+            <div style={{ marginTop: 20, borderTop: "1px solid #F3F4F6", paddingTop: 16 }}>
+              <h3 style={{ fontSize: 14, margin: "0 0 8px", color: "#111827" }}>💰 포인트 사용/출금</h3>
+              <div style={{ fontSize: 12, color: "#4B5563", lineHeight: 1.6, marginBottom: 10 }}>
+                - 돌봄/펫택시 결제 시 포인트를 할인으로 사용할 수 있도록 백엔드 함수(`use_points_for_service`)를 추가했습니다.<br />
+                - 전문가 답변 채택 시 작성자 포인트가 지급되고, 7일 미채택 시 자동 보상이 진행됩니다.<br />
+                - 5,000P 이상이면 출금 신청이 가능합니다.
+              </div>
+              <div style={{ display: "grid", gap: 8 }}>
+                <input value={withdrawPoints} onChange={(e) => setWithdrawPoints(Number(e.target.value || 0))}
+                  type="number" min={5000} step={100}
+                  placeholder="출금 포인트 (최소 5000)"
+                  style={{ padding: "8px 10px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontFamily: "inherit" }} />
+                <input value={withdrawBank} onChange={(e) => setWithdrawBank(e.target.value)}
+                  placeholder="은행명" style={{ padding: "8px 10px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontFamily: "inherit" }} />
+                <input value={withdrawAccount} onChange={(e) => setWithdrawAccount(e.target.value)}
+                  placeholder="계좌번호" style={{ padding: "8px 10px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontFamily: "inherit" }} />
+                <input value={withdrawHolder} onChange={(e) => setWithdrawHolder(e.target.value)}
+                  placeholder="예금주"
+                  style={{ padding: "8px 10px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontFamily: "inherit" }} />
+                <button onClick={requestWithdraw} disabled={withdrawing}
+                  style={{
+                    padding: "10px 12px", border: "none", borderRadius: 8,
+                    background: withdrawing ? "#D1D5DB" : "#111827", color: "#fff",
+                    fontSize: 12, fontWeight: 700, cursor: withdrawing ? "default" : "pointer", fontFamily: "inherit",
+                  }}>
+                  {withdrawing ? "신청 중..." : "포인트 출금 신청"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

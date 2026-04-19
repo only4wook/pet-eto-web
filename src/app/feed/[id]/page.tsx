@@ -41,6 +41,8 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
   const [expertSeverity, setExpertSeverity] = useState<"normal" | "mild" | "moderate" | "urgent">("mild");
   const [expertFollowUp, setExpertFollowUp] = useState(false);
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
+  const [acceptingAnswerId, setAcceptingAnswerId] = useState<string | null>(null);
+  const ACCEPT_REWARD_POINTS = 50;
 
   const handleDelete = async () => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
@@ -88,6 +90,15 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
       .then(({ data, error }) => {
         if (!error && data) setExpertAnswers(data as ExpertAnswer[]);
       });
+
+    // 페이지 접근 시 만료 건 자동 정산(7일 미채택)
+    supabase.rpc("settle_expired_expert_rewards", { p_limit: 50, p_auto_points: 20 }).then(() => {
+      // 정산 후 다시 전문가 답변 상태 동기화
+      supabase.from("feed_posts")
+        .select("*, author:users(id, nickname, avatar_url, points, role)")
+        .eq("id", id).single()
+        .then(({ data }) => { if (data) setPost(data); });
+    });
   }, [id]);
 
   const handleExpertAnswer = async () => {
@@ -123,12 +134,65 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
     await supabase.from("feed_posts").update({ comment_count: (post?.comment_count ?? 0) + 1 }).eq("id", id);
     await supabase.from("point_logs").insert({ user_id: user.id, amount: 5, reason: "피드 댓글" });
     await supabase.rpc("add_points", { uid: user.id, pts: 5 });
+
+    // 글 작성자에게 댓글 알림
+    if (post?.author_id && post.author_id !== user.id) {
+      await supabase.rpc("create_notification", {
+        p_user_id: post.author_id,
+        p_type: "feed_comment",
+        p_title: "새 댓글이 달렸습니다",
+        p_body: "작성한 피드에 새로운 댓글이 등록되었습니다.",
+        p_link: `/feed/${id}`,
+        p_meta: { feed_post_id: id },
+      });
+    }
+
     setNewComment("");
     const { data } = await supabase.from("feed_comments")
       .select("*, author:users(id, nickname, avatar_url, points)")
       .eq("feed_post_id", id).order("created_at", { ascending: true });
     if (data) setComments(data);
     if (post) setPost({ ...post, comment_count: post.comment_count + 1 });
+  };
+
+  const handleAcceptAnswer = async (answerId: string) => {
+    if (!user || !post) return;
+    if (post.author_id !== user.id) {
+      alert("작성자만 답변 채택이 가능합니다.");
+      return;
+    }
+    if (!confirm(`답변을 채택하고 ${ACCEPT_REWARD_POINTS}P를 지급할까요?`)) return;
+
+    setAcceptingAnswerId(answerId);
+    const { error } = await supabase.rpc("accept_expert_answer", {
+      p_answer_id: answerId,
+      p_reward_points: ACCEPT_REWARD_POINTS,
+    });
+    setAcceptingAnswerId(null);
+
+    if (error) {
+      alert("채택 실패: " + error.message);
+      return;
+    }
+
+    // 작성자 포인트 및 포스트 상태 동기화
+    const [{ data: refreshedPost }, { data: refreshedUser }] = await Promise.all([
+      supabase.from("feed_posts")
+        .select("*, author:users(id, nickname, avatar_url, points, role)")
+        .eq("id", id).single(),
+      supabase.from("users").select("*").eq("id", user.id).single(),
+    ]);
+    if (refreshedPost) setPost(refreshedPost as FeedPost);
+    if (refreshedUser) useAppStore.getState().setUser(refreshedUser as any);
+
+    // 답변 목록 재조회
+    const { data } = await supabase.from("expert_answers")
+      .select("*, expert:users(id, nickname, role, clinic_name, license_no, school_name, specialty, points)")
+      .eq("feed_post_id", id)
+      .order("created_at", { ascending: true });
+    if (data) setExpertAnswers(data as ExpertAnswer[]);
+
+    alert(`채택 완료! 전문가에게 ${ACCEPT_REWARD_POINTS}P가 지급되었습니다.`);
   };
 
   if (!post) {
@@ -301,6 +365,46 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                   <div style={{ fontSize: 14, color: "#1D1D1F", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
                     {a.content}
                   </div>
+
+                  {/* 답변 채택 버튼: 글 작성자만 가능, 1회만 */}
+                  {user && post.author_id === user.id && !post.accepted_expert_answer_id && (
+                    <button
+                      onClick={() => handleAcceptAnswer(a.id)}
+                      disabled={acceptingAnswerId === a.id}
+                      style={{
+                        marginTop: 12,
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        border: "1px solid #F59E0B",
+                        background: "#FFF7ED",
+                        color: "#9A3412",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: acceptingAnswerId === a.id ? "default" : "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      {acceptingAnswerId === a.id ? "채택 중..." : `답변 채택하기 (${ACCEPT_REWARD_POINTS}P 지급)`}
+                    </button>
+                  )}
+
+                  {post.accepted_expert_answer_id === a.id && (
+                    <div style={{
+                      marginTop: 10,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      background: "#ECFDF5",
+                      color: "#065F46",
+                      border: "1px solid #A7F3D0",
+                      borderRadius: 999,
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}>
+                      ✅ 채택된 답변
+                    </div>
+                  )}
                 </div>
               );
             })}

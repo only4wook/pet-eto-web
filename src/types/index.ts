@@ -78,6 +78,9 @@ export interface FeedPost {
   request_expert?: boolean;
   expert_target?: ExpertTarget | null;
   expert_status?: ExpertStatus;
+  accepted_expert_answer_id?: string | null;
+  answer_accepted_at?: string | null;
+  expert_auto_settled_at?: string | null;
 }
 
 export interface AnalysisResult {
@@ -128,7 +131,21 @@ export interface ExpertAnswer {
   severity_opinion: "normal" | "mild" | "moderate" | "urgent" | null;
   follow_up_recommended: boolean;
   created_at: string;
+  reward_status?: "none" | "accepted" | "auto_paid";
+  reward_points?: number;
+  rewarded_at?: string | null;
   expert?: User;
+}
+
+export interface NotificationItem {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
 }
 
 // 전문가 계정 신청
