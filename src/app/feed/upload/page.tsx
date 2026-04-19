@@ -108,6 +108,16 @@ export default function FeedUploadPage() {
 
   useEffect(() => {
     let mounted = true;
+
+    // 1) AuthProvider가 이미 setUser(...)로 채워놨으면 즉시 통과
+    //    → 로그인된 사용자에게 '접근 확인 중' 화면이 뜨지 않음
+    if (user && user.id && user.id !== "demo-user") {
+      setIsLoggedIn(true);
+      setAuthChecked(true);
+      return;
+    }
+
+    // 2) user 없으면 세션 재확인 (AuthProvider가 아직 로드 중인 경우 대비)
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
       const hasSession = Boolean(data.session?.user);
@@ -115,11 +125,11 @@ export default function FeedUploadPage() {
       setAuthChecked(true);
       if (!hasSession) {
         trackEvent("feed_upload_blocked_not_logged_in", { source: "feed_upload_page" });
-        router.replace("/auth/login?next=/feed/upload");
+        // 바로 리다이렉트하지 않고 안내 화면을 먼저 보여줌 (깜빡임 방지)
       }
     });
     return () => { mounted = false; };
-  }, [router]);
+  }, [user, router]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -310,31 +320,52 @@ export default function FeedUploadPage() {
     <>
       <Header />
       {!authChecked ? (
-        <main style={{ maxWidth: 500, margin: "0 auto", padding: "48px 16px", flex: 1, width: "100%" }}>
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, textAlign: "center" }}>
-            <div style={{ fontSize: 34, marginBottom: 8 }}>🔒</div>
-            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#1D1D1F" }}>접근 확인 중</h2>
-            <p style={{ margin: 0, color: "#6B7280", fontSize: 14 }}>업로드 권한을 확인하고 있어요.</p>
-          </div>
+        // 극히 짧은 순간(<200ms)만 깜빡임 — 화면을 덜 어색하게 얇은 스피너로 표시
+        <main style={{ maxWidth: 500, margin: "0 auto", padding: "60px 16px", flex: 1, width: "100%", textAlign: "center" }}>
+          <div style={{
+            display: "inline-block", width: 28, height: 28,
+            border: "3px solid #FFE0CC", borderTopColor: "#FF6B35",
+            borderRadius: "50%", animation: "spin 0.7s linear infinite",
+          }} />
+          <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </main>
       ) : !isLoggedIn ? (
         <main style={{ maxWidth: 500, margin: "0 auto", padding: "48px 16px", flex: 1, width: "100%" }}>
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, textAlign: "center" }}>
-            <div style={{ fontSize: 34, marginBottom: 8 }}>🛡️</div>
-            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#1D1D1F" }}>회원 전용 업로드</h2>
-            <p style={{ margin: "0 0 16px", color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
-              피드 신뢰도를 위해 사진/동영상 업로드는 회원가입 후 이용할 수 있습니다.
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, padding: 28, textAlign: "center" }}>
+            <div style={{ fontSize: 44, marginBottom: 12 }}>🔐</div>
+            <h2 style={{ margin: "0 0 10px", fontSize: 19, fontWeight: 800, color: "#1D1D1F", letterSpacing: "-0.02em" }}>
+              로그인이 필요해요
+            </h2>
+            <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, lineHeight: 1.7, wordBreak: "keep-all" }}>
+              피드의 신뢰도를 위해<br />
+              사진·영상 업로드는 회원 전용입니다.
             </p>
-            <button
-              onClick={() => router.push("/auth/login?next=/feed/upload")}
-              style={{
-                border: "none", background: "#FF6B35", color: "#fff",
-                padding: "10px 18px", borderRadius: 8, fontWeight: 700, cursor: "pointer",
-                fontSize: 14, fontFamily: "inherit",
-              }}
-            >
-              로그인하고 업로드하기
-            </button>
+            <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+              <button
+                onClick={() => router.push("/auth/login?next=/feed/upload")}
+                style={{
+                  border: "none", background: "#FF6B35", color: "#fff",
+                  padding: "12px 18px", borderRadius: 10, fontWeight: 700, cursor: "pointer",
+                  fontSize: 14, fontFamily: "inherit",
+                  boxShadow: "0 4px 12px rgba(255,107,53,0.25)",
+                }}
+              >
+                로그인하고 업로드하기
+              </button>
+              <button
+                onClick={() => router.push("/auth/signup?next=/feed/upload")}
+                style={{
+                  border: "1.5px solid #E5E7EB", background: "#fff", color: "#1D1D1F",
+                  padding: "11px 18px", borderRadius: 10, fontWeight: 700, cursor: "pointer",
+                  fontSize: 13, fontFamily: "inherit",
+                }}
+              >
+                회원가입 (30초)
+              </button>
+            </div>
+            <p style={{ margin: "14px 0 0", fontSize: 11, color: "#9CA3AF" }}>
+              첫 피드 업로드 시 +100P 보너스
+            </p>
           </div>
         </main>
       ) : (
