@@ -111,9 +111,11 @@ export default function PremiumHero() {
               letterSpacing: "-0.01em",
             }}
           >
-            3단계 검증을 통과한 펫시터가 우리 아이를 돌봐드립니다.
+            접수 후 전담 매니저가 아이 상태·시간·위치를 확인하고,
             <br />
-            AI 건강 분석 · 실시간 사진 보고 · 안전 결제까지 — 전부.
+            조건이 맞는 3단계 검증 펫시터를 우선순위로 매칭해드립니다.
+            <br />
+            AI 건강 분석 · 실시간 사진 보고 · 안전 결제 · 사고 시 최대 1억 보장까지.
           </p>
 
           {/* CTA 2개 */}
@@ -149,7 +151,7 @@ export default function PremiumHero() {
             {[
               { num: "10분", label: "평균 매칭 시간" },
               { num: "3단계", label: "파트너 검증" },
-              { num: "1억", label: "사고 시 보장" },
+              { num: "최대 1억", label: "사고 보장" },
             ].map((s) => (
               <div key={s.label}>
                 <div style={{ fontSize: "clamp(20px, 2vw, 26px)", fontWeight: 900, color: "#1D1D1F", letterSpacing: "-0.03em" }}>

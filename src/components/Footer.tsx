@@ -29,6 +29,7 @@ export default function Footer() {
                 <Link href="/partner/hotel" style={{ color: "#9CA3AF" }}>호텔링</Link>
                 <Link href="/partner/sitter" style={{ color: "#9CA3AF" }}>방문 돌봄</Link>
                 <Link href="/for-vets" style={{ color: "#9CA3AF" }}>수의사·병원</Link>
+                <Link href="/experts" style={{ color: "#9CA3AF" }}>전문가 디렉토리</Link>
               </div>
             </div>
             <div>

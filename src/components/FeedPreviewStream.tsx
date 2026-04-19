@@ -90,6 +90,23 @@ export default function FeedPreviewStream() {
         </div>
 
         <div
+          className="reveal delay-1"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            flexWrap: "wrap",
+            marginBottom: 16,
+          }}
+        >
+          <span style={{ fontSize: 12, color: "#6B7280", fontWeight: 700 }}>상태 분류</span>
+          <LegendChip label="긴급" bg="#FEF2F2" color="#B91C1C" border="#FCA5A5" icon="🚨" />
+          <LegendChip label="주의" bg="#FFFBEB" color="#B45309" border="#FCD34D" icon="⚠️" />
+          <LegendChip label="관찰" bg="#F0F9FF" color="#0C4A6E" border="#7DD3FC" icon="💡" />
+          <LegendChip label="정상" bg="#ECFDF5" color="#065F46" border="#86EFAC" icon="✅" />
+        </div>
+
+        <div
           className="feed-stream-grid"
           style={{
             display: "grid",
@@ -134,13 +151,13 @@ function FeedCardMini({ post, delayClass }: { post: FeedPost; delayClass: string
   const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
   const sev = post.analysis_result?.severity;
   const sevBadge = sev === "urgent"
-    ? { label: "🚨 긴급", bg: "#FEF2F2", color: "#DC2626" }
+    ? { label: "🚨 긴급", bg: "#FEF2F2", color: "#B91C1C", border: "#FCA5A5", strong: true }
     : sev === "moderate"
-    ? { label: "⚠️ 주의", bg: "#FFFBEB", color: "#D97706" }
+    ? { label: "⚠️ 주의", bg: "#FFFBEB", color: "#B45309", border: "#FCD34D", strong: false }
     : sev === "mild"
-    ? { label: "💡 관찰", bg: "#F0F9FF", color: "#0369A1" }
+    ? { label: "💡 관찰", bg: "#F0F9FF", color: "#0C4A6E", border: "#7DD3FC", strong: false }
     : sev === "normal"
-    ? { label: "✅ 정상", bg: "#ECFDF5", color: "#059669" }
+    ? { label: "✅ 정상", bg: "#ECFDF5", color: "#065F46", border: "#86EFAC", strong: false }
     : null;
 
   const expertBadge = post.expert_status === "answered"
@@ -174,10 +191,15 @@ function FeedCardMini({ post, delayClass }: { post: FeedPost; delayClass: string
         <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
           {sevBadge && (
             <span style={{
-              padding: "4px 10px", fontSize: 11, fontWeight: 700, borderRadius: 999,
+              padding: sevBadge.strong ? "6px 12px" : "5px 10px",
+              fontSize: sevBadge.strong ? 12 : 11,
+              fontWeight: 800,
+              borderRadius: 999,
               background: sevBadge.bg, color: sevBadge.color,
-              border: `1px solid ${sevBadge.color}33`,
+              border: `1.5px solid ${sevBadge.border}`,
+              boxShadow: sevBadge.strong ? "0 6px 16px rgba(185,28,28,0.24)" : "0 4px 12px rgba(0,0,0,0.08)",
               backdropFilter: "blur(4px)",
+              letterSpacing: "-0.01em",
             }}>{sevBadge.label}</span>
           )}
           {expertBadge && (
@@ -207,5 +229,38 @@ function FeedCardMini({ post, delayClass }: { post: FeedPost; delayClass: string
         </div>
       </div>
     </Link>
+  );
+}
+
+function LegendChip({
+  label,
+  icon,
+  bg,
+  color,
+  border,
+}: {
+  label: string;
+  icon: string;
+  bg: string;
+  color: string;
+  border: string;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "4px 10px",
+        fontSize: 11,
+        fontWeight: 700,
+        borderRadius: 999,
+        background: bg,
+        color,
+        border: `1px solid ${border}`,
+      }}
+    >
+      {icon} {label}
+    </span>
   );
 }

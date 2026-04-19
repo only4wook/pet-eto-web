@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PET_AI_PERSONA, GENERATION_CONFIG, SAFETY_SETTINGS } from "../../../lib/aiPrompts";
+import { PET_AI_PERSONA, GENERATION_CONFIG, SAFETY_SETTINGS, detectSymptomGuides } from "../../../lib/aiPrompts";
 
 // P.E.T AI 채팅 - Gemini 2.0 Flash 기반 수의학 대화 엔진
 // 공통 프롬프트 모듈(aiPrompts.ts)에서 페르소나·Few-shot·파라미터를 주입.
@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
       ? `\n\n## 이 보호자의 반려동물\n${pets.map((p) => `- ${p.name} (${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}, ${p.breed})`).join("\n")}\n답변 시 이 아이들의 품종 특성·호발 질환을 자연스럽게 반영하세요. 이름을 불러주면 보호자 친밀도가 올라갑니다.`
       : "";
 
+    // 타겟 증상(구토·피부발진·다리절뚝) 감지 → 전문 가이드 주입
+    const historyText = (history || []).map((m) => m.text).join(" ");
+    const guides = detectSymptomGuides(message + " " + historyText);
+    const symptomContext = guides.length > 0
+      ? `\n\n## 🎯 타겟 증상 감지 — 아래 전문 가이드에 따라 정밀하게 답변\n${guides.join("\n")}`
+      : "";
+
     // 최근 대화 8턴까지 유지 (맥락 유지 + 토큰 절약)
     const recentHistory = (history || []).slice(-8);
     const contents = [
@@ -41,7 +48,7 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           systemInstruction: {
-            parts: [{ text: PET_AI_PERSONA + petContext }],
+            parts: [{ text: PET_AI_PERSONA + petContext + symptomContext }],
           },
           contents,
           generationConfig: GENERATION_CONFIG,

@@ -156,6 +156,24 @@ export default function MyPage() {
             {/* 내 반려동물 건강 타임라인 (최근 30일) */}
             <HealthTimeline />
 
+            {/* 월간 리포트 바로가기 */}
+            <Link href="/mypage/report" style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "14px 16px",
+              background: "linear-gradient(135deg, #FF6B35 0%, #F59E0B 100%)",
+              color: "#fff", borderRadius: 14, marginBottom: 16,
+              textDecoration: "none", boxShadow: "0 6px 16px rgba(255,107,53,0.18)",
+            }}>
+              <span style={{ fontSize: 24 }}>📋</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>이달의 월간 건강 리포트</div>
+                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 2 }}>
+                  AI가 이번 달 기록을 한눈에 요약해드려요
+                </div>
+              </div>
+              <span style={{ fontSize: 18 }}>→</span>
+            </Link>
+
             {/* 등급 진행도 */}
             <div style={{ background: "#FAFAFA", borderRadius: 8, padding: 16, marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
