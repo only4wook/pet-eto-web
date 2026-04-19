@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 // P.E.T Trust Grid — 신뢰 시그널 6개를 Glassmorphism 카드로 표시
 // 레퍼런스: Linear.app Features, Apple 기능 카드, Stripe 섹션
 
 type TrustItem = {
-  icon: JSX.Element;
+  icon: ReactNode;
   title: string;
   desc: string;
   badge?: string;
