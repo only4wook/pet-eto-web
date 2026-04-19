@@ -15,6 +15,17 @@ function rankSeverity(s: string) {
   return s === "urgent" ? 3 : s === "moderate" ? 2 : s === "mild" ? 1 : 0;
 }
 
+function isRateLimitError(message: string) {
+  const m = (message || "").toLowerCase();
+  return m.includes("429") || m.includes("rate limit") || m.includes("quota");
+}
+
+function computeBackoffSeconds(retryCount: number) {
+  const base = 30; // 30s
+  const exp = Math.min(Math.max(retryCount, 0), 8); // cap to avoid extreme waits
+  return Math.min(base * (2 ** exp), 3600); // max 1h
+}
+
 async function analyzeViaInternalApi(post: {
   id: string;
   image_url: string;
@@ -55,11 +66,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const batchSize = Math.max(1, Math.min(50, Number(body?.batchSize || 20)));
+    const nowIso = new Date().toISOString();
 
     const { data: jobs, error } = await sb
       .from("feed_reanalysis_queue")
-      .select("id, feed_post_id")
+      .select("id, feed_post_id, retry_count, queued_at")
       .eq("status", "pending")
+      .lte("queued_at", nowIso)
       .order("priority", { ascending: true })
       .order("queued_at", { ascending: true })
       .limit(batchSize);
@@ -115,13 +128,29 @@ export async function POST(req: NextRequest) {
 
         if (rankSeverity(newSeverity) > rankSeverity(oldSeverity)) updated += 1;
       } catch (e: any) {
-        failures.push({ queue_id: job.id, reason: e?.message || "unknown" });
-        await sb.from("feed_reanalysis_queue").update({
-          status: "failed",
-          retry_count: 1,
-          last_error: String(e?.message || "unknown"),
-          finished_at: new Date().toISOString(),
-        }).eq("id", job.id);
+        const errMessage = String(e?.message || "unknown");
+        failures.push({ queue_id: job.id, reason: errMessage });
+
+        if (isRateLimitError(errMessage)) {
+          const nextRetryCount = Number(job.retry_count || 0) + 1;
+          const waitSec = computeBackoffSeconds(nextRetryCount);
+          const nextQueuedAt = new Date(Date.now() + waitSec * 1000).toISOString();
+          await sb.from("feed_reanalysis_queue").update({
+            status: "pending",
+            retry_count: nextRetryCount,
+            last_error: errMessage,
+            started_at: null,
+            finished_at: null,
+            queued_at: nextQueuedAt,
+          }).eq("id", job.id);
+        } else {
+          await sb.from("feed_reanalysis_queue").update({
+            status: "failed",
+            retry_count: Number(job.retry_count || 0) + 1,
+            last_error: errMessage,
+            finished_at: new Date().toISOString(),
+          }).eq("id", job.id);
+        }
       }
     }
 
