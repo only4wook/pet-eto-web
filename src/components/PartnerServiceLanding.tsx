@@ -201,7 +201,10 @@ function RequestForm({ meta, user }: { meta: PartnerServiceMeta; user: any }) {
           펫에토 매니저가 2시간 내 카카오톡으로 연락드립니다.
           <br />검증된 {meta.title} 업체와 매칭해드릴게요.
         </p>
-        <Link href="/" className="btn-primary-xl">홈으로</Link>
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+          <Link href={`/payment?service=${meta.kind}`} className="btn-primary-xl">결제 진행하기</Link>
+          <Link href="/" className="btn-secondary-xl">홈으로</Link>
+        </div>
       </div>
     );
   }

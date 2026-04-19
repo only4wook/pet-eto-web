@@ -79,12 +79,13 @@ export default function WritePage() {
             {/* 카테고리 */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>말머리</label>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {CATEGORIES.map((cat) => (
                   <button key={cat} onClick={() => setCategory(cat)} style={{
-                    padding: "6px 16px", border: "1px solid #ddd", borderRadius: 4,
+                    padding: "8px 14px", border: "1px solid #ddd", borderRadius: 8,
                     background: category === cat ? "#FF6B35" : "#fff",
                     color: category === cat ? "#fff" : "#333", cursor: "pointer", fontSize: 13,
+                    fontFamily: "inherit", fontWeight: 700, lineHeight: 1.2,
                   }}>{cat}</button>
                 ))}
               </div>
