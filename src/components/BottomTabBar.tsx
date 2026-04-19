@@ -28,11 +28,16 @@ export default function BottomTabBar() {
         right: 0,
         bottom: 0,
         zIndex: 50,
+        width: "100%",
         background: "rgba(255,255,255,0.92)",
         backdropFilter: "saturate(180%) blur(24px)",
         WebkitBackdropFilter: "saturate(180%) blur(24px)",
         borderTop: "0.5px solid rgba(0,0,0,0.08)",
+        // 상·하·좌·우 safe area 전부 반영 (iPhone 가로모드 노치 포함)
+        paddingTop: 0,
         paddingBottom: "env(safe-area-inset-bottom, 0)",
+        paddingLeft: "env(safe-area-inset-left, 0)",
+        paddingRight: "env(safe-area-inset-right, 0)",
         boxShadow: "0 -4px 20px rgba(0,0,0,0.04)",
       }}
     >
@@ -42,7 +47,13 @@ export default function BottomTabBar() {
           justifyContent: "space-around",
           alignItems: "center",
           height: 68,
-          padding: "0 4px",
+          // 큰 폰(아이폰 Pro Max·갤럭시 Ultra·아이패드 미니)에서도 탭이 좌측으로 몰리지 않게
+          // 화면 전체 너비를 100% 쓰되, 과도하게 퍼지지 않게 max-width로 제한 + 가운데 정렬
+          width: "100%",
+          maxWidth: 520,
+          margin: "0 auto",
+          padding: "0 6px",
+          boxSizing: "border-box",
         }}
       >
         {TABS.map((tab) => {
