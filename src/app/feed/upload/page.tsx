@@ -98,8 +98,8 @@ function pickHigherSeverity(
   return SEVERITY_RANK[a] >= SEVERITY_RANK[b] ? a : b;
 }
 
-// 영상 다중 프레임 추출(초중반/중반/후반) → Vision 분석 정확도 향상
-function extractVideoFrames(file: File, frameCount = 3): Promise<File[]> {
+// 영상 다중 프레임 추출(기본 5프레임) → Vision 분석 정확도 향상
+function extractVideoFrames(file: File, frameCount = 5): Promise<File[]> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     const objectUrl = URL.createObjectURL(file);
@@ -341,9 +341,9 @@ export default function FeedUploadPage() {
       }
 
       if (mediaType === "video") {
-        setLoadingMsg("AI 분석 중... (멀티 프레임)");
+        setLoadingMsg("AI 분석 중... (5프레임 정밀 분석)");
         try {
-          const frames = await extractVideoFrames(mediaFile, 3);
+          const frames = await extractVideoFrames(mediaFile, 5);
           const frameAnalyses: { severity: "normal" | "mild" | "moderate" | "urgent"; text: string }[] = [];
 
           for (const frame of frames) {
@@ -413,18 +413,34 @@ export default function FeedUploadPage() {
         baseInsert.expert_target = expertTarget;
         baseInsert.expert_status = "pending";
       }
-      let { error: insertError } = await supabase.from("feed_posts").insert(baseInsert);
+      let createdPostId: string | null = null;
+      let { data: insertedRows, error: insertError } = await supabase.from("feed_posts").insert(baseInsert).select("id");
+      if (!insertError && insertedRows?.[0]?.id) {
+        createdPostId = insertedRows[0].id;
+      }
       // DB에 request_expert 컬럼이 아직 없을 경우(마이그레이션 전) → 메타 제거하고 재시도
       if (insertError && effectiveRequestExpert && /column.*request_expert|expert_target|expert_status/i.test(insertError.message)) {
         const fallback = { ...baseInsert };
         delete fallback.request_expert;
         delete fallback.expert_target;
         delete fallback.expert_status;
-        const retry = await supabase.from("feed_posts").insert(fallback);
+        const retry = await supabase.from("feed_posts").insert(fallback).select("id");
         insertError = retry.error;
+        if (!insertError && retry.data?.[0]?.id) createdPostId = retry.data[0].id;
       }
 
       if (insertError) { alert("저장 실패: " + insertError.message); setLoading(false); return; }
+      if (createdPostId) {
+        try {
+          await supabase.rpc("enqueue_feed_reanalysis", {
+            p_feed_post_id: createdPostId,
+            p_reason: "post_upload_auto",
+            p_priority: 80,
+          });
+        } catch {
+          // 큐 미구성 환경에서는 무시
+        }
+      }
       trackEvent("feed_upload_success", { media_type: mediaType, request_expert: effectiveRequestExpert });
 
       // 포인트 +10P (첫 피드 +100P 보너스)

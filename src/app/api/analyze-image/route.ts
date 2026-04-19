@@ -207,6 +207,43 @@ const HIGH_RISK_PATTERNS = [
   "출혈",
 ];
 
+const SPECIES_TRIAGE_WEIGHTS: Record<
+  string,
+  {
+    droolingWeight: number;
+    breathingWeight: number;
+    lethargyWeight: number;
+    traumaWeight: number;
+    urgentFlagThreshold: number;
+    moderateFlagThreshold: number;
+  }
+> = {
+  cat: {
+    droolingWeight: 3,
+    breathingWeight: 3,
+    lethargyWeight: 2,
+    traumaWeight: 2,
+    urgentFlagThreshold: 4,
+    moderateFlagThreshold: 2,
+  },
+  dog: {
+    droolingWeight: 1, // 강아지는 침흘림 자체만으로는 고양이보다 보수적
+    breathingWeight: 3,
+    lethargyWeight: 2,
+    traumaWeight: 2,
+    urgentFlagThreshold: 4,
+    moderateFlagThreshold: 2,
+  },
+  other: {
+    droolingWeight: 2,
+    breathingWeight: 3,
+    lethargyWeight: 2,
+    traumaWeight: 2,
+    urgentFlagThreshold: 4,
+    moderateFlagThreshold: 2,
+  },
+};
+
 function includesAny(text: string, patterns: string[]) {
   return patterns.some((p) => text.includes(p));
 }
@@ -224,6 +261,26 @@ function computeSeverityScore(params: {
   const riskBoost = params.hasHighRiskText ? 2 : 0;
   const uncertainBoost = params.imageUncertain ? 1 : 0;
   return Math.max(0, Math.min(10, base + fgsBoost + flagBoost + riskBoost + uncertainBoost));
+}
+
+function computeSpeciesRiskPoints(
+  species: string,
+  redFlag: {
+    drooling_hypersalivation?: boolean;
+    open_mouth_breathing?: boolean;
+    lethargic_or_collapse_posture?: boolean;
+    visible_trauma_or_bleeding?: boolean;
+    face_pain_expression?: boolean;
+  }
+) {
+  const w = SPECIES_TRIAGE_WEIGHTS[species] || SPECIES_TRIAGE_WEIGHTS.other;
+  let points = 0;
+  if (redFlag.drooling_hypersalivation) points += w.droolingWeight;
+  if (redFlag.open_mouth_breathing) points += w.breathingWeight;
+  if (redFlag.lethargic_or_collapse_posture) points += w.lethargyWeight;
+  if (redFlag.visible_trauma_or_bleeding) points += w.traumaWeight;
+  if (redFlag.face_pain_expression) points += 1;
+  return { points, weights: w };
 }
 
 function buildEmergencyGuidance(params: {
@@ -440,6 +497,7 @@ export async function POST(req: NextRequest) {
       redFlag.visible_trauma_or_bleeding,
       redFlag.face_pain_expression,
     ].filter(Boolean).length;
+    const speciesRisk = computeSpeciesRiskPoints(species, redFlag);
 
     if (hasCriticalCombo || redFlagCount >= 2) severity = "urgent";
     else if (redFlagCount === 1 && severity === "normal") severity = "moderate";
@@ -452,6 +510,15 @@ export async function POST(req: NextRequest) {
 
     // 텍스트/이미지 단서에 고위험 표현이 있으면 최소 moderate
     if (hasHighRiskText && (severity === "normal" || severity === "mild")) {
+      severity = "moderate";
+    }
+
+    if (speciesRisk.points >= speciesRisk.weights.urgentFlagThreshold) {
+      severity = "urgent";
+    } else if (
+      speciesRisk.points >= speciesRisk.weights.moderateFlagThreshold &&
+      (severity === "normal" || severity === "mild")
+    ) {
       severity = "moderate";
     }
 
