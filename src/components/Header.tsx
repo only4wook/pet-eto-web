@@ -4,6 +4,8 @@ import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import GradeBadge from "./GradeBadge";
 import { safeNickname } from "../lib/utils";
+import { buildKakaoConsultUrl } from "../lib/contact";
+import { trackEvent } from "../lib/analytics";
 
 export default function Header() {
   const user = useAppStore((s) => s.user);
@@ -124,7 +126,7 @@ export default function Header() {
             </Link>
           ))}
           {/* 카톡 상담 */}
-          <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
+          <a href={buildKakaoConsultUrl("header_nav")} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent("kakao_click", { source: "header_nav" })} style={{
             marginLeft: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
             background: "#FEE500", color: "#1D1D1F", padding: "6px 14px",
             borderRadius: 20, fontSize: 12, fontWeight: 700, textDecoration: "none",

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { trackEvent } from "../lib/analytics";
 
 // 히어로 다음 "서비스 요약" — 커서 피드백: '서비스가 실제로 뭘 하는지 1개 요약 섹션'
 // 히어로와 신뢰 카드 사이에서 "정확히 어떤 걸 해준다"를 한 번에 전달
@@ -80,6 +81,7 @@ export default function ServiceSummary() {
             <Link
               key={it.num}
               href={it.cta.href}
+              onClick={() => trackEvent("home_service_summary_click", { target: it.cta.href })}
               className={`reveal delay-${idx + 1} lift`}
               style={{
                 display: "flex", flexDirection: "column",

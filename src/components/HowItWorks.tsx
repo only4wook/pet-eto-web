@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { buildKakaoConsultUrl } from "../lib/contact";
+import { trackEvent } from "../lib/analytics";
 
 // P.E.T How It Works — 3단계 이용 절차
 // 레퍼런스: Apple 제품 페이지 단계 설명, Linear.app 프로세스 스토리
@@ -216,9 +218,10 @@ export default function HowItWorks() {
         {/* CTA */}
         <div className="reveal delay-4" style={{ textAlign: "center" }}>
           <a
-            href="https://pf.kakao.com/_giedX/chat"
+            href={buildKakaoConsultUrl("howitworks_cta")}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("kakao_click", { source: "howitworks_cta" })}
             className="btn-primary-xl"
           >
             지금 1:1 상담 시작

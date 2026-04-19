@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { buildKakaoConsultUrl } from "../lib/contact";
+import { trackEvent } from "../lib/analytics";
 
 // P.E.T Awwwards-grade Hero
 // 레퍼런스: Airbnb(따뜻한 신뢰) + Linear(대범한 타이포) + Apple(여백·스토리텔링)
@@ -124,9 +126,10 @@ export default function PremiumHero() {
             style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 32 }}
           >
             <a
-              href="https://pf.kakao.com/_giedX/chat"
+              href={buildKakaoConsultUrl("hero_cta")}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackEvent("kakao_click", { source: "hero_cta" })}
               className="btn-primary-xl"
             >
               매칭 요청하기

@@ -136,11 +136,29 @@ export default function AboutPage() {
             ))}
           </div>
           <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", margin: 0 }}>
-            전문가 자문·제휴에 관심 있으시다면 📧 peteto2026@gmail.com 또는{" "}
+            전문가 자문·제휴에 관심 있으시다면 dnlsdpa123@nate.com 또는{" "}
             <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{ color: "#FF6B35", fontWeight: 600 }}>
               카카오톡 채널
             </a>로 연락주세요.
           </p>
+        </section>
+
+        {/* IR 안내 */}
+        <section style={{
+          background: "#fff", borderRadius: 16, padding: "24px 28px", marginBottom: 24, border: "1px solid #F3F4F6",
+        }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#1F2937", margin: "0 0 8px" }}>투자·IR</h2>
+          <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 12px", lineHeight: 1.7 }}>
+            P.E.T의 문제 정의, 해결 방식, 시장 전략을 요약한 IR 페이지를 공개했습니다.
+            자세한 자료는 이메일 또는 카카오톡으로 요청해 주세요.
+          </p>
+          <Link href="/ir" style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "8px 14px", borderRadius: 999, textDecoration: "none",
+            border: "1.5px solid #FDBA74", color: "#C2410C", fontSize: 13, fontWeight: 700,
+          }}>
+            IR 요약 보기 →
+          </Link>
         </section>
 
         {/* 연락처 */}
@@ -153,8 +171,8 @@ export default function AboutPage() {
             파트너 제휴, 투자, 언론 문의 등 무엇이든 편하게 연락주세요.
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", fontSize: 14 }}>
-            <span style={{ color: "#374151" }}>📧 peteto2026@gmail.com</span>
-            <span style={{ color: "#374151" }}>📍 경기도 고양시</span>
+            <span style={{ color: "#374151" }}>dnlsdpa123@nate.com</span>
+            <span style={{ color: "#374151" }}>경기도 고양시</span>
           </div>
         </section>
       </main>

@@ -8,6 +8,8 @@ import { findFood, formatFoodResponse } from "../lib/aiFoodSafety";
 import { BREED_DISEASE_DATA } from "../lib/wikiDiseaseData";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
+import { buildKakaoConsultUrl } from "../lib/contact";
+import { trackEvent } from "../lib/analytics";
 
 // 지역 키워드 추출 (세부 지역 우선 매칭, 동물 이름 혼동 방지)
 function findArea(q: string): string | null {
@@ -507,7 +509,7 @@ export default function HeroSection() {
             카톡으로 문의 → 매니저가 10분 내 응답
           </p>
         </div>
-        <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
+        <a href={buildKakaoConsultUrl("ai_section_cta")} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent("kakao_click", { source: "ai_section_cta" })} style={{
           background: "#1D1D1F", color: "#fff", padding: "8px 18px",
           borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
           whiteSpace: "nowrap", flexShrink: 0,

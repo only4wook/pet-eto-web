@@ -36,6 +36,7 @@ export default function Footer() {
               <p style={{ fontWeight: 700, color: "#D1D5DB", marginBottom: 8 }}>회사</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <Link href="/about" style={{ color: "#9CA3AF" }}>팀 소개</Link>
+                <Link href="/ir" style={{ color: "#9CA3AF" }}>투자·IR</Link>
                 <Link href="/pricing" style={{ color: "#9CA3AF" }}>요금·수수료</Link>
                 <Link href="/verification" style={{ color: "#9CA3AF" }}>3단계 검증</Link>
                 <Link href="/terms" style={{ color: "#9CA3AF" }}>이용약관</Link>
@@ -46,7 +47,7 @@ export default function Footer() {
         </div>
         <div style={{ borderTop: "1px solid #374151", paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <p style={{ margin: 0, color: "#6B7280" }}>&copy; 2026 P.E.T 펫에토. All rights reserved.</p>
-          <p style={{ margin: 0, color: "#6B7280" }}>peteto2026@gmail.com</p>
+          <p style={{ margin: 0, color: "#6B7280" }}>dnlsdpa123@nate.com</p>
         </div>
       </div>
     </footer>
