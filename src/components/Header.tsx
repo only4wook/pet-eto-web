@@ -134,66 +134,9 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* 카톡 상담 — 모바일 플로팅 버튼 (하단 탭바 위에 노출) */}
-      <a
-        href="https://pf.kakao.com/_giedX/chat"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mobile-only kakao-fab"
-        aria-label="카카오톡 상담"
-        style={{
-          display: "none",
-          position: "fixed",
-          right: 16,
-          bottom: "calc(84px + env(safe-area-inset-bottom, 0))",
-          zIndex: 45,
-          width: 54,
-          height: 54,
-          borderRadius: "50%",
-          background: "#FEE500",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
-          textDecoration: "none",
-          fontSize: 20,
-          fontWeight: 800,
-          color: "#3C1E1E",
-          touchAction: "manipulation",
-          WebkitTapHighlightColor: "transparent",
-        }}
-      >
-        💬
-      </a>
-
-      {/* 피드 업로드 FAB — 인스타처럼 어디서든 + 로 사진·영상 올리기 (모바일) */}
-      <Link
-        href="/feed/upload"
-        aria-label="사진·영상 올리기"
-        className="mobile-only upload-fab"
-        style={{
-          display: "none",
-          position: "fixed",
-          right: 16,
-          bottom: "calc(148px + env(safe-area-inset-bottom, 0))",
-          zIndex: 45,
-          width: 56,
-          height: 56,
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, #FF6B35 0%, #F59E0B 100%)",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 8px 24px rgba(255,107,53,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
-          textDecoration: "none",
-          fontSize: 30,
-          fontWeight: 400,
-          color: "#fff",
-          lineHeight: 1,
-          touchAction: "manipulation",
-          WebkitTapHighlightColor: "transparent",
-        }}
-      >
-        ＋
-      </Link>
+      {/* 모바일 플로팅 버튼은 제거 — 사용자 피드백: '계속 따라다녀서 거슬림'
+          · 피드 업로드는 /feed 페이지에서만 자체 FAB로 노출
+          · 카톡 상담은 PC 네비/Hero CTA/Footer에 이미 녹아있음 */}
     </header>
   );
 }

@@ -214,6 +214,8 @@ function SwipeCard({ post, idx, active }: { post: FeedPost; idx: number; active:
             } catch {}
           }
         }} ariaLabel="피드 공유하기" />
+        {/* 업로드 진입 — 공유 아래 */}
+        <ActionBtn icon="＋" label="올리기" href="/feed/upload" ariaLabel="사진·영상 올리기" />
       </div>
 
       {/* 하단 정보 오버레이 (그라디언트 아래에) */}
