@@ -84,6 +84,84 @@ function extractVideoThumbnail(file: File): Promise<Blob> {
   });
 }
 
+const SEVERITY_RANK: Record<"normal" | "mild" | "moderate" | "urgent", number> = {
+  normal: 0,
+  mild: 1,
+  moderate: 2,
+  urgent: 3,
+};
+
+function pickHigherSeverity(
+  a: "normal" | "mild" | "moderate" | "urgent",
+  b: "normal" | "mild" | "moderate" | "urgent"
+) {
+  return SEVERITY_RANK[a] >= SEVERITY_RANK[b] ? a : b;
+}
+
+// 영상 다중 프레임 추출(초중반/중반/후반) → Vision 분석 정확도 향상
+function extractVideoFrames(file: File, frameCount = 3): Promise<File[]> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const objectUrl = URL.createObjectURL(file);
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.src = objectUrl;
+
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl);
+      video.removeAttribute("src");
+      video.load();
+    };
+
+    video.onloadedmetadata = async () => {
+      try {
+        const duration = Math.max(video.duration || 0, 0.1);
+        const points = frameCount === 3 ? [0.2, 0.5, 0.8] : [0.15, 0.35, 0.55, 0.75, 0.9];
+        const selected = points.slice(0, frameCount).map((p) => Math.min(Math.max(duration * p, 0.05), Math.max(duration - 0.05, 0.05)));
+        const frames: File[] = [];
+
+        for (let i = 0; i < selected.length; i++) {
+          const sec = selected[i];
+          await new Promise<void>((r, j) => {
+            const onSeeked = async () => {
+              try {
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.min(video.videoWidth || 1200, 1200);
+                canvas.height = Math.round(canvas.width * ((video.videoHeight || 1200) / Math.max(video.videoWidth || 1200, 1)));
+                canvas.getContext("2d")!.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const blob = await new Promise<Blob | null>((blobResolve) => canvas.toBlob(blobResolve, "image/jpeg", 0.82));
+                if (!blob) throw new Error("프레임 추출 실패");
+                frames.push(new File([blob], `video-frame-${Date.now()}-${i + 1}.jpg`, { type: "image/jpeg" }));
+                r();
+              } catch {
+                j(new Error("프레임 캡처 실패"));
+              }
+            };
+            video.onseeked = onSeeked;
+            video.onerror = () => j(new Error("비디오 탐색 실패"));
+            video.currentTime = sec;
+          });
+        }
+
+        cleanup();
+        resolve(frames);
+      } catch (e) {
+        cleanup();
+        reject(e);
+      }
+    };
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("비디오 로드 실패"));
+    };
+    setTimeout(() => {
+      cleanup();
+      reject(new Error("비디오 프레임 추출 타임아웃"));
+    }, 16000);
+  });
+}
+
 type MediaType = "image" | "video";
 
 export default function FeedUploadPage() {
@@ -234,8 +312,9 @@ export default function FeedUploadPage() {
       let analysis: any = analyzeSymptoms(description, species); // 텍스트 기본 분석
       let aiImageAnalysis = "";
       let visionAnalyzed = false;
+      let forceExpertRequest = false;
 
-      if (analysisImageFile) {
+      if (analysisImageFile && mediaType === "image") {
         try {
           const aiFd = new FormData();
           aiFd.append("file", analysisImageFile);
@@ -261,6 +340,47 @@ export default function FeedUploadPage() {
         } catch { /* Gemini 실패 시 텍스트 분석 유지 */ }
       }
 
+      if (mediaType === "video") {
+        setLoadingMsg("AI 분석 중... (멀티 프레임)");
+        try {
+          const frames = await extractVideoFrames(mediaFile, 3);
+          const frameAnalyses: { severity: "normal" | "mild" | "moderate" | "urgent"; text: string }[] = [];
+
+          for (const frame of frames) {
+            const aiFd = new FormData();
+            aiFd.append("file", frame);
+            aiFd.append("description", description);
+            aiFd.append("species", species);
+            const aiRes = await fetch("/api/analyze-image", { method: "POST", body: aiFd });
+            const aiData = await aiRes.json();
+            if (aiRes.ok && aiData.analysis && aiData.severity) {
+              frameAnalyses.push({ severity: aiData.severity, text: aiData.analysis });
+            }
+          }
+
+          if (frameAnalyses.length > 0) {
+            visionAnalyzed = true;
+            const mergedSeverity = frameAnalyses.reduce(
+              (acc, cur) => pickHigherSeverity(acc, cur.severity),
+              "normal" as "normal" | "mild" | "moderate" | "urgent"
+            );
+            const mergedText = frameAnalyses
+              .map((f, i) => `[프레임 ${i + 1}] ${f.text.slice(0, 220)}`)
+              .join("\n\n");
+
+            aiImageAnalysis = `동영상 ${frameAnalyses.length}프레임 분석 결과\n\n${mergedText}`;
+            analysis = {
+              severity: mergedSeverity,
+              symptoms: [mergedSeverity === "urgent" ? "긴급" : mergedSeverity === "moderate" ? "주의" : mergedSeverity === "mild" ? "관찰" : "정상"],
+              summary: aiImageAnalysis.slice(0, 300),
+              recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
+            };
+          }
+        } catch {
+          // 멀티 프레임 실패 시 기존 thumbnail 기반 or 텍스트 분석 유지
+        }
+      }
+
       // 이미지/영상이 있지만 비전 분석에 실패한 경우: 정상 오판 방지용 최소 보수 판정
       if (analysisImageFile && !visionAnalyzed && analysis.severity === "normal") {
         analysis = {
@@ -270,6 +390,11 @@ export default function FeedUploadPage() {
           summary: "이미지/영상 AI 분석이 지연되어 보수적으로 관찰 등급으로 분류했습니다.",
           recommendation: "같은 증상이 지속되면 재촬영 후 다시 분석하거나 전문가 답변을 요청해주세요.",
         };
+      }
+
+      // 의심/응급 케이스는 자동 전문가 요청 활성화
+      if (analysis.severity === "moderate" || analysis.severity === "urgent") {
+        forceExpertRequest = true;
       }
 
       // DB 저장 (전문가 요청 시 request_expert 및 expert_status 'pending')
@@ -282,14 +407,15 @@ export default function FeedUploadPage() {
         pet_species: species,
         analysis_result: analysis,
       };
-      if (requestExpert) {
+      const effectiveRequestExpert = requestExpert || forceExpertRequest;
+      if (effectiveRequestExpert) {
         baseInsert.request_expert = true;
         baseInsert.expert_target = expertTarget;
         baseInsert.expert_status = "pending";
       }
       let { error: insertError } = await supabase.from("feed_posts").insert(baseInsert);
       // DB에 request_expert 컬럼이 아직 없을 경우(마이그레이션 전) → 메타 제거하고 재시도
-      if (insertError && requestExpert && /column.*request_expert|expert_target|expert_status/i.test(insertError.message)) {
+      if (insertError && effectiveRequestExpert && /column.*request_expert|expert_target|expert_status/i.test(insertError.message)) {
         const fallback = { ...baseInsert };
         delete fallback.request_expert;
         delete fallback.expert_target;
@@ -299,7 +425,7 @@ export default function FeedUploadPage() {
       }
 
       if (insertError) { alert("저장 실패: " + insertError.message); setLoading(false); return; }
-      trackEvent("feed_upload_success", { media_type: mediaType, request_expert: requestExpert });
+      trackEvent("feed_upload_success", { media_type: mediaType, request_expert: effectiveRequestExpert });
 
       // 포인트 +10P (첫 피드 +100P 보너스)
       let feedPts = 10;
