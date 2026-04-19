@@ -233,6 +233,7 @@ export default function FeedUploadPage() {
       setLoadingMsg("AI 분석 중...");
       let analysis: any = analyzeSymptoms(description, species); // 텍스트 기본 분석
       let aiImageAnalysis = "";
+      let visionAnalyzed = false;
 
       if (analysisImageFile) {
         try {
@@ -243,6 +244,7 @@ export default function FeedUploadPage() {
           const aiRes = await fetch("/api/analyze-image", { method: "POST", body: aiFd });
           const aiData = await aiRes.json();
           if (aiRes.ok && aiData.analysis) {
+            visionAnalyzed = true;
             aiImageAnalysis = aiData.analysis;
             // Gemini 분석 결과로 심각도 + 구조화 필드 업데이트
             analysis = {
@@ -257,6 +259,17 @@ export default function FeedUploadPage() {
             };
           }
         } catch { /* Gemini 실패 시 텍스트 분석 유지 */ }
+      }
+
+      // 이미지/영상이 있지만 비전 분석에 실패한 경우: 정상 오판 방지용 최소 보수 판정
+      if (analysisImageFile && !visionAnalyzed && analysis.severity === "normal") {
+        analysis = {
+          ...analysis,
+          severity: "mild",
+          symptoms: ["관찰"],
+          summary: "이미지/영상 AI 분석이 지연되어 보수적으로 관찰 등급으로 분류했습니다.",
+          recommendation: "같은 증상이 지속되면 재촬영 후 다시 분석하거나 전문가 답변을 요청해주세요.",
+        };
       }
 
       // DB 저장 (전문가 요청 시 request_expert 및 expert_status 'pending')
