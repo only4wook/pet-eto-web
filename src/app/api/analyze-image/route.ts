@@ -226,6 +226,53 @@ function computeSeverityScore(params: {
   return Math.max(0, Math.min(10, base + fgsBoost + flagBoost + riskBoost + uncertainBoost));
 }
 
+function buildEmergencyGuidance(params: {
+  species: string;
+  severity: "normal" | "mild" | "moderate" | "urgent";
+  redFlag: {
+    drooling_hypersalivation?: boolean;
+    open_mouth_breathing?: boolean;
+    lethargic_or_collapse_posture?: boolean;
+    visible_trauma_or_bleeding?: boolean;
+  };
+}) {
+  const { species, severity, redFlag } = params;
+  if (severity !== "urgent" && severity !== "moderate") return "";
+
+  const lines: string[] = [];
+  lines.push("🚨 [응급 분류 보강 가이드]");
+  if (species === "cat" && redFlag.drooling_hypersalivation) {
+    lines.push("- 고양이의 과다 침흘림은 중독·구강 통증·이물·신경계 이상 가능성이 있어 응급 우선 평가가 필요합니다.");
+  }
+  if (redFlag.open_mouth_breathing) {
+    lines.push("- 입벌림 호흡이 보이면 호흡기/심혈관 응급 가능성이 있어 지체 없이 내원이 필요합니다.");
+  }
+  if (redFlag.lethargic_or_collapse_posture) {
+    lines.push("- 무기력/기립 이상이 동반되면 전신 상태 악화 신호일 수 있습니다.");
+  }
+  if (redFlag.visible_trauma_or_bleeding) {
+    lines.push("- 외상·출혈은 2차 쇼크 위험이 있어 즉시 처치가 필요합니다.");
+  }
+
+  lines.push("");
+  lines.push("🏥 [지금 바로 할 행동]");
+  lines.push("1) 물/간식/약 임의 투여를 멈추고, 호흡·의식 상태를 먼저 확인하세요.");
+  lines.push("2) 이동이 가능하면 즉시 24시 동물병원으로 이동하세요.");
+  lines.push("3) 이동이 어렵다면 펫택시/대행 진료를 즉시 요청하세요.");
+  lines.push("");
+  lines.push("📋 [병원에 전달할 체크리스트]");
+  lines.push("- 증상 시작 시점(갑자기/점진적), 반복 횟수");
+  lines.push("- 동반 증상(구토·설사·호흡 곤란·경련·무기력)");
+  lines.push("- 독성 물질/약/세제/식물 접근 가능성");
+  lines.push("- 최근 섭취 음식 및 기존 질환/복용약");
+  lines.push("");
+  lines.push("💰 [예상 비용 가이드]");
+  lines.push("- 응급 초진 + 기본 검사(혈액/X-ray): 약 10만~40만원");
+  lines.push("- 증상에 따라 입원/집중치료 시 추가 비용 발생 가능");
+
+  return lines.join("\n");
+}
+
 async function callGemini({
   apiKey,
   mimeType,
@@ -420,9 +467,16 @@ export async function POST(req: NextRequest) {
             imageUncertain: Boolean(redFlag.image_uncertain || hasUncertain),
           });
 
+    const emergencyGuidance = buildEmergencyGuidance({
+      species,
+      severity,
+      redFlag,
+    });
+    const finalAnalysis = emergencyGuidance ? `${displayAnalysis}\n\n${emergencyGuidance}` : displayAnalysis;
+
     return NextResponse.json({
       success: true,
-      analysis: displayAnalysis,
+      analysis: finalAnalysis,
       severity,
       // 구조화 필드
       fgs_total: structured.fgs_total ?? null,
