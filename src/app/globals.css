@@ -245,11 +245,18 @@
   .sidebar-hide-mobile { display: none !important; }
   .mobile-only { display: flex !important; }
 
-  /* 하단 탭바 + 플로팅 버튼 공간 확보 (탭바 58 + safe-area) */
-  body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)) !important; }
+  /* 하단 탭바 + 플로팅 버튼 공간 확보 (탭바 68 + safe-area) */
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0)) !important; }
 
-  /* 본문 터치 타겟 최적화 */
-  button, a { -webkit-tap-highlight-color: rgba(255,107,53,0.15); }
+  /* 터치 타겟 최적화 — 300ms 딜레이 제거 + 피드백 */
+  button, a {
+    -webkit-tap-highlight-color: rgba(255,107,53,0.12);
+    touch-action: manipulation;
+  }
+  /* 인터랙티브 요소 최소 터치 영역 44px (Apple HIG) */
+  button { min-height: 44px; }
+  /* 검색/입력창 16px 이상 — iOS 자동 줌 방지 */
+  input, select, textarea { font-size: max(16px, 1em); }
 
   .hero-flex { flex-direction: column !important; padding: var(--space-5) var(--space-4) !important; }
   .hero-image-area { display: none !important; }
@@ -281,6 +288,13 @@
   }
   /* 채팅 메시지 영역 여백 조정 */
   .hero-chat > div:nth-child(2) { padding: 14px 14px !important; }
+
+  /* PremiumHero 모바일 레이아웃 — 단일 컬럼 */
+  .premium-hero-grid { grid-template-columns: 1fr !important; }
+  .premium-hero-grid .eyebrow {
+    font-size: 11px !important;
+    padding: 5px 12px !important;
+  }
 
   .trust-grid { grid-template-columns: repeat(2, 1fr) !important; }
 
@@ -396,4 +410,192 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+/* ============================================
+   Awwwards-grade Utilities (Warm Trust × Premium Motion)
+   ============================================ */
+
+/* Display Typography — 대범한 히어로 텍스트 */
+.text-display-xl {
+  font-size: clamp(1.75rem, 5.5vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  color: var(--color-text);
+  word-break: keep-all;
+}
+.text-display-lg {
+  font-size: clamp(1.5rem, 4vw, 3.25rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: var(--color-text);
+  word-break: keep-all;
+}
+.text-display-md {
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--color-text);
+  word-break: keep-all;
+}
+.text-accent-grad {
+  background: linear-gradient(135deg, #FF6B35 0%, #F59E0B 60%, #FBBF24 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(31,41,55,0.06), 0 1px 3px rgba(31,41,55,0.04);
+}
+.glass-dark {
+  background: rgba(29,29,31,0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+/* Hover Lift */
+.lift { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 60px rgba(31,41,55,0.10);
+}
+
+/* Gradient Backgrounds */
+.bg-warm-gradient {
+  background: radial-gradient(ellipse at top left, #FFEBD6 0%, transparent 50%),
+              radial-gradient(ellipse at bottom right, #FFF7ED 0%, #FAFAFA 60%);
+}
+.bg-hero-glow {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,107,53,0.14) 0%, transparent 40%),
+    radial-gradient(circle at 85% 100%, rgba(46,196,182,0.10) 0%, transparent 40%),
+    #FAFAFA;
+}
+
+/* Scroll Trigger — IntersectionObserver 연동 */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: opacity, transform;
+}
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal.delay-1 { transition-delay: 0.08s; }
+.reveal.delay-2 { transition-delay: 0.16s; }
+.reveal.delay-3 { transition-delay: 0.24s; }
+.reveal.delay-4 { transition-delay: 0.32s; }
+.reveal.delay-5 { transition-delay: 0.4s; }
+
+/* Floating bob */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.bob { animation: bob 4s ease-in-out infinite; }
+
+/* Live pulse */
+@keyframes livePulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  flex-shrink: 0;
+}
+.live-dot::after {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: #10B981;
+  animation: livePulse 1.8s ease-out infinite;
+}
+
+/* Awwwards-grade buttons */
+.btn-primary-xl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  background: linear-gradient(135deg, #FF6B35 0%, #F59E0B 100%);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(255,107,53,0.32), inset 0 1px 0 rgba(255,255,255,0.25);
+  transition: transform 0.2s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.2s;
+  font-family: inherit;
+  text-decoration: none;
+}
+.btn-primary-xl:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(255,107,53,0.40);
+}
+.btn-primary-xl:active { transform: translateY(0); }
+
+.btn-secondary-xl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #1D1D1F;
+  background: #fff;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2,0.8,0.2,1);
+  font-family: inherit;
+  text-decoration: none;
+}
+.btn-secondary-xl:hover {
+  border-color: #1D1D1F;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* Eyebrow label */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(255,107,53,0.08);
+  border: 1px solid rgba(255,107,53,0.18);
+  color: #FF6B35;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
