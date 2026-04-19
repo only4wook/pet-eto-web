@@ -138,7 +138,7 @@ export default function Header() {
           display: "none",
           position: "fixed",
           right: 16,
-          bottom: "calc(74px + env(safe-area-inset-bottom, 0))",
+          bottom: "calc(84px + env(safe-area-inset-bottom, 0))",
           zIndex: 45,
           width: 54,
           height: 54,

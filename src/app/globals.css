@@ -245,8 +245,8 @@
   .sidebar-hide-mobile { display: none !important; }
   .mobile-only { display: flex !important; }
 
-  /* 하단 탭바 + 플로팅 버튼 공간 확보 (탭바 58 + safe-area) */
-  body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)) !important; }
+  /* 하단 탭바 + 플로팅 버튼 공간 확보 (탭바 68 + safe-area) */
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0)) !important; }
 
   /* 터치 타겟 최적화 — 300ms 딜레이 제거 + 피드백 */
   button, a {
