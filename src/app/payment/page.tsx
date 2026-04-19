@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -13,7 +13,7 @@ const SERVICE_OPTIONS = [
   { value: "hotel", label: "호텔링" },
 ];
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useAppStore((s) => s.user);
@@ -193,6 +193,14 @@ export default function PaymentPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<main style={{ maxWidth: 640, margin: "0 auto", padding: "40px 16px" }}>결제 페이지 불러오는 중...</main>}>
+      <PaymentPageContent />
+    </Suspense>
   );
 }
 
