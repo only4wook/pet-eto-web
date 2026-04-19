@@ -4,10 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = "https://akhtlrcmvftfacaroeiq.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFraHRscmNtdmZ0ZmFjYXJvZWlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzOTgzODUsImV4cCI6MjA5MDk3NDM4NX0.CuJhuuSZFwnqMgFd4nZe9QjJqWGyW6p78gGl9C4aHuY";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
-  global: { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+  global: { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY}` } },
 });
 
 function rankSeverity(s: string) {
@@ -38,6 +39,13 @@ async function analyzeViaInternalApi(post: {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: "SUPABASE_SERVICE_ROLE_KEY 미설정 (queue processing requires service role)." },
+        { status: 500 }
+      );
+    }
+
     const authHeader = req.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
     const expected = process.env.REANALYZE_QUEUE_TOKEN;
