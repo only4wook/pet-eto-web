@@ -193,8 +193,37 @@ const RED_FLAG_PATTERNS = [
   "비정상 자세",
 ];
 
+const HIGH_RISK_PATTERNS = [
+  "침흘",
+  "유연",
+  "drool",
+  "거품",
+  "입벌",
+  "mouth open",
+  "호흡곤란",
+  "청색증",
+  "경련",
+  "발작",
+  "출혈",
+];
+
 function includesAny(text: string, patterns: string[]) {
   return patterns.some((p) => text.includes(p));
+}
+
+function computeSeverityScore(params: {
+  baseSeverity: "normal" | "mild" | "moderate" | "urgent";
+  fgsTotal?: number | null;
+  redFlagCount: number;
+  hasHighRiskText: boolean;
+  imageUncertain?: boolean;
+}) {
+  const base = params.baseSeverity === "urgent" ? 8 : params.baseSeverity === "moderate" ? 6 : params.baseSeverity === "mild" ? 3 : 1;
+  const fgsBoost = typeof params.fgsTotal === "number" ? Math.min(4, Math.round(params.fgsTotal / 2)) : 0;
+  const flagBoost = Math.min(4, params.redFlagCount);
+  const riskBoost = params.hasHighRiskText ? 2 : 0;
+  const uncertainBoost = params.imageUncertain ? 1 : 0;
+  return Math.max(0, Math.min(10, base + fgsBoost + flagBoost + riskBoost + uncertainBoost));
 }
 
 async function callGemini({
@@ -344,6 +373,7 @@ export async function POST(req: NextRequest) {
     const guardText = `${displayAnalysis}\n${description}`.toLowerCase();
     const hasUncertain = includesAny(guardText, UNCERTAIN_PATTERNS);
     const hasRedFlag = includesAny(guardText, RED_FLAG_PATTERNS);
+    const hasHighRiskText = includesAny(guardText, HIGH_RISK_PATTERNS);
     if (severity === "normal" && hasRedFlag) severity = "moderate";
     else if (severity === "normal" && hasUncertain) severity = "mild";
     else if (severity === "mild" && hasRedFlag) severity = "moderate";
@@ -368,6 +398,28 @@ export async function POST(req: NextRequest) {
     else if (redFlagCount === 1 && severity === "normal") severity = "moderate";
     else if (redFlag.image_uncertain && severity === "normal") severity = "mild";
 
+    // 고양이 침흘림은 단독으로도 응급 가능성이 높아 urgent로 상향
+    if (species === "cat" && redFlag.drooling_hypersalivation) {
+      severity = "urgent";
+    }
+
+    // 텍스트/이미지 단서에 고위험 표현이 있으면 최소 moderate
+    if (hasHighRiskText && (severity === "normal" || severity === "mild")) {
+      severity = "moderate";
+    }
+
+    // 점수형 위험도 산출(구조화 점수 없을 때 보강)
+    const severityScore =
+      typeof structured.severity_score === "number"
+        ? structured.severity_score
+        : computeSeverityScore({
+            baseSeverity: severity,
+            fgsTotal: structured.fgs_total,
+            redFlagCount,
+            hasHighRiskText,
+            imageUncertain: Boolean(redFlag.image_uncertain || hasUncertain),
+          });
+
     return NextResponse.json({
       success: true,
       analysis: displayAnalysis,
@@ -375,7 +427,7 @@ export async function POST(req: NextRequest) {
       // 구조화 필드
       fgs_total: structured.fgs_total ?? null,
       fgs_breakdown: structured.fgs_breakdown ?? null,
-      severity_score: structured.severity_score ?? null,
+      severity_score: severityScore,
       bboxes: structured.bboxes ?? [],
       triage_flags: redFlag,
     });
