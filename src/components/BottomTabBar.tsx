@@ -56,9 +56,22 @@ export default function BottomTabBar() {
                 fontWeight: active ? 700 : 500,
                 padding: "6px 0 4px",
                 transition: "color 0.15s",
+                WebkitTapHighlightColor: "transparent",
+                touchAction: "manipulation",
+                position: "relative",
               }}
               aria-current={active ? "page" : undefined}
             >
+              {/* 활성 탭 상단 인디케이터 */}
+              <span style={{
+                position: "absolute",
+                top: 0,
+                width: 24,
+                height: 3,
+                borderRadius: "0 0 3px 3px",
+                background: active ? "#FF6B35" : "transparent",
+                transition: "background 0.2s",
+              }} />
               <Icon color={color} active={active} />
               <span>{tab.label}</span>
             </Link>

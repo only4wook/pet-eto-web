@@ -58,30 +58,35 @@ export default function Header() {
             const q = (e.currentTarget.querySelector("input") as HTMLInputElement)?.value?.trim();
             if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`;
           }}>
-            <input type="text" name="q" placeholder="게시글, 위키, 증상 검색..." style={{
-              flex: 1, border: "1px solid #ddd", borderRight: "none",
-              padding: "7px 10px", fontSize: 13, borderRadius: "4px 0 0 4px", outline: "none", minWidth: 0,
-            }} />
+            <input type="search" name="q" placeholder="게시글, 위키, 증상 검색..."
+              inputMode="search" autoComplete="off" enterKeyHint="search"
+              style={{
+                flex: 1, border: "1px solid #ddd", borderRight: "none",
+                padding: "0 10px", height: 44, fontSize: 14, borderRadius: "8px 0 0 8px",
+                outline: "none", minWidth: 0,
+              }} />
             <button type="submit" style={{
               background: "#1D1D1F", color: "#fff", border: "none",
-              padding: "8px 14px", fontSize: 14, cursor: "pointer", borderRadius: "0 8px 8px 0", flexShrink: 0,
-              fontWeight: 500,
+              padding: "0 16px", height: 44, fontSize: 14, cursor: "pointer",
+              borderRadius: "0 8px 8px 0", flexShrink: 0, fontWeight: 500,
+              touchAction: "manipulation",
             }}>검색</button>
           </form>
-          {/* 모바일 로그인/프로필 + 로그아웃 */}
-          <div className="mobile-only" style={{ display: "none", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <Link href={user ? "/mypage" : "/auth/login"} style={{
-              width: 32, height: 32, borderRadius: "50%",
-              background: user ? "#FF6B35" : "#ddd", display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none",
+          {/* 모바일 프로필 — 마이페이지로 이동, 로그아웃은 마이페이지에서 처리 */}
+          <div className="mobile-only" style={{ display: "none", alignItems: "center", flexShrink: 0 }}>
+            <Link href={user ? "/mypage" : "/auth/login"} aria-label={user ? "마이페이지" : "로그인"} style={{
+              width: 44, height: 44, borderRadius: "50%",
+              background: user ? "#FF6B35" : "#E5E7EB",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: user ? "#fff" : "#6B7280", fontSize: 16, fontWeight: 700, textDecoration: "none",
+              flexShrink: 0,
             }}>
-              {user ? safeNickname(user.nickname, user.id).charAt(0) : "?"}
+              {user ? safeNickname(user.nickname, user.id).charAt(0).toUpperCase() : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" /><path d="M4 21v-1a7 7 0 0 1 14 0v1" />
+                </svg>
+              )}
             </Link>
-            {user && (
-              <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} style={{
-                fontSize: 11, color: "#888", textDecoration: "none",
-              }}>로그아웃</a>
-            )}
           </div>
         </div>
       </div>
@@ -146,6 +151,8 @@ export default function Header() {
           fontSize: 20,
           fontWeight: 800,
           color: "#3C1E1E",
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
         }}
       >
         💬
