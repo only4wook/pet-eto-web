@@ -164,6 +164,36 @@ export default function Header() {
       >
         💬
       </a>
+
+      {/* 피드 업로드 FAB — 인스타처럼 어디서든 + 로 사진·영상 올리기 (모바일) */}
+      <Link
+        href="/feed/upload"
+        aria-label="사진·영상 올리기"
+        className="mobile-only upload-fab"
+        style={{
+          display: "none",
+          position: "fixed",
+          right: 16,
+          bottom: "calc(148px + env(safe-area-inset-bottom, 0))",
+          zIndex: 45,
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #FF6B35 0%, #F59E0B 100%)",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 8px 24px rgba(255,107,53,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
+          textDecoration: "none",
+          fontSize: 30,
+          fontWeight: 400,
+          color: "#fff",
+          lineHeight: 1,
+          touchAction: "manipulation",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        ＋
+      </Link>
     </header>
   );
 }

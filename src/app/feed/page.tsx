@@ -50,7 +50,7 @@ export default function FeedPage() {
     return (
       <>
         <Header />
-        {/* 모드 전환 플로팅 버튼 */}
+        {/* 상단 우측 — 리스트 보기 전환 */}
         <button
           onClick={() => changeMode("classic")}
           aria-label="클래식 보기로 전환"
@@ -68,8 +68,33 @@ export default function FeedPage() {
             cursor: "pointer", fontFamily: "inherit",
           }}
         >
-          📋 리스트 보기
+          📋 리스트
         </button>
+
+        {/* 상단 좌측 — 업로드 버튼 (인스타 상단 + 처럼) */}
+        <Link
+          href="/feed/upload"
+          aria-label="사진·영상 올리기"
+          style={{
+            position: "fixed",
+            top: "calc(env(safe-area-inset-top, 0) + 70px)",
+            left: 14,
+            zIndex: 40,
+            padding: "7px 14px",
+            fontSize: 12, fontWeight: 800,
+            background: "linear-gradient(135deg, #FF6B35, #F59E0B)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 999,
+            textDecoration: "none",
+            boxShadow: "0 4px 12px rgba(255,107,53,0.35)",
+            display: "inline-flex", alignItems: "center", gap: 4,
+          }}
+        >
+          <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span>
+          올리기
+        </Link>
+
         <FeedSwipeView posts={posts} />
       </>
     );
