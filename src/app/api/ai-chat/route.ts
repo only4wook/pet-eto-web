@@ -1,89 +1,203 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PET_AI_PERSONA, GENERATION_CONFIG, SAFETY_SETTINGS } from "../../../lib/aiPrompts";
-import { PET_AI_PERSONA_EN, GENERATION_CONFIG_EN } from "../../../lib/aiPromptsEn";
+import { callGemini } from "../../../lib/geminiClient";
+import { callOpenAI } from "../../../lib/openaiClient";
+import { PET_AI_PERSONA } from "../../../lib/aiPrompts";
+import { PET_AI_PERSONA_EN } from "../../../lib/aiPromptsEn";
+import { classifyQuery, mergeEnsemble } from "../../../lib/aiRouter";
+import { criticizeAndImprove } from "../../../lib/selfCritique";
 
-// P.E.T AI 채팅 - Gemini 2.0 Flash 기반 수의학 대화 엔진
-// KO/EN 전용 페르소나를 완전히 분리해서 양쪽 모두 최고 품질 유지
+// P.E.T AI 채팅 - Hybrid Router 기반
+// 2026-04-23 업그레이드:
+//   - critical 쿼리 → Gemini + GPT 병렬 앙상블 + 합의 확인
+//   - complex 쿼리 → GPT-4o (추론력 우위)
+//   - normal 쿼리 → Gemini 2.0 Flash (빠르고 저렴)
+//   - 응급 케이스는 self-critique 추가 → 품질 최상
 
 type ChatMessage = { role: "user" | "ai"; text: string };
 type PetInfo = { name: string; species: string; breed: string };
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: "GEMINI_API_KEY 미설정", fallback: true }, { status: 200 });
-    }
-
-    const { message, history, pets, locale }: {
+    const {
+      message,
+      history,
+      pets,
+      locale: localeInput,
+    }: {
       message: string;
       history: ChatMessage[];
       pets: PetInfo[];
       locale?: "ko" | "en";
     } = await req.json();
+
     if (!message?.trim()) {
       return NextResponse.json({ error: "메시지가 비어있습니다." }, { status: 400 });
     }
 
+    // ── 1) 쿼리 분류 (라우팅 결정) ──
+    const classification = classifyQuery(message, localeInput);
+    const locale = classification.locale;
     const isEn = locale === "en";
 
-    // 언어별로 완전히 분리된 시스템 프롬프트
-    const systemPersona = isEn ? PET_AI_PERSONA_EN : PET_AI_PERSONA;
-
-    // 등록 반려동물 컨텍스트
+    // 반려동물 컨텍스트
     const petContext = pets && pets.length > 0
       ? (isEn
-          ? `\n\n## This owner's pets\n${pets.map((p) => `- ${p.name} (${p.species}, ${p.breed})`).join("\n")}\nNaturally weave in these pets' breed traits and common health conditions when relevant. Using their names increases rapport.`
-          : `\n\n## 이 보호자의 반려동물\n${pets.map((p) => `- ${p.name} (${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}, ${p.breed})`).join("\n")}\n답변 시 이 아이들의 품종 특성·호발 질환을 자연스럽게 반영하세요. 이름을 불러주면 보호자 친밀도가 올라갑니다.`)
+          ? `\n\n## This owner's pets\n${pets.map((p) => `- ${p.name} (${p.species}, ${p.breed})`).join("\n")}\nNaturally weave in these pets' breed traits when relevant.`
+          : `\n\n## 이 보호자의 반려동물\n${pets.map((p) => `- ${p.name} (${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}, ${p.breed})`).join("\n")}\n답변 시 품종 특성을 반영하세요.`)
       : "";
 
-    // 최근 대화 8턴까지 유지
+    const systemPersona = (isEn ? PET_AI_PERSONA_EN : PET_AI_PERSONA) + petContext;
+
+    // 최근 대화 8턴 유지
     const recentHistory = (history || []).slice(-8);
     const contents = [
       ...recentHistory.map((m) => ({
-        role: m.role === "user" ? "user" : "model",
+        role: m.role === "user" ? "user" : "model" as "user" | "model",
         parts: [{ text: m.text }],
       })),
-      { role: "user", parts: [{ text: message }] },
+      { role: "user" as const, parts: [{ text: message }] },
     ];
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemPersona + petContext }],
+    // OpenAI용 messages (형식 다름)
+    const openaiMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      { role: "system", content: systemPersona },
+      ...recentHistory.map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.text,
+      })),
+      { role: "user", content: message },
+    ];
+
+    // ── 2) 라우트별 처리 ──
+    const route = classification.route;
+
+    // ▶ 경로 1: ENSEMBLE (생명 위험 → Gemini + GPT 병렬)
+    if (route === "ensemble") {
+      const [geminiResult, gptResult] = await Promise.all([
+        callGemini(contents, { locale, timeoutMs: 12000 }),
+        callOpenAI(openaiMessages, { model: "gpt-4o-mini", timeoutMs: 12000 }),
+      ]);
+
+      // 둘 중 성공한 쪽만 쓰기
+      if (geminiResult.ok && gptResult.ok) {
+        const ensemble = mergeEnsemble(geminiResult.reply!, gptResult.reply!, locale);
+        // 합의된 경우에만 self-critique 실행 (불일치는 원본 그대로 표시)
+        let finalReply = ensemble.final;
+        if (ensemble.agreement) {
+          finalReply = await criticizeAndImprove(message, ensemble.final, locale);
+        }
+        return NextResponse.json({
+          success: true,
+          reply: finalReply,
+          meta: {
+            route,
+            urgency: classification.urgency,
+            confidence: ensemble.confidence,
+            agreement: ensemble.agreement,
+            sources: ensemble.sources,
+            classificationReasons: classification.reasons,
           },
-          contents,
-          generationConfig: isEn ? GENERATION_CONFIG_EN : GENERATION_CONFIG,
-          safetySettings: SAFETY_SETTINGS,
-        }),
+        });
       }
-    );
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
+      // 한 쪽만 성공 → 그 답변 사용
+      const okReply = geminiResult.ok ? geminiResult.reply : gptResult.ok ? gptResult.reply : null;
+      if (okReply) {
+        return NextResponse.json({
+          success: true,
+          reply: okReply,
+          meta: {
+            route,
+            urgency: classification.urgency,
+            confidence: "medium",
+            agreement: false,
+            sources: [geminiResult.ok ? "Gemini 2.0 Flash" : "GPT-4o (Gemini failed)"],
+            classificationReasons: classification.reasons,
+          },
+        });
+      }
+
+      // 둘 다 실패 → 폴백
       return NextResponse.json({
-        error: `Gemini API 오류: ${geminiRes.status}`,
-        detail: errText.slice(0, 300),
+        error: "앙상블 실패 — 두 AI 모두 응답 불가",
+        geminiError: geminiResult.error,
+        gptError: gptResult.error,
         fallback: true,
       }, { status: 200 });
     }
 
-    const data = await geminiRes.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    // ▶ 경로 2: GPT-4o 단일 (복잡한 문맥)
+    if (route === "gpt-single") {
+      const result = await callOpenAI(openaiMessages, { model: "gpt-4o-mini", timeoutMs: 15000 });
+      if (result.ok && result.reply) {
+        return NextResponse.json({
+          success: true,
+          reply: result.reply,
+          meta: {
+            route,
+            urgency: classification.urgency,
+            sources: ["GPT-4o mini"],
+            classificationReasons: classification.reasons,
+          },
+        });
+      }
 
-    if (!reply) {
-      const blockReason = data?.promptFeedback?.blockReason;
+      // GPT 실패 → Gemini로 폴백
+      const fallback = await callGemini(contents, { locale });
+      if (fallback.ok && fallback.reply) {
+        return NextResponse.json({
+          success: true,
+          reply: fallback.reply,
+          meta: {
+            route: "gpt-fallback-gemini",
+            urgency: classification.urgency,
+            sources: ["Gemini 2.0 Flash (GPT failed)"],
+          },
+        });
+      }
+
       return NextResponse.json({
-        error: blockReason ? `응답 차단: ${blockReason}` : "응답을 가져올 수 없습니다.",
+        error: result.error || "GPT 실패, Gemini도 실패",
         fallback: true,
       }, { status: 200 });
     }
 
-    return NextResponse.json({ success: true, reply: reply.trim() });
+    // ▶ 경로 3: Gemini 단일 (일반 질문, 기본 경로)
+    const geminiResult = await callGemini(contents, { locale });
+    if (geminiResult.ok && geminiResult.reply) {
+      return NextResponse.json({
+        success: true,
+        reply: geminiResult.reply,
+        meta: {
+          route,
+          urgency: classification.urgency,
+          sources: ["Gemini 2.0 Flash"],
+          classificationReasons: classification.reasons,
+        },
+      });
+    }
+
+    // Gemini 실패 → GPT로 폴백 (OPENAI_API_KEY 있을 때만)
+    if (process.env.OPENAI_API_KEY) {
+      const gptFallback = await callOpenAI(openaiMessages, { model: "gpt-4o-mini" });
+      if (gptFallback.ok && gptFallback.reply) {
+        return NextResponse.json({
+          success: true,
+          reply: gptFallback.reply,
+          meta: {
+            route: "gemini-fallback-gpt",
+            urgency: classification.urgency,
+            sources: ["GPT-4o mini (Gemini failed)"],
+          },
+        });
+      }
+    }
+
+    // 둘 다 실패 → 룰 기반 폴백 신호
+    return NextResponse.json({
+      error: geminiResult.error || "Gemini 실패",
+      fallback: true,
+    }, { status: 200 });
   } catch (err: any) {
     return NextResponse.json({
       error: err.message || "서버 오류",
