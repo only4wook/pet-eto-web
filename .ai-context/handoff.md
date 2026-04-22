@@ -15,6 +15,32 @@
 
 ---
 
+## [2026-04-23 08:30] — Claude Code
+**작업**: TTcare 경쟁 대응 — AI 영어 응답 개선 + 31 증상 체크 + 학습 파이프라인 구축
+**상태**: 완료 ✅ (커밋 63d9d71)
+**변경 파일**:
+- `src/lib/aiPromptsEn.ts` (신규, 영어 수의사 페르소나 한국어 동급)
+- `src/lib/symptomTaxonomy.ts` (신규, 31개 증상 체크 시스템)
+- `src/lib/aiFallbackEn.ts` (신규, 영어 룰 폴백 13개 케이스)
+- `src/app/api/ai-chat/route.ts` (locale별 페르소나 분리)
+- `src/app/api/analyze-image/route.ts` (31 증상 체크리스트 주입)
+- `src/components/HeroSection.tsx` (EN 폴백 연결)
+- `supabase/migrations/20260423_training_dataset.sql` (신규, 학습 데이터 파이프라인)
+- `docs/ai-strategy-vs-ttcare.md` (신규, 경쟁 전략 4단계 로드맵)
+**다음 단계**:
+- Vercel 프리뷰 QA (EN 질문 → EN 답변)
+- Supabase training_dataset 마이그레이션 실행
+- main 승격 PR (i18n + AI 업그레이드 한꺼번에)
+- GPT-4o 앙상블 구현 (Q2)
+- 수의사 섭외로 전문가 답변 corpus 축적 시작
+**주의사항**:
+- 대욱님이 "TTcare 경쟁력 필요" 강하게 피력 → 단순 기능 추가가 아니라 4단계 전략 로드맵 문서화
+- "기술력 부족" 프레임 재정의: Vision CNN 단일 축 vs 펫에토 하이브리드
+- Gemini 쿼터 소진 시에도 EN/KO 모두 품질 폴백 보장
+- 학습 데이터 Day 1부터 수집 시작 → 12개월 후 자체 Vision 모델 파인튜닝 목표
+
+---
+
 ## [2026-04-22 22:45] — Claude Code
 **작업**: 위키 품종 상세 페이지 26개 전체 영어 번역 완성 + 가독성 대폭 개선
 **상태**: 완료 ✅ (로컬 빌드 통과, 원격 푸시 완료 — 커밋 6ef5f31)
