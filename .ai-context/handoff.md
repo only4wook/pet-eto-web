@@ -15,7 +15,7 @@
 
 ---
 
-## [2026-04-22 20:20] — Claude Code
+## [2026-04-22 20:20] — Cursor
 **작업**: `design/awwwards-redesign` 배포 실패(TypeScript JSX namespace) 긴급 복구
 **상태**: 완료 ✅
 **변경 파일**: `src/components/PremiumTrustGrid.tsx`, `.ai-context/handoff.md`
