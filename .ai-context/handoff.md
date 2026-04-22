@@ -15,6 +15,32 @@
 
 ---
 
+## [2026-04-22 22:05] — Claude Code
+**작업**: 한영 전환 전면 완성 (홈/피드/위키/마이/커뮤니티/건강체크) + /ai 페이지 복원 + Hydration 수정
+**상태**: 완료 ✅ (로컬 빌드 통과, 원격 푸시 완료)
+**변경 파일**:
+- `next.config.ts` (devIndicators:false)
+- `src/i18n/{ko,en}.ts` (feed/ai/wiki/mypage/community/breed/grades/how/trust 섹션 대량 확장)
+- `src/components/I18nProvider.tsx` (Hydration 안전화)
+- `src/components/{Header,Footer,BottomTabBar,PremiumHero,PremiumTrustGrid,HowItWorks,HeroSection,FeedCard}.tsx` (i18n 적용)
+- `src/app/{page,feed/page,feed/[id]/page,feed/upload 제외,wiki/page,wiki/cat/page,wiki/dog/page,community/page,mypage/page,ai/page}.tsx`
+- `src/app/api/ai-chat/route.ts` (locale 파라미터 → Gemini 영어 응답)
+- `src/lib/wikiData.ts` (CAT_OVERVIEW_EN, DOG_OVERVIEW_EN 추가)
+- 커밋 `ba52ea1` (20 files, +1002 insertions)
+**다음 단계**:
+- 품종별 상세 본문 (20품종 × 5섹션) EN 번역 — 데이터 양 많음
+- 피드 업로드 폼(/feed/upload) i18n 마저
+- 회원가입/로그인 페이지 i18n
+- 이용가이드/약관/개인정보 정책 페이지 i18n
+**주의사항**:
+- 대욱님이 "한 번에 다 해달라" 강하게 피드백 → 이번엔 7개 영역 한 번에 처리했음
+- 홈 맨 아래 AI 섹션 제거 (/ai 전용 페이지로 완전 분리)
+- EN 모드에서 Gemini 실패 시 룰 기반 한국어 폴백 대신 영어 안내 메시지 표시
+- 위키 품종 상세 본문은 EN 배너 + 한국어 유지 (데이터 번역 대량 작업이라 별도)
+- Production(peteto.kr)은 main 브랜치라 아직 i18n 반영 안 됨. 승격 필요.
+
+---
+
 ## [2026-04-22 20:50] — Claude Code
 **작업**: 커서가 방치한 스태시(main의 i18n 7파일) 복구 + 누락 의존 파일 복원 + 빌드 검증
 **상태**: 완료 ✅ (로컬 빌드 통과, 푸시는 대욱님 컨펌 대기)
