@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useRef, type ReactNode } from "react";
+import { useI18n } from "./I18nProvider";
 
 // P.E.T Trust Grid — 신뢰 시그널 6개를 Glassmorphism 카드로 표시
 // 레퍼런스: Linear.app Features, Apple 기능 카드, Stripe 섹션
 
 type TrustItem = {
   icon: ReactNode;
-  title: string;
-  desc: string;
-  badge?: string;
+  titleKey: string;
+  descKey: string;
+  badgeKey?: "badgeNew" | "badgeSoon";
 };
 
 const ITEMS: TrustItem[] = [
@@ -19,9 +20,9 @@ const ITEMS: TrustItem[] = [
         <path d="m9 12 2 2 4-4" />
       </svg>
     ),
-    title: "3단계 파트너 검증",
-    desc: "신원 확인 → 대면 면접 → 시범 케어. 3단계 모두 통과한 펫시터만 매칭됩니다.",
-    badge: "NEW",
+    titleKey: "card1Title",
+    descKey: "card1Desc",
+    badgeKey: "badgeNew",
   },
   {
     icon: (
@@ -31,8 +32,8 @@ const ITEMS: TrustItem[] = [
         <path d="M12 7v4M8 16h.01M16 16h.01" />
       </svg>
     ),
-    title: "AI 건강 분석",
-    desc: "수의학 전문 AI가 사진·증상을 분석해 긴급도와 대처법을 30초 내 알려드려요.",
+    titleKey: "card2Title",
+    descKey: "card2Desc",
   },
   {
     icon: (
@@ -42,8 +43,8 @@ const ITEMS: TrustItem[] = [
         <path d="M21 16l-5-5-9 9" />
       </svg>
     ),
-    title: "실시간 사진 보고",
-    desc: "케어 중 20분마다 사진·영상 자동 전송. 아이 상태를 언제든 확인하세요.",
+    titleKey: "card3Title",
+    descKey: "card3Desc",
   },
   {
     icon: (
@@ -52,8 +53,8 @@ const ITEMS: TrustItem[] = [
         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
       </svg>
     ),
-    title: "에스크로 안전 결제",
-    desc: "케어 완료 확인 후 시터에게 지급. 사고 시 100% 환불을 보장합니다.",
+    titleKey: "card4Title",
+    descKey: "card4Desc",
   },
   {
     icon: (
@@ -62,8 +63,8 @@ const ITEMS: TrustItem[] = [
         <path d="M12 6v6l4 2" />
       </svg>
     ),
-    title: "24시간 긴급 대응",
-    desc: "새벽 구토, 갑작스런 출장에도 대응. 평균 10분 내 매칭이 시작됩니다.",
+    titleKey: "card5Title",
+    descKey: "card5Desc",
   },
   {
     icon: (
@@ -71,14 +72,15 @@ const ITEMS: TrustItem[] = [
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
     ),
-    title: "반려동물 보험 연계",
-    desc: "케어 중 사고 발생 시 제휴 보험사가 의료비를 보장합니다. (출시 준비 중)",
-    badge: "곧",
+    titleKey: "card6Title",
+    descKey: "card6Desc",
+    badgeKey: "badgeSoon",
   },
 ];
 
 export default function PremiumTrustGrid() {
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -113,12 +115,12 @@ export default function PremiumTrustGrid() {
           style={{ textAlign: "center", marginBottom: "clamp(40px, 6vw, 72px)", maxWidth: 720, margin: "0 auto clamp(40px, 6vw, 72px)" }}
         >
           <span className="eyebrow" style={{ marginBottom: 20 }}>
-            왜 P.E.T인가요?
+            {t("home.trust.eyebrow")}
           </span>
           <h2 id="trust-headline" className="text-display-lg" style={{ margin: "16px 0 16px" }}>
-            신뢰할 수 있는 선택,
+            {t("home.trust.gridTitle1")}
             <br />
-            하나하나 직접 증명합니다.
+            {t("home.trust.gridTitle2")}
           </h2>
           <p style={{
             fontSize: "clamp(15px, 1.3vw, 17px)",
@@ -128,7 +130,7 @@ export default function PremiumTrustGrid() {
             margin: "0 auto",
             letterSpacing: "-0.01em",
           }}>
-            "내 아이를 맡길 수 있을까?" — 이 질문에 6가지 방법으로 답합니다.
+            {t("home.trust.gridQuestion")}
           </p>
         </div>
 
@@ -143,7 +145,7 @@ export default function PremiumTrustGrid() {
         >
           {ITEMS.map((item, idx) => (
             <article
-              key={item.title}
+              key={item.titleKey}
               className={`glass lift reveal delay-${(idx % 5) + 1}`}
               style={{
                 padding: "clamp(22px, 2.4vw, 32px)",
@@ -152,7 +154,7 @@ export default function PremiumTrustGrid() {
                 minHeight: 220,
               }}
             >
-              {item.badge && (
+              {item.badgeKey && (
                 <span
                   style={{
                     position: "absolute",
@@ -161,13 +163,13 @@ export default function PremiumTrustGrid() {
                     fontSize: 10,
                     fontWeight: 800,
                     letterSpacing: "0.06em",
-                    background: item.badge === "NEW" ? "#FEF3C7" : "#E0E7FF",
-                    color: item.badge === "NEW" ? "#92400E" : "#3730A3",
+                    background: item.badgeKey === "badgeNew" ? "#FEF3C7" : "#E0E7FF",
+                    color: item.badgeKey === "badgeNew" ? "#92400E" : "#3730A3",
                     padding: "3px 8px",
                     borderRadius: 6,
                   }}
                 >
-                  {item.badge}
+                  {t(`home.trust.${item.badgeKey}`)}
                 </span>
               )}
               {/* 아이콘 */}
@@ -196,7 +198,7 @@ export default function PremiumTrustGrid() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {item.title}
+                {t(`home.trust.${item.titleKey}`)}
               </h3>
               <p
                 style={{
@@ -207,7 +209,7 @@ export default function PremiumTrustGrid() {
                   letterSpacing: "-0.005em",
                 }}
               >
-                {item.desc}
+                {t(`home.trust.${item.descKey}`)}
               </p>
             </article>
           ))}

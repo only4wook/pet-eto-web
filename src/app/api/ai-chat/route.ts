@@ -14,14 +14,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "GEMINI_API_KEY 미설정", fallback: true }, { status: 200 });
     }
 
-    const { message, history, pets }: { message: string; history: ChatMessage[]; pets: PetInfo[] } = await req.json();
+    const { message, history, pets, locale }: {
+      message: string;
+      history: ChatMessage[];
+      pets: PetInfo[];
+      locale?: "ko" | "en";
+    } = await req.json();
     if (!message?.trim()) {
       return NextResponse.json({ error: "메시지가 비어있습니다." }, { status: 400 });
     }
 
+    // 언어별 시스템 지시 — 영어 모드에서는 반드시 영어로 답변
+    const languageDirective = locale === "en"
+      ? "\n\n## CRITICAL LANGUAGE RULE\nYou MUST respond entirely in English. The user is a non-Korean-speaking pet parent. Use clear, natural, warm English. Do NOT include Korean text in your answer."
+      : "";
+
     // 등록 반려동물 컨텍스트 — 품종별 호발 질환까지 자연스럽게 반영
     const petContext = pets && pets.length > 0
-      ? `\n\n## 이 보호자의 반려동물\n${pets.map((p) => `- ${p.name} (${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}, ${p.breed})`).join("\n")}\n답변 시 이 아이들의 품종 특성·호발 질환을 자연스럽게 반영하세요. 이름을 불러주면 보호자 친밀도가 올라갑니다.`
+      ? (locale === "en"
+          ? `\n\n## This owner's pets\n${pets.map((p) => `- ${p.name} (${p.species}, ${p.breed})`).join("\n")}\nNaturally reflect these pets' breed traits and common conditions when relevant.`
+          : `\n\n## 이 보호자의 반려동물\n${pets.map((p) => `- ${p.name} (${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}, ${p.breed})`).join("\n")}\n답변 시 이 아이들의 품종 특성·호발 질환을 자연스럽게 반영하세요. 이름을 불러주면 보호자 친밀도가 올라갑니다.`)
       : "";
 
     // 최근 대화 8턴까지 유지 (맥락 유지 + 토큰 절약)
@@ -41,7 +53,7 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           systemInstruction: {
-            parts: [{ text: PET_AI_PERSONA + petContext }],
+            parts: [{ text: PET_AI_PERSONA + languageDirective + petContext }],
           },
           contents,
           generationConfig: GENERATION_CONFIG,

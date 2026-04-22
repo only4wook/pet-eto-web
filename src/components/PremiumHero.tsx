@@ -154,9 +154,9 @@ export default function PremiumHero() {
             }}
           >
             {[
-              { num: "10분", label: "평균 매칭 시간" },
-              { num: "3단계", label: "파트너 검증" },
-              { num: "최대 1억", label: "사고 보장" },
+              { num: t("home.hero.statMatchNum"), label: t("home.hero.statMatchLabel") },
+              { num: t("home.hero.statVerifyNum"), label: t("home.hero.statVerifyLabel") },
+              { num: t("home.hero.statCoverageNum"), label: t("home.hero.statCoverageLabel") },
             ].map((s) => (
               <div key={s.label}>
                 <div style={{ fontSize: "clamp(20px, 2vw, 26px)", fontWeight: 900, color: "#1D1D1F", letterSpacing: "-0.03em" }}>

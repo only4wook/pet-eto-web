@@ -1,36 +1,19 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useI18n } from "./I18nProvider";
 
 // P.E.T How It Works — 3단계 이용 절차
-// 레퍼런스: Apple 제품 페이지 단계 설명, Linear.app 프로세스 스토리
-
-const STEPS = [
-  {
-    no: "01",
-    title: "상황 공유",
-    desc: "카카오톡 1:1 채팅으로 반려동물 상태, 필요한 케어 시간, 위치를 알려주세요. 10분 내 매니저가 응답합니다.",
-    tag: "약 3분 소요",
-    color: "#FF6B35",
-  },
-  {
-    no: "02",
-    title: "전문 시터 매칭",
-    desc: "3단계 검증 통과한 펫시터 중 가장 적합한 분을 추천해드립니다. 프로필·리뷰 확인 후 승인하시면 케어 시작!",
-    tag: "평균 10분",
-    color: "#F59E0B",
-  },
-  {
-    no: "03",
-    title: "안심 케어 + 보고",
-    desc: "케어가 진행되는 동안 20분마다 사진·영상을 받아보세요. 완료 후 확인하고 에스크로로 안전하게 결제.",
-    tag: "실시간",
-    color: "#10B981",
-  },
-];
 
 export default function HowItWorks() {
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
+
+  const STEPS = [
+    { no: "01", titleKey: "home.how.step1Title", descKey: "home.how.step1Desc", tagKey: "home.how.step1Tag", color: "#FF6B35" },
+    { no: "02", titleKey: "home.how.step2Title", descKey: "home.how.step2Desc", tagKey: "home.how.step2Tag", color: "#F59E0B" },
+    { no: "03", titleKey: "home.how.step3Title", descKey: "home.how.step3Desc", tagKey: "home.how.step3Tag", color: "#10B981" },
+  ];
 
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -89,16 +72,16 @@ export default function HowItWorks() {
               color: "#FBBF24",
             }}
           >
-            이용 방법
+            {t("home.how.eyebrow")}
           </span>
           <h2
             id="how-it-works-headline"
             className="text-display-lg"
             style={{ margin: "18px 0 14px", color: "#fff" }}
           >
-            3단계로 끝나는,
+            {t("home.how.titleLine1")}
             <br />
-            <span className="text-accent-grad">가장 안전한 케어</span>
+            <span className="text-accent-grad">{t("home.how.titleAccent")}</span>
           </h2>
           <p
             style={{
@@ -110,7 +93,7 @@ export default function HowItWorks() {
               letterSpacing: "-0.01em",
             }}
           >
-            처음이라도 복잡하지 않아요. 카톡 한 번이면 전문가 손길이 시작됩니다.
+            {t("home.how.desc")}
           </p>
         </div>
 
@@ -161,7 +144,7 @@ export default function HowItWorks() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {step.title}
+                {t(step.titleKey)}
               </h3>
               <p
                 style={{
@@ -172,7 +155,7 @@ export default function HowItWorks() {
                   flex: 1,
                 }}
               >
-                {step.desc}
+                {t(step.descKey)}
               </p>
 
               {/* 소요 시간 배지 */}
@@ -188,7 +171,7 @@ export default function HowItWorks() {
                   border: "1px solid rgba(255,255,255,0.12)",
                 }}
               >
-                ⏱ {step.tag}
+                ⏱ {t(step.tagKey)}
               </span>
 
               {/* 연결선 (PC only, 마지막 제외) */}
@@ -221,7 +204,7 @@ export default function HowItWorks() {
             rel="noopener noreferrer"
             className="btn-primary-xl"
           >
-            지금 1:1 상담 시작
+            {t("home.how.ctaButton")}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M5 12h14M13 5l7 7-7 7" />
             </svg>

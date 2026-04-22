@@ -11,7 +11,18 @@ import { useAppStore } from "../../../lib/store";
 import { DEMO_FEED } from "../../../lib/demoFeed";
 import { formatDate, safeNickname } from "../../../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../../../lib/symptomAnalyzer";
+import { useI18n } from "../../../components/I18nProvider";
 import type { FeedPost, FeedComment } from "../../../types";
+
+// 증상 한글 → i18n 키 매핑 (EN 모드에서 영어로 표시)
+const SYMPTOM_I18N: Record<string, string> = {
+  "구토": "feed.symptomVomit",
+  "식욕 부진": "feed.symptomAppetiteLoss",
+  "은둔 행동": "feed.symptomHidden",
+  "무기력": "feed.symptomLethargy",
+  "가려움": "feed.symptomScratching",
+  "설사": "feed.symptomDiarrhea",
+};
 
 export default function FeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -22,22 +33,21 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
   const [newComment, setNewComment] = useState("");
   const [showVets, setShowVets] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const { t, locale } = useI18n();
 
   const handleDelete = async () => {
-    if (!confirm("정말 삭제하시겠습니까?")) return;
+    if (!confirm(t("feed.deleteConfirm"))) return;
     setDeleting(true);
-    // Storage 이미지 삭제 (실패해도 진행)
     if (post?.image_url) {
       const path = post.image_url.split("/feed-images/")[1];
       if (path) await supabase.storage.from("feed-images").remove([path]);
     }
-    // DB 삭제 (댓글 먼저, 그 다음 글)
     await supabase.from("feed_comments").delete().eq("feed_post_id", id);
     await supabase.from("feed_likes").delete().eq("feed_post_id", id);
     const { error } = await supabase.from("feed_posts").delete().eq("id", id);
     setDeleting(false);
-    if (error) { alert("삭제 실패: " + error.message); return; }
-    alert("삭제되었습니다.");
+    if (error) { alert(`${t("feed.deleteFailed")}: ${error.message}`); return; }
+    alert(t("feed.deleted"));
     router.push("/feed");
   };
 
@@ -78,8 +88,8 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
 
   if (!post) {
     return (<><Header /><main style={{ maxWidth: 500, margin: "0 auto", padding: 40, textAlign: "center" }}>
-      <p style={{ color: "#888" }}>게시글을 찾을 수 없습니다.</p>
-      <Link href="/feed" style={{ color: "#FF6B35" }}>피드로 돌아가기</Link>
+      <p style={{ color: "#888" }}>{t("feed.notFound")}</p>
+      <Link href="/feed" style={{ color: "#FF6B35" }}>{t("feed.backToFeed")}</Link>
     </main><Footer /></>);
   }
 
@@ -116,7 +126,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                 background: "none", border: "1px solid #E5E7EB", borderRadius: 6,
                 padding: "4px 10px", fontSize: 12, color: "#9CA3AF", cursor: "pointer",
               }}>
-                {deleting ? "삭제 중..." : "삭제"}
+                {deleting ? t("feed.deleting") : t("feed.delete")}
               </button>
             )}
           </div>
@@ -149,28 +159,36 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                 background: analysis.severity === "normal" ? "#059669" : (sevColor?.bg || "#888"),
                 color: "#fff", padding: "10px 14px", fontSize: 14, fontWeight: 700,
               }}>
-                {analysis.severity === "normal" ? "✅ AI 분석: 정상입니다"
-                  : analysis.severity === "urgent" ? "🚨 긴급 증상 분석 결과"
-                  : analysis.severity === "moderate" ? "⚠️ 주의 증상 분석 결과"
-                  : "💡 관찰 필요 증상 분석 결과"}
+                {analysis.severity === "normal" ? t("feed.detailNormalTitle")
+                  : analysis.severity === "urgent" ? t("feed.detailUrgentTitle")
+                  : analysis.severity === "moderate" ? t("feed.detailCautionTitle")
+                  : t("feed.detailObserveTitle")}
               </div>
               <div style={{ padding: 14 }}>
                 {analysis.severity === "normal" ? (
                   <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#059669" }}>
-                    특별한 이상 증상이 감지되지 않았습니다. 건강한 상태로 보입니다. 정기적인 건강검진을 권장합니다.
+                    {t("feed.detailNormalDesc")}
                   </p>
                 ) : (
                   <>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-                      {analysis.symptoms.map((s, i) => (
-                        <span key={i} style={{
-                          background: (sevColor?.bg || "#888") + "15", color: sevColor?.bg || "#888",
-                          padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600,
-                        }}>{s}</span>
-                      ))}
+                      {analysis.symptoms.map((s, i) => {
+                        const symKey = SYMPTOM_I18N[s];
+                        return (
+                          <span key={i} style={{
+                            background: (sevColor?.bg || "#888") + "15", color: sevColor?.bg || "#888",
+                            padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600,
+                          }}>{symKey ? t(symKey) : s}</span>
+                        );
+                      })}
                     </div>
                     <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#444" }}>{analysis.summary}</p>
                     <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.7, color: "#666", fontStyle: "italic" }}>{analysis.recommendation}</p>
+                    {locale === "en" && (
+                      <p style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.5, color: "#9CA3AF" }}>
+                        (Analysis was generated in Korean. Translation coming soon.)
+                      </p>
+                    )}
                   </>
                 )}
                 {/* 주변 동물병원 — 주의/긴급은 자동 표시, 정상/관찰은 버튼 클릭 */}
@@ -185,19 +203,19 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                       background: analysis.severity === "normal" ? "#059669" : "#0369A1",
                       color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer",
                     }}>
-                      {showVets ? "병원 목록 닫기" : "🏥 주변 동물병원 찾기"}
+                      {showVets ? t("feed.closeVets") : t("feed.findVets")}
                     </button>
                     {showVets && <div style={{ marginTop: 12 }}><VetClinicList /></div>}
                   </>
                 )}
-                <div style={{ fontSize: 11, color: "#aaa", marginTop: 10 }}>※ AI 자동 분석이며, 의학적 진단이 아닙니다.</div>
+                <div style={{ fontSize: 11, color: "#aaa", marginTop: 10 }}>{t("feed.aiDisclaimer")}</div>
               </div>
             </div>
           )}
 
           {/* 댓글 */}
           <div style={{ padding: "0 16px 16px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#888" }}>댓글 {comments.length}개</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#888" }}>{t("feed.commentsLabel")} {comments.length}{t("feed.commentsUnit")}</div>
             {comments.map((c) => (
               <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid #f8f8f8" }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{safeNickname(c.author?.nickname, (c.author as any)?.id)}</span>
@@ -206,22 +224,22 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             ))}
             {id.startsWith("df") && comments.length === 0 && (
-              <div style={{ color: "#aaa", fontSize: 12, padding: "8px 0" }}>데모 게시글에는 댓글이 표시되지 않습니다.</div>
+              <div style={{ color: "#aaa", fontSize: 12, padding: "8px 0" }}>{t("feed.demoNoComments")}</div>
             )}
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <input value={newComment} onChange={(e) => setNewComment(e.target.value)}
-                placeholder="댓글 달기... (+5P)" onKeyDown={(e) => e.key === "Enter" && handleComment()}
+                placeholder={t("feed.commentPlaceholder")} onKeyDown={(e) => e.key === "Enter" && handleComment()}
                 style={{ flex: 1, padding: "8px 12px", border: "1px solid #ddd", borderRadius: 20, fontSize: 13, outline: "none" }} />
               <button onClick={handleComment} style={{
                 background: "#FF6B35", color: "#fff", border: "none", borderRadius: 20,
                 padding: "0 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-              }}>등록</button>
+              }}>{t("feed.commentSubmit")}</button>
             </div>
           </div>
         </div>
 
         <div style={{ textAlign: "center", marginTop: 16 }}>
-          <Link href="/feed" style={{ color: "#888", fontSize: 13 }}>← 피드로 돌아가기</Link>
+          <Link href="/feed" style={{ color: "#888", fontSize: 13 }}>{t("feed.backToFeed")}</Link>
         </div>
       </main>
       <Footer />

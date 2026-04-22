@@ -7,7 +7,40 @@ import GradeBadge from "../../components/GradeBadge";
 import { useAppStore } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
 import { getGrade, getNextGrade, GRADE_REQUIREMENTS, POINT_RULES, ROLE_TABLE } from "../../lib/grades";
+import { useI18n } from "../../components/I18nProvider";
 import type { Pet } from "../../types";
+
+// 등급·역할·포인트 규칙의 한글 값을 EN 라벨로 매핑
+const GRADE_LABEL_I18N: Record<string, { en: string; key: string }> = {
+  "새싹 반려인":   { en: "Sprout",       key: "grades.sprout" },
+  "초보 반려인":   { en: "Beginner",     key: "grades.beginner" },
+  "중급 반려인":   { en: "Intermediate", key: "grades.intermediate" },
+  "고급 반려인":   { en: "Advanced",     key: "grades.advanced" },
+  "준전문가":      { en: "Semi-Expert",  key: "grades.semiExpert" },
+  "마스터":        { en: "Master",       key: "grades.master" },
+};
+const CONDITION_I18N: Record<string, string> = {
+  "회원가입 시 자동 부여":                          "grades.reqSprout",
+  "100P 이상 (글 10개 또는 댓글 20개)":             "grades.reqBeginner",
+  "500P 이상":                                       "grades.reqIntermediate",
+  "1,500P 이상":                                     "grades.reqAdvanced",
+  "5,000P 이상 + 전문가답변 채택 10회 이상":        "grades.reqSemiExpert",
+  "15,000P 이상 + 커뮤니티 기여 우수자":            "grades.reqMaster",
+};
+const ACTION_I18N: Record<string, string> = {
+  "회원가입":         "grades.ruleSignup",
+  "게시글 작성":      "grades.rulePost",
+  "댓글 작성":        "grades.ruleComment",
+  "좋아요 받기":      "grades.ruleLike",
+  "전문가 답변 채택": "grades.ruleExpertAccept",
+  "일일 출석":        "grades.ruleAttend",
+};
+const ROLE_I18N: Record<string, string> = {
+  "수의사": "mypageExtra.roleVet",
+  "의사":   "mypageExtra.roleDoctor",
+  "약사":   "mypageExtra.rolePharma",
+  "업체":   "mypageExtra.roleShop",
+};
 
 export default function MyPage() {
   const user = useAppStore((s) => s.user);
@@ -18,6 +51,8 @@ export default function MyPage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myFeeds, setMyFeeds] = useState<any[]>([]);
+  const { t, locale } = useI18n();
+  const gradeLabel = (ko: string) => locale === "en" ? (GRADE_LABEL_I18N[ko]?.en ?? ko) : ko;
 
   useEffect(() => {
     if (user && user.id !== "demo-user") {
@@ -57,7 +92,7 @@ export default function MyPage() {
         {/* 프로필 카드 */}
         <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 4, marginBottom: 16 }}>
           <div style={{ padding: "12px 20px", borderBottom: "1px solid #e0e0e0", fontSize: 15, fontWeight: 700 }}>
-            마이페이지
+            {t("mypage.title")}
           </div>
           <div style={{ padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 20, borderBottom: "1px solid #f0f0f0", marginBottom: 20 }}>
@@ -81,11 +116,11 @@ export default function MyPage() {
             <div style={{ background: "#FAFAFA", borderRadius: 8, padding: 16, marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 700 }}>
-                  {grade.icon} 현재 등급: <span style={{ color: grade.color }}>{grade.label}</span>
+                  {grade.icon} {t("mypage.currentGrade")}: <span style={{ color: grade.color }}>{gradeLabel(grade.label)}</span>
                 </span>
                 {next && (
                   <span style={{ fontSize: 12, color: "#888" }}>
-                    다음 등급까지 <b style={{ color: "#FF6B35" }}>{remaining}P</b>
+                    {t("mypage.toNextGrade")} <b style={{ color: "#FF6B35" }}>{remaining}P</b>
                   </span>
                 )}
               </div>
@@ -101,7 +136,7 @@ export default function MyPage() {
               )}
               {!next && (
                 <div style={{ fontSize: 13, color: "#F59E0B", fontWeight: 600 }}>
-                  최고 등급에 도달했습니다!
+                  {locale === "en" ? "You've reached the highest grade!" : "최고 등급에 도달했습니다!"}
                 </div>
               )}
             </div>
@@ -112,10 +147,10 @@ export default function MyPage() {
               border: "1px solid #e0e0e0", borderRadius: 4, overflow: "hidden", marginBottom: 20,
             }}>
               {[
-                { label: "포인트", value: points, color: "#FF6B35" },
-                { label: "게시글", value: myPostCount, color: "#333" },
-                { label: "피드", value: myFeedCount, color: "#333" },
-                { label: "반려동물", value: myPets.length, color: "#2EC4B6" },
+                { label: t("mypage.points"), value: points, color: "#FF6B35" },
+                { label: t("mypage.posts"), value: myPostCount, color: "#333" },
+                { label: t("mypage.feeds"), value: myFeedCount, color: "#333" },
+                { label: t("mypage.pets"), value: myPets.length, color: "#2EC4B6" },
               ].map((item, i) => (
                 <div key={i} style={{ flex: 1, padding: "16px 0", borderRight: i < 3 ? "1px solid #e0e0e0" : "none" }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: item.color }}>{item.value}</div>
@@ -127,10 +162,10 @@ export default function MyPage() {
             {/* 메뉴 */}
             <div>
               {[
-                { label: "내가 쓴 글", key: "posts", action: () => { setActiveMenu(activeMenu === "posts" ? null : "posts"); loadMyPosts(); } },
-                { label: "내 피드", key: "feeds", action: () => { setActiveMenu(activeMenu === "feeds" ? null : "feeds"); loadMyFeeds(); } },
-                { label: "내 반려동물", key: "pets", action: () => { const el = document.getElementById("my-pets"); el?.scrollIntoView({ behavior: "smooth" }); } },
-                { label: "이용 가이드", key: "guide", action: () => { window.location.href = "/guide"; } },
+                { label: t("mypage.myPosts"), key: "posts", action: () => { setActiveMenu(activeMenu === "posts" ? null : "posts"); loadMyPosts(); } },
+                { label: t("mypage.myFeeds"), key: "feeds", action: () => { setActiveMenu(activeMenu === "feeds" ? null : "feeds"); loadMyFeeds(); } },
+                { label: t("mypage.myPets"), key: "pets", action: () => { const el = document.getElementById("my-pets"); el?.scrollIntoView({ behavior: "smooth" }); } },
+                { label: t("mypage.guide"), key: "guide", action: () => { window.location.href = "/guide"; } },
               ].map((item, i) => (
                 <div key={i}>
                   <div style={{
@@ -181,38 +216,44 @@ export default function MyPage() {
         {/* 등급 안내 */}
         <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 4, marginBottom: 16 }}>
           <div style={{ padding: "12px 20px", borderBottom: "1px solid #e0e0e0", fontSize: 14, fontWeight: 700 }}>
-            📊 등급 시스템 안내
+            📊 {t("mypage.gradeSystem")}
           </div>
           <div style={{ padding: 16 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#f8f8f8" }}>
-                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>등급</th>
-                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>승급 조건</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>{t("grades.column1")}</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>{t("grades.column2")}</th>
                 </tr>
               </thead>
               <tbody>
-                {GRADE_REQUIREMENTS.map((g, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                    <td style={{ padding: "8px 12px", fontWeight: grade.label === g.grade ? 700 : 400, color: grade.label === g.grade ? "#FF6B35" : "#333" }}>
-                      {grade.label === g.grade ? "▶ " : ""}{g.grade}
-                    </td>
-                    <td style={{ padding: "8px 12px", color: "#666" }}>{g.condition}</td>
-                  </tr>
-                ))}
+                {GRADE_REQUIREMENTS.map((g, i) => {
+                  const condKey = CONDITION_I18N[g.condition];
+                  return (
+                    <tr key={i} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <td style={{ padding: "8px 12px", fontWeight: grade.label === g.grade ? 700 : 400, color: grade.label === g.grade ? "#FF6B35" : "#333" }}>
+                        {grade.label === g.grade ? "▶ " : ""}{gradeLabel(g.grade)}
+                      </td>
+                      <td style={{ padding: "8px 12px", color: "#666" }}>{condKey ? t(condKey) : g.condition}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 
-            <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700 }}>포인트 적립 규칙</div>
+            <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700 }}>{t("grades.rulesTitle")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-              {POINT_RULES.map((r, i) => (
-                <span key={i} style={{
-                  background: "#f8f8f8", padding: "4px 10px", borderRadius: 4,
-                  fontSize: 12, color: "#555",
-                }}>
-                  {r.action}: <b style={{ color: "#FF6B35" }}>{r.points}</b>
-                </span>
-              ))}
+              {POINT_RULES.map((r, i) => {
+                const actKey = ACTION_I18N[r.action];
+                return (
+                  <span key={i} style={{
+                    background: "#f8f8f8", padding: "4px 10px", borderRadius: 4,
+                    fontSize: 12, color: "#555",
+                  }}>
+                    {actKey ? t(actKey) : r.action}: <b style={{ color: "#FF6B35" }}>{r.points}</b>
+                  </span>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -224,19 +265,19 @@ export default function MyPage() {
             padding: "12px 20px", borderBottom: "1px solid #e0e0e0",
             fontSize: 14, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
-            <span>🐾 내 반려동물</span>
+            <span>🐾 {t("mypage.myPets")}</span>
             <Link href="/pet/register" style={{
               background: "#FF6B35", color: "#fff", border: "none", borderRadius: 4,
               padding: "4px 12px", fontSize: 12, fontWeight: 600, textDecoration: "none",
-            }}>+ 추가 등록</Link>
+            }}>{t("mypageExtra.addPet")}</Link>
           </div>
           <div style={{ padding: "12px 20px" }}>
             {myPets.length === 0 ? (
               <div style={{ textAlign: "center", padding: "20px 0", color: "#888" }}>
-                <p style={{ fontSize: 14, margin: "0 0 8px" }}>등록된 반려동물이 없어요</p>
+                <p style={{ fontSize: 14, margin: "0 0 8px" }}>{t("mypageExtra.noPets")}</p>
                 <Link href="/pet/register" style={{
                   color: "#FF6B35", fontSize: 13, fontWeight: 600,
-                }}>반려동물 등록하기 →</Link>
+                }}>{t("mypageExtra.registerPet")}</Link>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -283,29 +324,31 @@ export default function MyPage() {
             padding: "12px 20px", borderBottom: "1px solid #e0e0e0",
             fontSize: 14, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
-            <span>🩺 전문가 인증 신청</span>
+            <span>🩺 {t("mypageExtra.expertApplyTitle")}</span>
             <button onClick={() => setShowExpertForm(!showExpertForm)} style={{
               background: "#2EC4B6", color: "#fff", border: "none", borderRadius: 4,
               padding: "4px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600,
             }}>
-              {showExpertForm ? "닫기" : "신청하기"}
+              {showExpertForm ? t("common2.close") : t("mypageExtra.expertApplyCta")}
             </button>
           </div>
 
           <div style={{ padding: 16 }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-              {ROLE_TABLE.map((r) => (
-                <span key={r.role} style={{
-                  background: r.bgColor, color: r.color,
-                  padding: "4px 12px", borderRadius: 4, fontSize: 12, fontWeight: 700,
-                }}>
-                  {r.icon} {r.label}
-                </span>
-              ))}
+              {ROLE_TABLE.map((r) => {
+                const roleKey = ROLE_I18N[r.label];
+                return (
+                  <span key={r.role} style={{
+                    background: r.bgColor, color: r.color,
+                    padding: "4px 12px", borderRadius: 4, fontSize: 12, fontWeight: 700,
+                  }}>
+                    {roleKey && locale === "en" ? t(roleKey) : `${r.icon} ${r.label}`}
+                  </span>
+                );
+              })}
             </div>
             <p style={{ fontSize: 12, color: "#888", margin: 0, lineHeight: 1.6 }}>
-              수의사, 의사, 약사, 업체 관계자분은 전문가 인증을 통해 전문가 배지를 받을 수 있습니다.
-              인증 후 전문가 답변 작성 시 추가 포인트(+50P)가 지급됩니다.
+              {t("mypageExtra.expertApplyDesc")}
             </p>
             {/* 카카오톡 문의 버튼 */}
             <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{

@@ -8,6 +8,7 @@ import { findFood, formatFoodResponse } from "../lib/aiFoodSafety";
 import { BREED_DISEASE_DATA } from "../lib/wikiDiseaseData";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
+import { useI18n } from "./I18nProvider";
 
 // 지역 키워드 추출 (세부 지역 우선 매칭, 동물 이름 혼동 방지)
 function findArea(q: string): string | null {
@@ -397,6 +398,7 @@ export default function HeroSection() {
   const [chatInput, setChatInput] = useState("");
   const [userPets, setUserPets] = useState<PetInfo[]>([]);
   const user = useAppStore((s) => s.user);
+  const { t, locale } = useI18n();
 
   // 로그인 유저의 등록 반려동물 조회
   useEffect(() => {
@@ -407,9 +409,12 @@ export default function HeroSection() {
     }
   }, [user]);
 
+  // locale에 따라 인사말·등록동물 안내 분기
   const petGreeting = userPets.length > 0
-    ? `안녕하세요! P.E.T AI입니다 🐾\n등록된 반려동물: ${userPets.map((p) => `${p.name}(${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species} · ${p.breed})`).join(", ")}\n\n무엇이든 물어보세요!`
-    : "안녕하세요! P.E.T AI입니다 🐾\n품종 정보, 증상 분석, 치료비 등 무엇이든 물어보세요!";
+    ? (locale === "en"
+        ? `${t("ai.chatGreeting")}\nRegistered pets: ${userPets.map((p) => `${p.name} (${p.species} · ${p.breed})`).join(", ")}\n\nAsk me anything!`
+        : `${t("ai.chatGreeting")}\n등록된 반려동물: ${userPets.map((p) => `${p.name}(${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species} · ${p.breed})`).join(", ")}\n\n무엇이든 물어보세요!`)
+    : `${t("ai.chatGreeting")}\n${t("ai.chatGreetingSub")}`;
 
   const [messages, setMessages] = useState<ChatMsg[]>([
     { role: "ai", text: petGreeting },
@@ -457,6 +462,7 @@ export default function HeroSection() {
           message: userMsg,
           history: messages.slice(-8),
           pets: userPets.map((p) => ({ name: p.name, species: p.species, breed: p.breed })),
+          locale,
         }),
       });
       const data = await res.json();
@@ -472,7 +478,15 @@ export default function HeroSection() {
         console.warn("[P.E.T AI] Gemini 폴백 모드 진입:", data.error || "unknown");
       }
 
-      // Gemini 실패 → 룰 기반 폴백 (후속 질문 맥락 결합)
+      // EN 모드에서는 룰 기반 한국어 응답을 쓰지 않고 영어 안내 메시지만 표시
+      if (locale === "en") {
+        const enFallback = "Sorry — our AI vet assistant is temporarily unavailable.\n\nWhile we restore service, here's what you can do:\n• For urgent symptoms (bleeding, seizure, collapse) → visit a 24h vet clinic immediately\n• For mild symptoms (mild vomiting, appetite drop) → monitor for 12–24 hours and consult a vet if it persists\n• For breed/cost/clinic questions → tap 'Request Match' above for a human manager reply\n\nWe'll be back shortly.";
+        setMessages((prev) => [...prev, { role: "ai", text: enFallback }]);
+        setThinking(false);
+        return;
+      }
+
+      // KO 모드: 룰 기반 폴백 (후속 질문 맥락 결합)
       const prevMsgs = messages.filter((m) => m.role === "user");
       const context = prevMsgs.length > 0 ? prevMsgs[prevMsgs.length - 1].text : "";
       let enrichedQuery = userMsg;
@@ -483,7 +497,12 @@ export default function HeroSection() {
       setMessages((prev) => [...prev, { role: "ai", text: reply }]);
       setThinking(false);
     } catch (err) {
-      // 네트워크 완전 차단 시에도 룰 기반 폴백
+      if (locale === "en") {
+        const enFallback = "Sorry — our AI vet assistant is temporarily unavailable. Please check your connection or tap 'Request Match' for human support.";
+        setMessages((prev) => [...prev, { role: "ai", text: enFallback }]);
+        setThinking(false);
+        return;
+      }
       const reply = generateAIResponse(userMsg);
       setMessages((prev) => [...prev, { role: "ai", text: reply }]);
       setThinking(false);
@@ -501,14 +520,14 @@ export default function HeroSection() {
       }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#1D1D1F", margin: 0, letterSpacing: "-0.03em" }}>
-            우리 아이를 안전하게 연결해드려요
+            {t("ai.matchTitle")}
           </h1>
           <p style={{ fontSize: 13, color: "#6B7280", margin: "4px 0 0" }}>
-            검증된 펫시터 · AI 건강 분석 · 안전 결제
+            {t("ai.matchDesc")}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          {["3단계 검증", "AI 분석", "실시간 보고", "안전 결제"].map((label) => (
+          {[t("ai.trust3step"), t("ai.trustAI"), t("ai.trustReport"), t("ai.trustPay")].map((label) => (
             <span key={label} style={{
               fontSize: 12, color: "#6B7280", background: "#F9FAFB",
               border: "1px solid #E5E7EB", borderRadius: 20, padding: "5px 14px",
@@ -522,7 +541,7 @@ export default function HeroSection() {
             borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
             whiteSpace: "nowrap",
           }}>
-            매칭 요청
+            {t("ai.matchCta")}
           </a>
         </div>
       </div>
@@ -546,13 +565,13 @@ export default function HeroSection() {
             fontSize: 18,
           }}>🤖</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>P.E.T AI</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>품종 · 증상 · 비용 · 병원 무엇이든 물어보세요</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>{t("ai.chatTitle")}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{t("ai.chatSubtitle")}</div>
           </div>
           <span style={{
             fontSize: 11, fontWeight: 600,
             background: "rgba(5,150,105,0.2)", color: "#34D399", padding: "3px 10px", borderRadius: 8,
-          }}>온라인</span>
+          }}>{t("ai.chatOnline")}</span>
         </div>
 
         {/* 채팅 메시지 영역 */}
@@ -585,7 +604,7 @@ export default function HeroSection() {
               color: "rgba(255,255,255,0.4)", padding: "12px 16px", borderRadius: 16,
               fontSize: 14, borderBottomLeftRadius: 4,
             }}>
-              <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}>분석 중...</span>
+              <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}>{t("ai.chatThinking")}</span>
             </div>
           )}
         </div>
@@ -597,7 +616,7 @@ export default function HeroSection() {
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
         }}>
-          {["말티즈 특징", "구토 증상", "중성화 비용", "서울 병원", "처음 키우기", "슬개골 수술비"].map((q) => (
+          {[t("ai.quickQ1"), t("ai.quickQ2"), t("ai.quickQ3"), t("ai.quickQ4"), t("ai.quickQ5"), t("ai.quickQ6")].map((q) => (
             <button key={q} onClick={() => { setChatInput(q); }}
               style={{
                 flexShrink: 0, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)",
@@ -621,7 +640,7 @@ export default function HeroSection() {
         }}>
           <input
             value={chatInput} onChange={(e) => setChatInput(e.target.value)}
-            placeholder="증상·품종·비용 무엇이든..."
+            placeholder={t("ai.chatInputPlaceholder")}
             style={{
               flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 12, padding: "12px 16px", color: "#fff",
@@ -636,7 +655,7 @@ export default function HeroSection() {
             letterSpacing: "-0.01em",
             fontFamily: "inherit",
           }}>
-            전송
+            {t("ai.chatSend")}
           </button>
         </form>
       </div>
@@ -647,10 +666,10 @@ export default function HeroSection() {
         flexWrap: "wrap",
       }}>
         {[
-          { label: "3단계 검증", desc: "신원·면접·시범" },
-          { label: "AI 분석", desc: "증상 즉시 분석" },
-          { label: "실시간 보고", desc: "사진·영상 공유" },
-          { label: "안전 결제", desc: "에스크로 보호" },
+          { label: t("ai.trust3step"), desc: t("ai.trust3stepDesc") },
+          { label: t("ai.trustAI"), desc: t("ai.trustAIDesc") },
+          { label: t("ai.trustReport"), desc: t("ai.trustReportDesc") },
+          { label: t("ai.trustPay"), desc: t("ai.trustPayDesc") },
         ].map((item) => (
           <div key={item.label} style={{ textAlign: "center" }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#1D1D1F" }}>{item.label}</div>

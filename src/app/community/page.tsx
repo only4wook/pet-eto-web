@@ -9,13 +9,27 @@ import { useAppStore } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
 import { formatDate, getCategoryColor, safeNickname } from "../../lib/utils";
 import EventCalendar from "../../components/EventCalendar";
+import { useI18n } from "../../components/I18nProvider";
 import type { Post } from "../../types";
+
+// 카테고리 한글 값 → i18n 키 매핑 (DB는 한글 값 그대로 유지)
+const CAT_KEYS: Array<{ value: string; key: string }> = [
+  { value: "전체", key: "community.categoryAll" },
+  { value: "질문", key: "community.categoryQuestion" },
+  { value: "일상", key: "community.categoryDaily" },
+  { value: "후기", key: "community.categoryReview" },
+  { value: "가이드", key: "community.categoryGuide" },
+  { value: "행사", key: "community.categoryEvent" },
+  { value: "논문", key: "community.categoryThesis" },
+  { value: "긴급", key: "community.categoryUrgent" },
+];
 
 function CommunityContent() {
   const searchParams = useSearchParams();
   const cat = searchParams.get("cat") || "전체";
   const { posts: demoPosts } = useAppStore();
   const [dbPosts, setDbPosts] = useState<Post[]>([]);
+  const { t } = useI18n();
 
   useEffect(() => {
     supabase
@@ -37,31 +51,31 @@ function CommunityContent() {
       <main className="container-pet" style={{ padding: "20px 0", flex: 1 }}>
         {/* 헤더 + 글쓰기 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1D1D1F", letterSpacing: "-0.02em" }}>커뮤니티</h2>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1D1D1F", letterSpacing: "-0.02em" }}>{t("community.title")}</h2>
           <Link href="/community/write" style={{
             padding: "8px 18px", background: "#1D1D1F", color: "#fff", borderRadius: 10,
             fontSize: 13, fontWeight: 600, textDecoration: "none",
-          }}>글쓰기</Link>
+          }}>{t("community.writePost")}</Link>
         </div>
 
         {/* 카테고리 탭 */}
         <div className="cat-tabs" style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
-          {["전체", "질문", "일상", "후기", "가이드", "행사", "논문", "긴급"].map((c) => (
-            <Link key={c} href={c === "전체" ? "/community" : `/community?cat=${c}`} style={{
+          {CAT_KEYS.map((c) => (
+            <Link key={c.value} href={c.value === "전체" ? "/community" : `/community?cat=${c.value}`} style={{
               padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
-              background: cat === c ? "#1D1D1F" : "#F3F4F6",
-              color: cat === c ? "#fff" : "#6B7280",
+              background: cat === c.value ? "#1D1D1F" : "#F3F4F6",
+              color: cat === c.value ? "#fff" : "#6B7280",
               textDecoration: "none", whiteSpace: "nowrap",
               transition: "all 0.15s",
             }}>
-              {c}
+              {t(c.key)}
             </Link>
           ))}
           <Link href="/guide" style={{
             padding: "7px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600,
             background: "#F3F4F6", color: "#6B7280", textDecoration: "none", whiteSpace: "nowrap",
           }}>
-            가이드
+            {t("community.categoryGuide")}
           </Link>
         </div>
 
@@ -76,18 +90,18 @@ function CommunityContent() {
         <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", tableLayout: "fixed" }}>
           <thead>
             <tr style={{ background: "#f8f8f8", borderBottom: "1px solid #e0e0e0" }}>
-              <th style={{ ...th, width: 60 }}>번호</th>
-              <th style={{ ...th, width: 64 }}>말머리</th>
-              <th style={th}>제목</th>
-              <th style={{ ...th, width: 90 }}>글쓴이</th>
-              <th style={{ ...th, width: 80 }}>날짜</th>
-              <th style={{ ...th, width: 50 }}>조회</th>
-              <th style={{ ...th, width: 50 }}>추천</th>
+              <th style={{ ...th, width: 60 }}>{t("community.tableNo")}</th>
+              <th style={{ ...th, width: 64 }}>{t("community.tableTag")}</th>
+              <th style={th}>{t("community.tableTitle")}</th>
+              <th style={{ ...th, width: 90 }}>{t("community.tableAuthor")}</th>
+              <th style={{ ...th, width: 80 }}>{t("community.tableDate")}</th>
+              <th style={{ ...th, width: 50 }}>{t("community.tableViews")}</th>
+              <th style={{ ...th, width: 50 }}>{t("community.tableLikes")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: "#aaa" }}>게시글이 없습니다.</td></tr>
+              <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: "#aaa" }}>{t("community.noPosts")}</td></tr>
             ) : filtered.map((post, i) => (
               <tr key={post.id} style={{ borderBottom: "1px solid #f0f0f0", cursor: "pointer" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#fafafa")}
@@ -106,7 +120,7 @@ function CommunityContent() {
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", verticalAlign: "middle",
                     }}>{post.title}</span>
                     {post.comment_count > 0 && <span style={{ color: "#FF6B35", fontSize: 11, marginLeft: 4, fontWeight: 700 }}>[{post.comment_count}]</span>}
-                    {post.is_expert_answered && <span style={{ background: "#2EC4B6", color: "#fff", fontSize: 10, padding: "1px 4px", borderRadius: 2, marginLeft: 6, fontWeight: 600 }}>전문가답변</span>}
+                    {post.is_expert_answered && <span style={{ background: "#2EC4B6", color: "#fff", fontSize: 10, padding: "1px 4px", borderRadius: 2, marginLeft: 6, fontWeight: 600 }}>{t("community.expertAnswer")}</span>}
                   </Link>
                 </td>
                 <td style={td}>

@@ -3,12 +3,22 @@ import Link from "next/link";
 import GradeBadge from "./GradeBadge";
 import { formatDate, safeNickname } from "../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../lib/symptomAnalyzer";
+import { useI18n } from "./I18nProvider";
 import type { FeedPost } from "../types";
+
+// severity → i18n 레이블 매핑 (EN 모드일 때)
+const SEVERITY_EN: Record<string, string> = {
+  normal: "Normal",
+  mild: "Mild",
+  moderate: "Caution",
+  urgent: "Urgent",
+};
 
 export default function FeedCard({ post }: { post: FeedPost }) {
   const analysis = post.analysis_result;
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
   const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
+  const { t, locale } = useI18n();
 
   return (
     <div style={{
@@ -41,7 +51,9 @@ export default function FeedCard({ post }: { post: FeedPost }) {
             color: analysis.severity === "normal" ? "#059669" : (sevColor?.color || "#666"),
             padding: "3px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700,
           }}>
-            {analysis.severity === "normal" ? "✅ 정상" : `AI ${getSeverityLabel(analysis.severity)}`}
+            {analysis.severity === "normal"
+              ? (locale === "en" ? "✅ Normal" : "✅ 정상")
+              : `AI ${locale === "en" ? (SEVERITY_EN[analysis.severity] || analysis.severity) : getSeverityLabel(analysis.severity)}`}
           </div>
         )}
       </div>
@@ -64,7 +76,7 @@ export default function FeedCard({ post }: { post: FeedPost }) {
           display: "none", width: "100%", height: 200, background: "#F9FAFB",
           alignItems: "center", justifyContent: "center", color: "#9CA3AF", fontSize: 13,
         }}>
-          📷 이미지를 표시할 수 없습니다
+          {t("feed.imgError")}
         </div>
       </Link>
 
@@ -94,11 +106,11 @@ export default function FeedCard({ post }: { post: FeedPost }) {
               background: "#F0F9FF", border: "1px solid #BAE6FD", fontSize: 12,
               color: "#0369A1", lineHeight: 1.7, whiteSpace: "pre-line",
             }}>
-              🤖 <b>AI 이미지 분석</b>
+              🤖 <b>{t("feed.aiImageLabel")}</b>
               <div style={{ marginTop: 4, color: "#374151" }}>
                 {post.description.split("🤖 AI 이미지 분석:")[1]?.slice(0, 200)}...
               </div>
-              <span style={{ color: "#FF6B35", fontWeight: 600, fontSize: 11 }}>자세히 보기 →</span>
+              <span style={{ color: "#FF6B35", fontWeight: 600, fontSize: 11 }}>{t("feed.viewDetails")}</span>
             </div>
           )}
         </div>
@@ -127,14 +139,14 @@ export default function FeedCard({ post }: { post: FeedPost }) {
                 : analysis.severity === "moderate" ? "#D97706"
                 : "#0369A1",
             }}>
-              {analysis.severity === "normal" ? "✅ AI 분석: 정상입니다"
-                : analysis.severity === "urgent" ? "🚨 긴급 증상 감지"
-                : analysis.severity === "moderate" ? "⚠️ 주의 증상 감지"
-                : "💡 관찰 필요 증상 감지"}
+              {analysis.severity === "normal" ? t("feed.cardNormalTitle")
+                : analysis.severity === "urgent" ? t("feed.cardUrgentTitle")
+                : analysis.severity === "moderate" ? t("feed.cardCautionTitle")
+                : t("feed.cardObserveTitle")}
             </div>
             <div style={{ fontSize: 12, color: "#666", lineHeight: 1.5 }}>
               {analysis.severity === "normal"
-                ? "특별한 이상 증상이 감지되지 않았습니다. 건강한 상태로 보입니다."
+                ? t("feed.cardNormalDesc")
                 : (analysis.summary?.slice(0, 80) || "") + "..."}
             </div>
             {analysis.severity !== "normal" && (
@@ -142,7 +154,7 @@ export default function FeedCard({ post }: { post: FeedPost }) {
                 fontSize: 11, marginTop: 4, fontWeight: 600,
                 color: analysis.severity === "urgent" ? "#DC2626" : "#D97706",
               }}>
-                자세히 보기 →
+                {t("feed.viewDetails")}
               </div>
             )}
           </div>

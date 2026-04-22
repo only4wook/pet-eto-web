@@ -2,32 +2,49 @@
 import Link from "next/link";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
-import { DOG_DATA } from "../../../lib/wikiData";
+import { DOG_DATA, DOG_OVERVIEW_EN } from "../../../lib/wikiData";
 import { useBreedImages } from "../../../lib/useBreedImages";
+import { useI18n } from "../../../components/I18nProvider";
 
 export const dynamic = "force-dynamic";
 
 export default function DogWikiPage() {
   const data = DOG_DATA;
   const { getImage, loaded } = useBreedImages();
+  const { t, locale } = useI18n();
+  const overview = locale === "en" ? DOG_OVERVIEW_EN : {
+    title: data.title,
+    description: data.description,
+    history: data.history,
+    characteristics: data.characteristics,
+    healthTips: data.healthTips,
+  };
   return (
     <>
       <Header />
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px", flex: 1, width: "100%" }}>
-        <Link href="/wiki" style={{ fontSize: 12, color: "#888" }}>← 펫-위키</Link>
+        <Link href="/wiki" style={{ fontSize: 12, color: "#888" }}>{t("wiki.backToWiki")}</Link>
 
         <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e0e0e0", marginTop: 12 }}>
           <div style={{ background: "linear-gradient(135deg, #2EC4B6, #5EDDD1)", padding: "28px 24px", color: "#fff", borderRadius: "8px 8px 0 0" }}>
             <div style={{ fontSize: 14, opacity: 0.8 }}>{data.scientificName}</div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, margin: "4px 0 0" }}>🐶 {data.title}</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 800, margin: "4px 0 0" }}>🐶 {locale === "en" ? "Dog" : data.title}</h1>
           </div>
 
           <div style={{ padding: "24px" }}>
+            {locale === "en" && (
+              <div style={{
+                background: "#ECFDF5", border: "1px solid #10B981", borderRadius: 8,
+                padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#065F46",
+              }}>
+                🌐 Category overview is available in English. Individual breed details below are still being translated — showing in Korean for now.
+              </div>
+            )}
             {[
-              { title: "개요", content: data.description },
-              { title: "역사", content: data.history },
-              { title: "특징", content: data.characteristics },
-              { title: "건강 관리", content: data.healthTips },
+              { title: t("wiki.sectionOverview"), content: overview.description },
+              { title: t("wiki.sectionHistory"), content: overview.history },
+              { title: t("wiki.sectionFeatures"), content: overview.characteristics },
+              { title: t("wiki.sectionHealth"), content: overview.healthTips },
             ].map((section, i) => (
               <div key={i} style={{ marginBottom: 24 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 700, borderBottom: "2px solid #2EC4B6", paddingBottom: 6, marginBottom: 10 }}>
@@ -38,7 +55,7 @@ export default function DogWikiPage() {
             ))}
 
             <h3 style={{ fontSize: 16, fontWeight: 700, borderBottom: "2px solid #2EC4B6", paddingBottom: 6, marginBottom: 16 }}>
-              품종별 상세 정보
+              {t("wiki.sectionBreedDetail")}
             </h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
               {data.breeds.map((breed) => (
@@ -46,8 +63,12 @@ export default function DogWikiPage() {
                   <div style={{ border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
                     <img src={getImage(breed.id, breed.image)} alt={breed.name} style={{ width: "100%", height: 140, objectFit: "cover" }} />
                     <div style={{ padding: 12 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#333" }}>{breed.name}</div>
-                      <div style={{ fontSize: 11, color: "#888" }}>{breed.nameEn} · {breed.origin}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#333" }}>
+                        {locale === "en" ? breed.nameEn : breed.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#888" }}>
+                        {locale === "en" ? breed.name : breed.nameEn} · {breed.origin}
+                      </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                         {breed.personality.slice(0, 3).map((p, i) => (
                           <span key={i} style={{ background: "#F0FFFE", color: "#2EC4B6", fontSize: 10, padding: "2px 6px", borderRadius: 8 }}>{p}</span>
@@ -65,15 +86,15 @@ export default function DogWikiPage() {
               borderRadius: 8, padding: 20, textAlign: "center",
             }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>🐶</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#333" }}>찾으시는 견종이 없나요?</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#333" }}>{t("wiki.breedRequestTitle")}</div>
               <p style={{ fontSize: 13, color: "#888", margin: "6px 0 12px" }}>
-                등록을 원하는 견종이 있다면 요청해주세요. 검토 후 추가해드립니다!
+                {t("wiki.breedRequestDesc")}
               </p>
               <a href="https://forms.gle/ekF9CxYZkoEbAvgC9" target="_blank" rel="noopener noreferrer" style={{
                 display: "inline-block", background: "#2EC4B6", color: "#fff",
                 padding: "8px 20px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none",
               }}>
-                견종 추가 요청하기
+                {t("wiki.breedRequestCta")}
               </a>
             </div>
           </div>

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 개발 모드에서 좌하단 Next.js DevTools "N" 배지 숨김
+  // (대욱님 피드백: 스크린샷/QA 시 UI 가림)
+  devIndicators: false,
   async headers() {
     return [
       {

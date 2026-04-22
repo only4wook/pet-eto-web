@@ -251,3 +251,30 @@ export const DOG_DATA: PetOverview = {
       history: "전라남도 진도군에서 수백 년(일부 추정에 따르면 수천 년)간 자연적으로 번식해온 한국 토종견입니다. 진도는 섬이라는 지리적 특성상 외래 견종과의 혼혈이 최소화되어 순수 혈통이 잘 보존되었습니다. 1962년 대한민국 천연기념물 제53호로 지정되었으며, 진도에서는 진돗개의 순혈 보존을 위해 '진도군 진도개 보호·육성에 관한 조례'를 시행하고 있습니다. 2005년 FCI(세계애견연맹)에 정식 등록되어 국제적으로도 공인받았습니다. '백구'라는 이름의 진돗개가 대전에서 진도까지 300km를 7개월에 걸쳐 찾아간 이야기는 진돗개의 충성심과 귀소본능을 보여주는 대표적인 일화입니다." },
   ],
 };
+
+// ═════════════════════════════════════════════
+// EN 오버뷰 (품종 상세는 KO 유지 + 번역 배너)
+// ═════════════════════════════════════════════
+export const CAT_OVERVIEW_EN = {
+  title: "Cat",
+  description:
+    "Cats are domesticated carnivorous mammals that have lived alongside humans for about 10,000 years. Over 600 million cats are raised worldwide, making them one of the most beloved companion animals — admired for their independent personality and clean habits.",
+  history:
+    "Cat domestication is believed to have begun around 9,500 years ago in the Near East. As humans started storing grains in agricultural societies, rodents gathered, and wild cats approached human settlements to hunt them — marking the start of domestication. In ancient Egypt, cats were revered as sacred animals and worshipped as incarnations of the goddess Bastet.",
+  characteristics:
+    "Cats have excellent night vision, keen hearing, and a flexible body structure. Their whiskers (vibrissae) are sensory organs that aid spatial awareness, and their retractable front claws can be extended or withdrawn at will. Their body temperature runs 38–39°C, and they sleep 12–16 hours a day on average, spending 30–50% of their waking hours grooming themselves.",
+  healthTips:
+    "Cats live an average of 12–18 years, and indoor cats often live longer. Key health priorities: regular vaccinations (panleukopenia, calici, herpes), spay/neuter (around 6 months of age), deworming every 3 months, dental care, and maintaining a healthy weight. Since cats instinctively hide illness, watch closely for changes in appetite, water intake, and litter habits.",
+};
+
+export const DOG_OVERVIEW_EN = {
+  title: "Dog",
+  description:
+    "Dogs are carnivorous mammals descended from wolves, domesticated by humans roughly 15,000 years ago — making them humanity's earliest companion animal. Over 500 million dogs are raised worldwide, and their loyal personality and high sociability have earned them the title 'humanity's best friend.'",
+  history:
+    "Dog domestication is estimated to have begun 15,000–40,000 years ago, evolving from the grey wolf (Canis lupus). Early roles included hunting assistance, guarding, and herding. As societies changed, dogs have taken on roles in companionship, rescue, guidance, and therapy.",
+  characteristics:
+    "Dogs have an exceptional sense of smell (10,000–100,000 times stronger than humans), high social intelligence, and remarkable learning ability. They express emotions through tail wagging, barking, and body language, and they read their owner's emotions extraordinarily well. Body size, personality, and exercise needs vary dramatically by breed.",
+  healthTips:
+    "Small breeds live an average of 12–16 years; large breeds 8–12 years. Key health priorities: vaccinations (DHPPL, corona, kennel cough, rabies), monthly heartworm prevention, deworming every 3 months, dental care, healthy weight management, and regular wellness checkups.",
+};

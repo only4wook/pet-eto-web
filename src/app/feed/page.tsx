@@ -7,9 +7,11 @@ import FeedCard from "../../components/FeedCard";
 import { supabase } from "../../lib/supabase";
 import { DEMO_FEED } from "../../lib/demoFeed";
 import type { FeedPost } from "../../types";
+import { useI18n } from "../../components/I18nProvider";
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<FeedPost[]>(DEMO_FEED);
+  const { t } = useI18n();
 
   useEffect(() => {
     supabase
@@ -29,12 +31,12 @@ export default function FeedPage() {
       <Header />
       <main style={{ maxWidth: 500, margin: "0 auto", padding: "16px", flex: 1, width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "#333" }}>📸 펫 피드</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "#333" }}>{t("feed.title")}</h2>
           <Link href="/feed/upload" style={{
             background: "#FF6B35", color: "#fff", padding: "8px 16px", borderRadius: 20,
             fontSize: 13, fontWeight: 700, textDecoration: "none",
           }}>
-            + 사진 올리기
+            {t("feed.uploadButton")}
           </Link>
         </div>
 
