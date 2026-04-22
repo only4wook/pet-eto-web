@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { buildKakaoConsultUrl } from "../lib/contact";
+import { trackEvent } from "../lib/analytics";
+import { useI18n } from "./I18nProvider";
 
 // P.E.T Awwwards-grade Hero
 // 레퍼런스: Airbnb(따뜻한 신뢰) + Linear(대범한 타이포) + Apple(여백·스토리텔링)
@@ -8,6 +11,7 @@ import Link from "next/link";
 
 export default function PremiumHero() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   // 스크롤 진입 시 .reveal → .in-view 전환 (IntersectionObserver)
   useEffect(() => {
@@ -84,36 +88,38 @@ export default function PremiumHero() {
           <div className="reveal" style={{ marginBottom: 20 }}>
             <span className="eyebrow">
               <span className="live-dot" aria-hidden="true" />
-              지금 이 시각 <strong style={{ fontWeight: 800 }}>8명</strong>의 보호자가 매칭 중
+              {t("home.hero.matchingNowPrefix")} <strong style={{ fontWeight: 800 }}>8</strong>{t("home.hero.matchingNowSuffix")}
             </span>
           </div>
 
           {/* 헤드라인 — 대범한 타이포 */}
           <h1
             id="hero-headline"
-            className="text-display-xl reveal delay-1"
+            className="text-display-xl reveal delay-1 headline-balance"
             style={{ margin: "0 0 18px" }}
           >
-            혼자 둘 수 없는 순간,
+            {t("home.hero.headlineLine1")}
             <br />
-            곁에 둘 <span className="text-accent-grad">전문가</span>가 있습니다.
+            {t("home.hero.headlineLine2Prefix")}
+            <span className="text-accent-grad">{t("home.hero.headlineLine2Accent")}</span>
+            {t("home.hero.headlineLine2Suffix")}
           </h1>
 
           {/* 서브카피 */}
           <p
-            className="reveal delay-2"
+            className="reveal delay-2 readable-kor"
             style={{
               fontSize: "clamp(15px, 1.4vw, 18px)",
               color: "#4B5563",
-              lineHeight: 1.65,
+              lineHeight: 1.75,
               maxWidth: 560,
               margin: "0 0 32px",
               letterSpacing: "-0.01em",
             }}
           >
-            3단계 검증을 통과한 펫시터가 우리 아이를 돌봐드립니다.
-            <br />
-            AI 건강 분석 · 실시간 사진 보고 · 안전 결제까지 — 전부.
+            {t("home.hero.sub1")}
+            <br /><br />
+            {t("home.hero.sub2")}
           </p>
 
           {/* CTA 2개 */}
@@ -122,19 +128,20 @@ export default function PremiumHero() {
             style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 32 }}
           >
             <a
-              href="https://pf.kakao.com/_giedX/chat"
+              href={buildKakaoConsultUrl("hero_cta")}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackEvent("kakao_click", { source: "hero_cta" })}
               className="btn-primary-xl"
             >
-              매칭 요청하기
+              {t("home.hero.requestMatching")}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M5 12h14M13 5l7 7-7 7" />
               </svg>
             </a>
-            <a href="#ai-chat" className="btn-secondary-xl">
-              AI 건강 상담
-            </a>
+            <Link href="/ai" className="btn-secondary-xl">
+              {t("home.hero.healthCheck")}
+            </Link>
           </div>
 
           {/* 신뢰 지표 3개 — 인라인 */}
@@ -149,7 +156,7 @@ export default function PremiumHero() {
             {[
               { num: "10분", label: "평균 매칭 시간" },
               { num: "3단계", label: "파트너 검증" },
-              { num: "100%", label: "에스크로 보호" },
+              { num: "최대 1억", label: "사고 보장" },
             ].map((s) => (
               <div key={s.label}>
                 <div style={{ fontSize: "clamp(20px, 2vw, 26px)", fontWeight: 900, color: "#1D1D1F", letterSpacing: "-0.03em" }}>

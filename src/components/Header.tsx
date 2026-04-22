@@ -4,10 +4,15 @@ import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import GradeBadge from "./GradeBadge";
 import { safeNickname } from "../lib/utils";
+import { buildKakaoConsultUrl } from "../lib/contact";
+import { trackEvent } from "../lib/analytics";
+import { useI18n } from "./I18nProvider";
+import LanguageToggle from "./LanguageToggle";
 
 export default function Header() {
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
+  const { t } = useI18n();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -17,14 +22,21 @@ export default function Header() {
   };
 
   return (
-    <header style={{ background: "#fff", borderBottom: "1px solid #E5E7EB" }}>
+    <header style={{
+      background: "#fff",
+      borderBottom: "1px solid #E5E7EB",
+      paddingTop: "env(safe-area-inset-top, 0)",
+      position: "sticky",
+      top: 0,
+      zIndex: 30,
+    }}>
       {/* PC 상단 바 */}
       <div className="container-pet" style={{ padding: "0 16px" }}>
         <div className="pc-only" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 40 }}>
           <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#888" }}>
-            <Link href="/mypage" style={{ color: "#888" }}>마이페이지</Link>
-            <Link href="/pet/register" style={{ color: "#888" }}>반려동물 등록</Link>
-            <Link href="/partner" style={{ color: "#FF6B35", fontWeight: 600 }}>파트너 신청</Link>
+            <Link href="/mypage" style={{ color: "#888" }}>{t("header.mypage")}</Link>
+            <Link href="/pet/register" style={{ color: "#888" }}>{t("header.registerPet")}</Link>
+            <Link href="/partner" style={{ color: "#FF6B35", fontWeight: 600 }}>{t("header.partnerApply")}</Link>
           </div>
           <div style={{ display: "flex", gap: 8, fontSize: 12, alignItems: "center" }}>
             {user ? (
@@ -35,12 +47,12 @@ export default function Header() {
                 <span style={{ color: "#ddd" }}>|</span>
                 <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} style={{
                   color: "#888", fontSize: 12, cursor: "pointer", textDecoration: "none",
-                }}>로그아웃</a>
+                }}>{t("header.logout")}</a>
               </>
             ) : (
               <>
-                <Link href="/auth/login" style={{ color: "#FF6B35", fontWeight: 600 }}>로그인</Link>
-                <Link href="/auth/signup" style={{ color: "#888" }}>회원가입</Link>
+                <Link href="/auth/login" style={{ color: "#FF6B35", fontWeight: 600 }}>{t("header.login")}</Link>
+                <Link href="/auth/signup" style={{ color: "#888" }}>{t("header.signup")}</Link>
               </>
             )}
           </div>
@@ -53,12 +65,13 @@ export default function Header() {
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
             <span style={{ fontSize: 22, fontWeight: 900, color: "#1D1D1F", letterSpacing: "-0.03em" }}>P.E.T</span>
           </Link>
+          <LanguageToggle compact />
           <form style={{ flex: 1, display: "flex", minWidth: 0 }} onSubmit={(e) => {
             e.preventDefault();
             const q = (e.currentTarget.querySelector("input") as HTMLInputElement)?.value?.trim();
             if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`;
           }}>
-            <input type="search" name="q" placeholder="게시글, 위키, 증상 검색..."
+            <input type="search" name="q" placeholder={t("header.searchPlaceholder")}
               inputMode="search" autoComplete="off" enterKeyHint="search"
               style={{
                 flex: 1, border: "1px solid #ddd", borderRight: "none",
@@ -70,11 +83,11 @@ export default function Header() {
               padding: "0 16px", height: 44, fontSize: 14, cursor: "pointer",
               borderRadius: "0 8px 8px 0", flexShrink: 0, fontWeight: 500,
               touchAction: "manipulation",
-            }}>검색</button>
+            }}>{t("header.search")}</button>
           </form>
           {/* 모바일 프로필 — 마이페이지로 이동, 로그아웃은 마이페이지에서 처리 */}
-          <div className="mobile-only" style={{ display: "none", alignItems: "center", flexShrink: 0 }}>
-            <Link href={user ? "/mypage" : "/auth/login"} aria-label={user ? "마이페이지" : "로그인"} style={{
+          <div className="mobile-only" style={{ display: "none", alignItems: "center", flexShrink: 0, gap: 8 }}>
+            <Link href={user ? "/mypage" : "/auth/login"} aria-label={user ? t("header.mypage") : t("header.login")} style={{
               width: 44, height: 44, borderRadius: "50%",
               background: user ? "#FF6B35" : "#E5E7EB",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -98,65 +111,54 @@ export default function Header() {
           display: "flex", gap: 0, whiteSpace: "nowrap", alignItems: "center",
         }}>
           {[
-            { label: "홈", href: "/" },
-            { label: "피드", href: "/feed" },
-            { label: "위키", href: "/wiki" },
-            { label: "커뮤니티", href: "/community" },
-            { label: "마이", href: "/mypage" },
+            { label: t("header.nav.home"), href: "/", highlight: false },
+            { label: t("header.nav.feed"), href: "/feed", highlight: false },
+            { label: t("header.nav.healthCheck"), href: "/ai", highlight: true },
+            { label: t("header.nav.wiki"), href: "/wiki", highlight: false },
+            { label: t("header.nav.community"), href: "/community", highlight: false },
+            { label: t("header.nav.my"), href: "/mypage", highlight: false },
           ].map((item) => (
             <Link key={item.label} href={item.href} style={{
-              color: "rgba(255,255,255,0.85)", padding: "12px 16px", fontSize: 14,
-              fontWeight: 500, textDecoration: "none", display: "block", flexShrink: 0,
-              letterSpacing: "-0.01em",
+              color: item.highlight ? "#FF6B35" : "rgba(255,255,255,0.85)",
+              padding: "12px 16px", fontSize: 14,
+              fontWeight: item.highlight ? 700 : 500,
+              textDecoration: "none", display: "flex", alignItems: "center", gap: 6,
+              flexShrink: 0, letterSpacing: "-0.01em",
               transition: "color 0.15s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.85)")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = item.highlight ? "#FF8A5B" : "#fff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = item.highlight ? "#FF6B35" : "rgba(255,255,255,0.85)")}
             >
+              {item.highlight && (
+                <span aria-hidden="true" style={{
+                  width: 6, height: 6, borderRadius: "50%", background: "#FF6B35",
+                  boxShadow: "0 0 0 3px rgba(255,107,53,0.25)",
+                }} />
+              )}
               {item.label}
+              {item.highlight && (
+                <span style={{
+                  fontSize: 10, fontWeight: 800, padding: "1px 6px",
+                  borderRadius: 8, background: "rgba(255,107,53,0.18)",
+                  color: "#FFB38A", letterSpacing: "0.02em",
+                }}>{t("common.ai")}</span>
+              )}
             </Link>
           ))}
           {/* 카톡 상담 */}
-          <a href="https://pf.kakao.com/_giedX/chat" target="_blank" rel="noopener noreferrer" style={{
+          <a href={buildKakaoConsultUrl("header_nav")} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent("kakao_click", { source: "header_nav" })} style={{
             marginLeft: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
             background: "#FEE500", color: "#1D1D1F", padding: "6px 14px",
             borderRadius: 20, fontSize: 12, fontWeight: 700, textDecoration: "none",
           }}>
-            카톡 상담
+            {t("header.kakaoConsult")}
           </a>
         </div>
       </nav>
 
-      {/* 카톡 상담 — 모바일 플로팅 버튼 (하단 탭바 위에 노출) */}
-      <a
-        href="https://pf.kakao.com/_giedX/chat"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mobile-only kakao-fab"
-        aria-label="카카오톡 상담"
-        style={{
-          display: "none",
-          position: "fixed",
-          right: 16,
-          bottom: "calc(84px + env(safe-area-inset-bottom, 0))",
-          zIndex: 45,
-          width: 54,
-          height: 54,
-          borderRadius: "50%",
-          background: "#FEE500",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
-          textDecoration: "none",
-          fontSize: 20,
-          fontWeight: 800,
-          color: "#3C1E1E",
-          touchAction: "manipulation",
-          WebkitTapHighlightColor: "transparent",
-        }}
-      >
-        💬
-      </a>
+      {/* 모바일 플로팅 버튼은 제거 — 사용자 피드백: '계속 따라다녀서 거슬림'
+          · 피드 업로드는 /feed 페이지에서만 자체 FAB로 노출
+          · 카톡 상담은 PC 네비/Hero CTA/Footer에 이미 녹아있음 */}
     </header>
   );
 }
