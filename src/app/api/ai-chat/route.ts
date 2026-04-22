@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PET_AI_PERSONA, GENERATION_CONFIG, SAFETY_SETTINGS } from "../../../lib/aiPrompts";
+import { PET_AI_PERSONA_EN, GENERATION_CONFIG_EN } from "../../../lib/aiPromptsEn";
 
 // P.E.T AI 채팅 - Gemini 2.0 Flash 기반 수의학 대화 엔진
-// 공통 프롬프트 모듈(aiPrompts.ts)에서 페르소나·Few-shot·파라미터를 주입.
+// KO/EN 전용 페르소나를 완전히 분리해서 양쪽 모두 최고 품질 유지
 
 type ChatMessage = { role: "user" | "ai"; text: string };
 type PetInfo = { name: string; species: string; breed: string };
@@ -24,19 +25,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "메시지가 비어있습니다." }, { status: 400 });
     }
 
-    // 언어별 시스템 지시 — 영어 모드에서는 반드시 영어로 답변
-    const languageDirective = locale === "en"
-      ? "\n\n## CRITICAL LANGUAGE RULE\nYou MUST respond entirely in English. The user is a non-Korean-speaking pet parent. Use clear, natural, warm English. Do NOT include Korean text in your answer."
-      : "";
+    const isEn = locale === "en";
 
-    // 등록 반려동물 컨텍스트 — 품종별 호발 질환까지 자연스럽게 반영
+    // 언어별로 완전히 분리된 시스템 프롬프트
+    const systemPersona = isEn ? PET_AI_PERSONA_EN : PET_AI_PERSONA;
+
+    // 등록 반려동물 컨텍스트
     const petContext = pets && pets.length > 0
-      ? (locale === "en"
-          ? `\n\n## This owner's pets\n${pets.map((p) => `- ${p.name} (${p.species}, ${p.breed})`).join("\n")}\nNaturally reflect these pets' breed traits and common conditions when relevant.`
+      ? (isEn
+          ? `\n\n## This owner's pets\n${pets.map((p) => `- ${p.name} (${p.species}, ${p.breed})`).join("\n")}\nNaturally weave in these pets' breed traits and common health conditions when relevant. Using their names increases rapport.`
           : `\n\n## 이 보호자의 반려동물\n${pets.map((p) => `- ${p.name} (${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}, ${p.breed})`).join("\n")}\n답변 시 이 아이들의 품종 특성·호발 질환을 자연스럽게 반영하세요. 이름을 불러주면 보호자 친밀도가 올라갑니다.`)
       : "";
 
-    // 최근 대화 8턴까지 유지 (맥락 유지 + 토큰 절약)
+    // 최근 대화 8턴까지 유지
     const recentHistory = (history || []).slice(-8);
     const contents = [
       ...recentHistory.map((m) => ({
@@ -53,10 +54,10 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           systemInstruction: {
-            parts: [{ text: PET_AI_PERSONA + languageDirective + petContext }],
+            parts: [{ text: systemPersona + petContext }],
           },
           contents,
-          generationConfig: GENERATION_CONFIG,
+          generationConfig: isEn ? GENERATION_CONFIG_EN : GENERATION_CONFIG,
           safetySettings: SAFETY_SETTINGS,
         }),
       }
@@ -74,7 +75,6 @@ export async function POST(req: NextRequest) {
     const data = await geminiRes.json();
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    // 안전 필터 등으로 응답이 비었을 때
     if (!reply) {
       const blockReason = data?.promptFeedback?.blockReason;
       return NextResponse.json({

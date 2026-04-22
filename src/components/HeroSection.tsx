@@ -9,6 +9,7 @@ import { BREED_DISEASE_DATA } from "../lib/wikiDiseaseData";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { useI18n } from "./I18nProvider";
+import { findEnglishFallback, defaultEnglishResponse } from "../lib/aiFallbackEn";
 
 // 지역 키워드 추출 (세부 지역 우선 매칭, 동물 이름 혼동 방지)
 function findArea(q: string): string | null {
@@ -478,10 +479,11 @@ export default function HeroSection() {
         console.warn("[P.E.T AI] Gemini 폴백 모드 진입:", data.error || "unknown");
       }
 
-      // EN 모드에서는 룰 기반 한국어 응답을 쓰지 않고 영어 안내 메시지만 표시
+      // EN 모드: 룰 기반 영어 폴백 (chocolate, vomit, limping 등 13개 영어 규칙)
       if (locale === "en") {
-        const enFallback = "Sorry — our AI vet assistant is temporarily unavailable.\n\nWhile we restore service, here's what you can do:\n• For urgent symptoms (bleeding, seizure, collapse) → visit a 24h vet clinic immediately\n• For mild symptoms (mild vomiting, appetite drop) → monitor for 12–24 hours and consult a vet if it persists\n• For breed/cost/clinic questions → tap 'Request Match' above for a human manager reply\n\nWe'll be back shortly.";
-        setMessages((prev) => [...prev, { role: "ai", text: enFallback }]);
+        const ruleResponse = findEnglishFallback(userMsg);
+        const enReply = ruleResponse || defaultEnglishResponse(userMsg);
+        setMessages((prev) => [...prev, { role: "ai", text: enReply }]);
         setThinking(false);
         return;
       }
@@ -498,8 +500,9 @@ export default function HeroSection() {
       setThinking(false);
     } catch (err) {
       if (locale === "en") {
-        const enFallback = "Sorry — our AI vet assistant is temporarily unavailable. Please check your connection or tap 'Request Match' for human support.";
-        setMessages((prev) => [...prev, { role: "ai", text: enFallback }]);
+        const ruleResponse = findEnglishFallback(userMsg);
+        const enReply = ruleResponse || defaultEnglishResponse(userMsg);
+        setMessages((prev) => [...prev, { role: "ai", text: enReply }]);
         setThinking(false);
         return;
       }
