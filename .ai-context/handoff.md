@@ -15,6 +15,30 @@
 
 ---
 
+## [2026-04-22 22:45] — Claude Code
+**작업**: 위키 품종 상세 페이지 26개 전체 영어 번역 완성 + 가독성 대폭 개선
+**상태**: 완료 ✅ (로컬 빌드 통과, 원격 푸시 완료 — 커밋 6ef5f31)
+**변경 파일**:
+- `src/lib/wikiDataEn.ts` (신규, 26품종 × 5섹션 = 130 텍스트 블록)
+- `src/lib/wikiGuideDataEn.ts` (신규, 첫 키우기 가이드 영어판)
+- `src/app/wiki/{cat,dog}/[breed]/page.tsx` (완전 재작성)
+- `src/app/wiki/{cat,dog}/page.tsx` (EN 배너 개선 + 카드 영어 매핑)
+**다음 단계**:
+- Vercel 프리뷰 QA (언어 토글 KO↔EN 전체 위키 플로우)
+- 문제 없으면 main 승격 PR
+- /feed/upload, /auth/*, /guide, /terms 페이지 i18n
+- 피드 유저 생성 콘텐츠는 번역 불가 (범위 외)
+**주의사항**:
+- 대욱님이 "위키가 가독성 떨어진다" 피드백 → 영어 모드 전용 스타일 강화:
+  · 섹션 제목 17px, 본문 15px, line-height 1.85
+  · letterSpacing -0.003em, wordBreak normal
+  · 문단 간 여백 28px
+- 원산지/성격태그는 lookup 매핑 (ORIGIN_EN 21개, PERSONALITY_EN 65개)
+- 비용 포맷: 한국어 "20만원" ↔ 영어 "₩200K" 자동 변환
+- 질병 설명 본문은 의료 정확성 위해 한국어 유지
+
+---
+
 ## [2026-04-22 22:05] — Claude Code
 **작업**: 한영 전환 전면 완성 (홈/피드/위키/마이/커뮤니티/건강체크) + /ai 페이지 복원 + Hydration 수정
 **상태**: 완료 ✅ (로컬 빌드 통과, 원격 푸시 완료)
