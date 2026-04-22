@@ -3,6 +3,7 @@ import Link from "next/link";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { DOG_DATA, DOG_OVERVIEW_EN } from "../../../lib/wikiData";
+import { ORIGIN_EN, PERSONALITY_EN } from "../../../lib/wikiDataEn";
 import { useBreedImages } from "../../../lib/useBreedImages";
 import { useI18n } from "../../../components/I18nProvider";
 
@@ -12,7 +13,8 @@ export default function DogWikiPage() {
   const data = DOG_DATA;
   const { getImage, loaded } = useBreedImages();
   const { t, locale } = useI18n();
-  const overview = locale === "en" ? DOG_OVERVIEW_EN : {
+  const isEn = locale === "en";
+  const overview = isEn ? DOG_OVERVIEW_EN : {
     title: data.title,
     description: data.description,
     history: data.history,
@@ -32,12 +34,12 @@ export default function DogWikiPage() {
           </div>
 
           <div style={{ padding: "24px" }}>
-            {locale === "en" && (
+            {isEn && (
               <div style={{
                 background: "#ECFDF5", border: "1px solid #10B981", borderRadius: 8,
-                padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#065F46",
+                padding: "12px 16px", marginBottom: 24, fontSize: 13, color: "#065F46", lineHeight: 1.7,
               }}>
-                🌐 Category overview is available in English. Individual breed details below are still being translated — showing in Korean for now.
+                🌐 Full English support — category overview and individual breed details are both available.
               </div>
             )}
             {[
@@ -46,11 +48,18 @@ export default function DogWikiPage() {
               { title: t("wiki.sectionFeatures"), content: overview.characteristics },
               { title: t("wiki.sectionHealth"), content: overview.healthTips },
             ].map((section, i) => (
-              <div key={i} style={{ marginBottom: 24 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, borderBottom: "2px solid #2EC4B6", paddingBottom: 6, marginBottom: 10 }}>
+              <div key={i} style={{ marginBottom: isEn ? 28 : 24 }}>
+                <h3 style={{ fontSize: isEn ? 17 : 16, fontWeight: 700, borderBottom: "2px solid #2EC4B6", paddingBottom: 6, marginBottom: 10 }}>
                   {section.title}
                 </h3>
-                <p style={{ fontSize: 14, lineHeight: 1.8, color: "#444", margin: 0 }}>{section.content}</p>
+                <p style={{
+                  fontSize: isEn ? 15 : 14,
+                  lineHeight: isEn ? 1.85 : 1.8,
+                  color: "#374151",
+                  margin: 0,
+                  letterSpacing: isEn ? "-0.003em" : "-0.01em",
+                  wordBreak: isEn ? "normal" : "keep-all",
+                }}>{section.content}</p>
               </div>
             ))}
 
@@ -63,15 +72,17 @@ export default function DogWikiPage() {
                   <div style={{ border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
                     <img src={getImage(breed.id, breed.image)} alt={breed.name} style={{ width: "100%", height: 140, objectFit: "cover" }} />
                     <div style={{ padding: 12 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#333" }}>
-                        {locale === "en" ? breed.nameEn : breed.name}
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#333", lineHeight: 1.35 }}>
+                        {isEn ? breed.nameEn : breed.name}
                       </div>
-                      <div style={{ fontSize: 11, color: "#888" }}>
-                        {locale === "en" ? breed.name : breed.nameEn} · {breed.origin}
+                      <div style={{ fontSize: 11, color: "#888", marginTop: 2, lineHeight: 1.45 }}>
+                        {isEn ? (ORIGIN_EN[breed.origin] || breed.origin) : breed.origin}
                       </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
                         {breed.personality.slice(0, 3).map((p, i) => (
-                          <span key={i} style={{ background: "#F0FFFE", color: "#2EC4B6", fontSize: 10, padding: "2px 6px", borderRadius: 8 }}>{p}</span>
+                          <span key={i} style={{ background: "#F0FFFE", color: "#2EC4B6", fontSize: 10, padding: "2px 8px", borderRadius: 8, fontWeight: 600 }}>
+                            {isEn ? (PERSONALITY_EN[p] || p) : p}
+                          </span>
                         ))}
                       </div>
                     </div>
