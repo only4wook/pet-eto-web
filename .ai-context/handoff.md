@@ -91,6 +91,34 @@
 
 ---
 
+## [2026-04-23 02:xx] — Claude Code
+**작업**: 한양대 창업동아리 지원금(HWP) 분석 + 펫에토 마케팅 도구 전체 설계 패키지 제작
+**상태**: 완료 ✅
+**변경 파일**:
+- `.ai-context/funding_guide.md` (지원금 가이드)
+- `.ai-context/marketing/brand_system.md` (브랜드 시스템 기준)
+- `.ai-context/marketing/business_cards.md` (명함 5종 디자인)
+- `.ai-context/marketing/leaflets.md` (리플릿 5종 × 3타겟 카피)
+- `.ai-context/marketing/sales_kit.md` (영업킷 3레벨)
+- `.ai-context/marketing/stickers.md` (스티커 5종 디자인)
+- `.ai-context/marketing/design_brief_printer.md` (인쇄소 전달 브리프)
+- `.ai-context/funding/pre_approval_form_draft.md` (사전승인신청서 초안)
+- `.ai-context/funding/result_report_template.md` (결과보고서·검수확인서 템플릿)
+**다음 단계**:
+- 대욱님: 인쇄소 3곳 견적 요청 → 최저가 선정
+- 대욱님: 1차 전담멘토(강창규/이광헌 교수) 예약 · https://bit.ly/41TAKRm
+- 대욱님: 2차 담당매니저 멘토링 후 사전승인신청서 제출
+- Claude Code: 실제 견적 반영해서 신청서 최종본 완성
+- Claude Code: 로고 파일이 확인되면 디자인 브리프 보강
+**주의사항**:
+- 본 설계는 전부 텍스트/브리프. 실제 디자인은 인쇄소나 디자이너가 이 브리프를 받아 구현
+- 전 문서가 `brand_system.md` 하나를 참조하므로 일관성 보장
+- QR URL은 전부 `?src=` 트래킹 파라미터 포함 → 채널별 전환율 측정 가능
+- 예산 시뮬레이션: 핵심만 약 110만원 / 풀세트 200만원+
+- HWP 원본 추출은 Hancom COM 자동화로 성공 (pyhwp 없이도 가능)
+
+---
+
 ## [2026-04-22 20:50] — Claude Code
 **작업**: 커서가 방치한 스태시(main의 i18n 7파일) 복구 + 누락 의존 파일 복원 + 빌드 검증
 **상태**: 완료 ✅ (로컬 빌드 통과, 푸시는 대욱님 컨펌 대기)
