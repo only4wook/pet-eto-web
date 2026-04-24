@@ -3,6 +3,36 @@ import { PET_AI_PERSONA, IMAGE_ANALYSIS_CONFIG, SAFETY_SETTINGS } from "../../..
 import { PET_AI_PERSONA_EN, IMAGE_ANALYSIS_CONFIG_EN } from "../../../lib/aiPromptsEn";
 import { buildSymptomChecklistKo, buildSymptomChecklistEn, TOTAL_SYMPTOMS } from "../../../lib/symptomTaxonomy";
 
+type Severity = "normal" | "mild" | "moderate" | "urgent";
+
+/**
+ * AI 분석 텍스트에서 심각도를 추출.
+ *
+ * 기존 문제점: loose includes() 사용으로 "관찰되지 않습니다"(부정문) → mild 오매칭,
+ * "주의해주세요"(일반 권고) → moderate 오매칭 등으로 건강한 펫이 경고 표시되던 버그.
+ *
+ * 해결: "심각도"/"Severity" 라벨 뒤에 오는 enum 토큰(normal|mild|moderate|urgent)만 매칭.
+ * 백업: 명시 라벨을 못 찾으면 이모지+키워드 조합으로 추론 (loose match는 여전히 회피).
+ */
+function extractSeverity(text: string): Severity {
+  // 1순위: 명시적 라벨 뒤 enum 토큰 (프롬프트가 강제한 형식)
+  //   예시 매칭: "**심각도**: normal", "⚡ 심각도 mild", "**Severity**: urgent"
+  const labelMatch = text.match(
+    /(?:심각도|severity)\s*[*:\-—\s]*\s*(normal|mild|moderate|urgent)\b/i
+  );
+  if (labelMatch) {
+    return labelMatch[1].toLowerCase() as Severity;
+  }
+
+  // 2순위: 긴급 이모지/키워드가 명확히 등장한 경우 (가장 보수적으로)
+  if (/🚨|긴급|emergency/i.test(text)) return "urgent";
+  if (/⚠️/.test(text) && /주의|caution/i.test(text)) return "moderate";
+  if (/💡/.test(text) && /관찰 필요|requires observation/i.test(text)) return "mild";
+
+  // 3순위: 기본값 normal (건강한 펫을 경고로 오분류하지 않기 위해)
+  return "normal";
+}
+
 // Gemini 2.0 Flash 기반 반려동물 이미지 분석
 // 2026-04-23: 31개 부위별 증상 체크리스트 주입 (TTcare 동등 이상 경쟁력)
 
@@ -147,12 +177,9 @@ export async function POST(req: NextRequest) {
     const analysisText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text
       || (isEn ? "Analysis result unavailable." : "분석 결과를 가져올 수 없습니다.");
 
-    // 심각도 추출 (4단계)
-    let severity: "normal" | "mild" | "moderate" | "urgent" = "normal";
-    const lower = analysisText.toLowerCase();
-    if (lower.includes("urgent") || analysisText.includes("긴급")) severity = "urgent";
-    else if (lower.includes("moderate") || analysisText.includes("주의")) severity = "moderate";
-    else if (lower.includes("mild") || analysisText.includes("관찰")) severity = "mild";
+    // 심각도 추출 — AI 출력의 명시적 라벨에서만 enum 추출 (loose match 금지)
+    // 이전 버그: "관찰되지 않습니다"(부정문)을 mild로 오매칭해 건강한 펫이 "관찰" 표시됨
+    const severity = extractSeverity(analysisText);
 
     return NextResponse.json({
       success: true,
