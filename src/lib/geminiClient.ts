@@ -41,9 +41,13 @@ export async function callGemini(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+  // 모델은 GEMINI_MODEL 환경변수로 교체 가능 (기본: gemini-1.5-flash — 무료 티어가 가장 관대)
+  // Vercel env에 GEMINI_MODEL=gemini-2.5-flash 설정 시 업그레이드 즉시 반영
+  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,9 +64,11 @@ export async function callGemini(
 
     if (!res.ok) {
       const errText = await res.text();
+      // 서버 로그로 원본 에러 노출 (진단용) — 브라우저 콘솔엔 요약만
+      console.error(`[Gemini ${model}] ${res.status}:`, errText.slice(0, 500));
       return {
         ok: false,
-        error: `Gemini API 오류: ${res.status}`,
+        error: `Gemini API 오류: ${res.status} — ${errText.slice(0, 300)}`,
         fallback: true,
       };
     }

@@ -110,8 +110,11 @@ export async function POST(req: NextRequest) {
       ? `The pet parent uploaded a photo of their ${animalName}.\n${description ? `Owner's note: "${description}"` : "No additional note."}`
       : `보호자가 ${animalName} 사진을 올렸습니다.\n${description ? `보호자 설명: "${description}"` : "별도 설명 없음."}`;
 
+    // 모델은 GEMINI_MODEL 환경변수로 교체 가능 (geminiClient.ts와 동일 기본값)
+    const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,9 +135,11 @@ export async function POST(req: NextRequest) {
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
+      console.error(`[analyze-image ${model}] ${geminiRes.status}:`, errText.slice(0, 500));
       return NextResponse.json({
         error: `Gemini API 오류: ${geminiRes.status}`,
-        detail: errText.slice(0, 200),
+        detail: errText.slice(0, 500),
+        model,
       }, { status: 500 });
     }
 
