@@ -41,9 +41,9 @@ export async function callGemini(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  // 모델은 GEMINI_MODEL 환경변수로 교체 가능 (기본: gemini-1.5-flash — 무료 티어가 가장 관대)
-  // Vercel env에 GEMINI_MODEL=gemini-2.5-flash 설정 시 업그레이드 즉시 반영
-  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  // 모델은 GEMINI_MODEL 환경변수로 교체 가능 (기본: gemini-2.5-flash — v1beta 지원 최신)
+  // 주의: gemini-1.5-flash 는 v1beta 에서 404 반환되므로 사용 금지
+  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   try {
     const res = await fetch(

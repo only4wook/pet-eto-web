@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       : `보호자가 ${animalName} 사진을 올렸습니다.\n${description ? `보호자 설명: "${description}"` : "별도 설명 없음."}`;
 
     // 모델은 GEMINI_MODEL 환경변수로 교체 가능 (geminiClient.ts와 동일 기본값)
-    const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
