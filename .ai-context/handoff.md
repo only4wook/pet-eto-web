@@ -3,6 +3,15 @@
 > 이 파일은 **Claude Code와 Cursor가 번갈아 작업할 때** 서로에게 남기는 인수인계서입니다.
 > 작업을 시작하기 전에 **맨 위 2~3개 항목**을 반드시 읽고, 작업이 끝나면 맨 위에 새 항목을 추가하세요.
 
+## [2026-04-25 19:20] — Cursor
+**작업**: 2026-04-25 19:10 최상 상태 백업 기준점 생성
+**상태**: 완료 ✅
+**변경 파일**: `.ai-context/handoff.md`
+**다음 단계**: 이후 작업이 흔들리면 Git 태그 `backup-2026-04-25-1910-best-state` 또는 로컬 백업 파일에서 복구
+**주의사항**: 대욱님이 현재 Production 상태를 최상 상태로 확정. 기준 커밋은 `531b3d9` (`fix(feed): clean analysis attribution display`). 원격 태그 `backup-2026-04-25-1910-best-state` 푸시 완료. 로컬 백업 위치: `/Users/wook/Desktop/pet-eto-web-backups/pet-eto-web-backup-2026-04-25-1910-best-state.tar.gz`, `/Users/wook/Desktop/pet-eto-web-backups/pet-eto-web-backup-2026-04-25-1910-best-state.bundle`.
+
+---
+
 ## [2026-04-25 19:12] — Cursor
 **작업**: AI 분석 모델명 노출 제거 + 전문가 의견 배지 추가
 **상태**: 완료 ✅
