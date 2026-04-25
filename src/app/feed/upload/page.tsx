@@ -693,11 +693,18 @@ export default function FeedUploadPage() {
       trackEvent("feed_upload_success", { media_type: mediaType, request_expert: effectiveRequestExpert, photo_count: imageUrls.length });
 
       // 포인트 +10P (첫 피드 +100P 보너스)
+      // 어뷰징 방지: point_logs에 "첫 피드 보너스" 기록이 이미 있으면 안 줌
+      // (현재 feed_posts 카운트로만 판단하면 삭제 후 재업로드로 무한 수령 가능)
       let feedPts = 10;
       let feedBonus = "";
-      const { count: feedCount } = await supabase.from("feed_posts").select("id", { count: "exact", head: true })
-        .eq("author_id", user.id);
-      if (feedCount === 1) {
+      const { data: prevBonusLogs } = await supabase
+        .from("point_logs")
+        .select("id")
+        .eq("user_id", user.id)
+        .like("reason", "%첫 피드 보너스%")
+        .limit(1);
+      const alreadyClaimed = (prevBonusLogs?.length ?? 0) > 0;
+      if (!alreadyClaimed) {
         feedPts += 100;
         feedBonus = "\n🎉 첫 피드 보너스 +100P!";
       }

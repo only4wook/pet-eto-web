@@ -10,12 +10,46 @@ export const maxDuration = 60;
 type ChatMessage = { role: "user" | "ai"; text: string };
 type PetInfo = { name: string; species: string; breed: string };
 
-// 모델 풀백 체인 — 2.0 Flash 실패 시 1.5 Flash, 그것도 실패 시 1.5 Flash-8B
+// 모델 풀백 체인 — 최신 우선, 실패 시 단계 하향
+// 2.5-flash가 가장 빠르고 똑똑. 안 되면 2.0/1.5 순으로 폴백.
 const MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-1.5-flash",
   "gemini-1.5-flash-8b",
 ];
+
+// OpenAI gpt-4o-mini 폴백 — Gemini 전부 실패 시 마지막 방어선
+async function callOpenAIChat(opts: {
+  apiKey: string;
+  systemText: string;
+  userMessages: { role: "user" | "assistant"; content: string }[];
+}): Promise<{ ok: true; reply: string } | { ok: false; status: number; error: string }> {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${opts.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: opts.systemText },
+        ...opts.userMessages,
+      ],
+      temperature: 0.7,
+      max_tokens: 1500,
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    return { ok: false, status: res.status, error: errText.slice(0, 200) };
+  }
+  const data = await res.json();
+  const reply = data?.choices?.[0]?.message?.content;
+  if (!reply) return { ok: false, status: 0, error: "empty" };
+  return { ok: true, reply: reply.trim() };
+}
 
 async function callGeminiChat(opts: {
   apiKey: string;
@@ -99,8 +133,27 @@ export async function POST(req: NextRequest) {
       if (result.status !== 429 && result.status < 500 && result.status !== 0) break;
     }
 
+    // Gemini 전부 실패 → OpenAI 폴백
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      const userMessages = contents.map((c: any) => ({
+        role: (c.role === "model" ? "assistant" : "user") as "user" | "assistant",
+        content: c.parts?.[0]?.text || "",
+      }));
+      const oaResult = await callOpenAIChat({
+        apiKey: openaiKey,
+        systemText,
+        userMessages,
+      });
+      if (oaResult.ok) {
+        return NextResponse.json({ success: true, reply: oaResult.reply, model: "gpt-4o-mini" });
+      }
+      lastError = `gemini=${lastError} | openai=${oaResult.error}`;
+      lastStatus = oaResult.status;
+    }
+
     return NextResponse.json({
-      error: `Gemini API 오류: ${lastStatus} ${lastError}`,
+      error: `AI 호출 실패: ${lastStatus} ${lastError}`,
       fallback: true,
     }, { status: 200 });
   } catch (err: any) {

@@ -333,21 +333,26 @@ function buildEmergencyGuidance(params: {
   return lines.join("\n");
 }
 
+// Gemini 모델 폴백 체인 — 최신부터 순서대로
+const VISION_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+
 async function callGemini({
   apiKey,
   mimeType,
   base64,
   systemText,
   userText,
+  model = "gemini-2.5-flash",
 }: {
   apiKey: string;
   mimeType: string;
   base64: string;
   systemText: string;
   userText: string;
+  model?: string;
 }) {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -366,6 +371,72 @@ async function callGemini({
     }
   );
   return res;
+}
+
+// Gemini 모델 폴백 체인으로 호출 — 429/5xx면 다음 모델 시도
+async function callGeminiWithFallback(opts: {
+  apiKey: string;
+  mimeType: string;
+  base64: string;
+  systemText: string;
+  userText: string;
+}): Promise<{ ok: true; rawText: string; model: string } | { ok: false; status: number; error: string }> {
+  let lastStatus = 0;
+  let lastError = "";
+  for (const model of VISION_MODELS) {
+    const res = await callGemini({ ...opts, model });
+    if (res.ok) {
+      const data = await res.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (rawText) return { ok: true, rawText, model };
+      lastError = data?.promptFeedback?.blockReason || "empty";
+      lastStatus = 0;
+      continue;
+    }
+    lastStatus = res.status;
+    lastError = (await res.text().catch(() => "")).slice(0, 200);
+    if (res.status !== 429 && res.status < 500) break;
+  }
+  return { ok: false, status: lastStatus, error: lastError };
+}
+
+// OpenAI gpt-4o vision 폴백 — Gemini 전부 실패 시
+async function callOpenAIVision(opts: {
+  apiKey: string;
+  mimeType: string;
+  base64: string;
+  systemText: string;
+  userText: string;
+}): Promise<{ ok: true; rawText: string } | { ok: false; status: number; error: string }> {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${opts.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: opts.systemText },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: opts.userText },
+            { type: "image_url", image_url: { url: `data:${opts.mimeType};base64,${opts.base64}` } },
+          ],
+        },
+      ],
+      temperature: 0.5,
+      max_tokens: 1500,
+    }),
+  });
+  if (!res.ok) {
+    return { ok: false, status: res.status, error: (await res.text().catch(() => "")).slice(0, 200) };
+  }
+  const data = await res.json();
+  const rawText = data?.choices?.[0]?.message?.content || "";
+  if (!rawText) return { ok: false, status: 0, error: "empty" };
+  return { ok: true, rawText };
 }
 
 export async function POST(req: NextRequest) {
@@ -406,14 +477,41 @@ export async function POST(req: NextRequest) {
       reason?: string;
     };
 
-    // 메인 분석 (필수). quick 모드면 트리아지 스킵해서 응답 시간 절반.
-    const geminiRes = await callGemini({
-      apiKey,
-      mimeType,
-      base64,
-      systemText: PET_AI_PERSONA + "\n\n" + IMAGE_ANALYSIS_TASK,
+    // 메인 분석 — Gemini 폴백 체인. 전부 실패 시 OpenAI gpt-4o-mini 폴백.
+    const mainSystemText = PET_AI_PERSONA + "\n\n" + IMAGE_ANALYSIS_TASK;
+    let rawText = "";
+    let usedModel = "";
+    const geminiResult = await callGeminiWithFallback({
+      apiKey, mimeType, base64,
+      systemText: mainSystemText,
       userText: userContext,
     });
+    if (geminiResult.ok) {
+      rawText = geminiResult.rawText;
+      usedModel = geminiResult.model;
+    } else {
+      // Gemini 다 실패 → OpenAI 폴백
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (openaiKey) {
+        const oaResult = await callOpenAIVision({
+          apiKey: openaiKey, mimeType, base64,
+          systemText: mainSystemText,
+          userText: userContext,
+        });
+        if (oaResult.ok) {
+          rawText = oaResult.rawText;
+          usedModel = "gpt-4o-mini";
+        } else {
+          return NextResponse.json({
+            error: `AI 호출 실패: gemini=${geminiResult.error} | openai=${oaResult.error}`,
+          }, { status: 500 });
+        }
+      } else {
+        return NextResponse.json({
+          error: `Gemini API 오류: ${geminiResult.status} ${geminiResult.error}`,
+        }, { status: 500 });
+      }
+    }
 
     // 트리아지는 quick 모드에서 스킵 (큐가 나중에 처리)
     let triageResSettled: Response | null = null;
@@ -426,14 +524,6 @@ export async function POST(req: NextRequest) {
         userText: userContext,
       }).catch(() => null);
     }
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      return NextResponse.json({ error: `Gemini API 오류: ${geminiRes.status}`, detail: errText.slice(0, 200) }, { status: 500 });
-    }
-
-    const geminiData = await geminiRes.json();
-    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "분석 결과를 가져올 수 없습니다.";
 
     let redFlag: RedFlagResult = {};
     if (triageResSettled && triageResSettled.ok) {
@@ -557,6 +647,7 @@ export async function POST(req: NextRequest) {
       success: true,
       analysis: finalAnalysis,
       severity,
+      model: usedModel,
       // 구조화 필드
       fgs_total: structured.fgs_total ?? null,
       fgs_breakdown: structured.fgs_breakdown ?? null,

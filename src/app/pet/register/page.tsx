@@ -41,11 +41,15 @@ export default function PetRegisterPage() {
 
     if (error) { alert("등록 실패: " + error.message); setLoading(false); return; }
 
-    // 반려동물 등록 보너스 +100P (첫 등록 시)
+    // 반려동물 등록 보너스 +100P (첫 등록 시) — point_logs로 중복 수령 차단
     let petBonus = "";
-    const { count: petCount } = await supabase.from("pets").select("id", { count: "exact", head: true })
-      .eq("owner_id", user.id);
-    if (petCount === 1) {
+    const { data: prevPetBonusLogs } = await supabase
+      .from("point_logs")
+      .select("id")
+      .eq("user_id", user.id)
+      .like("reason", "%반려동물 첫 등록 보너스%")
+      .limit(1);
+    if ((prevPetBonusLogs?.length ?? 0) === 0) {
       await supabase.from("point_logs").insert({ user_id: user.id, amount: 100, reason: "반려동물 첫 등록 보너스" });
       await supabase.rpc("add_points", { uid: user.id, pts: 100 });
       petBonus = "\n🎉 첫 등록 보너스 +100P!";

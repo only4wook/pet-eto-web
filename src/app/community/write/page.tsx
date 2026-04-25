@@ -49,11 +49,15 @@ export default function WritePage() {
     let pts = category === "후기" ? 20 : 10;
     let bonusMsg = "";
 
-    // 첫 후기 보너스 +100P
+    // 첫 후기 보너스 +100P (point_logs로 중복 수령 차단 — 삭제 후 재작성 어뷰징 방지)
     if (category === "후기") {
-      const { count } = await supabase.from("posts").select("id", { count: "exact", head: true })
-        .eq("author_id", user.id).eq("category", "후기");
-      if (count === 0 || count === null) {
+      const { data: prevBonusLogs } = await supabase
+        .from("point_logs")
+        .select("id")
+        .eq("user_id", user.id)
+        .like("reason", "%첫 후기 보너스%")
+        .limit(1);
+      if ((prevBonusLogs?.length ?? 0) === 0) {
         pts += 100;
         bonusMsg = "\n🎉 첫 후기 보너스 +100P!";
       }

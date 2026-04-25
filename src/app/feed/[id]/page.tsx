@@ -160,6 +160,16 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
       setExpertAnswers((prev) => [...prev, data as ExpertAnswer]);
       setExpertAnswer("");
       setExpertFollowUp(false);
+      // 글 작성자에게 이메일 알림 (실패해도 답변 자체는 영향 없음)
+      fetch("/api/notify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "expert_answer",
+          post_id: id,
+          actor_nickname: user.nickname,
+        }),
+      }).catch(() => { /* 무시 */ });
     }
   };
 
@@ -170,7 +180,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
     await supabase.from("point_logs").insert({ user_id: user.id, amount: 5, reason: "피드 댓글" });
     await supabase.rpc("add_points", { uid: user.id, pts: 5 });
 
-    // 글 작성자에게 댓글 알림
+    // 글 작성자에게 댓글 알림 (in-app + 이메일)
     if (post?.author_id && post.author_id !== user.id) {
       await supabase.rpc("create_notification", {
         p_user_id: post.author_id,
@@ -180,6 +190,16 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
         p_link: `/feed/${id}`,
         p_meta: { feed_post_id: id },
       });
+      // 이메일 알림 (실패해도 댓글은 그대로)
+      fetch("/api/notify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "feed_comment",
+          post_id: id,
+          actor_nickname: user.nickname,
+        }),
+      }).catch(() => { /* 무시 */ });
     }
 
     setNewComment("");
