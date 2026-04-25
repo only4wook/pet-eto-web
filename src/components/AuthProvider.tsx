@@ -71,8 +71,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           nickname: safeName,
           avatar_url: u.user_metadata?.avatar_url || null,
           points: 100,
-          // OAuth가 준 이름이면 사용자 설정으로 인정 · 익명 자동생성이면 true로 표시 (추후 자동 재설정 금지)
-          nickname_set_by_user: true,
+          // OAuth가 직접 준 이름이면 user-set, 자동 생성이면 false → NicknameSetupModal이 변경 유도
+          nickname_set_by_user: providedByUser,
           created_at: new Date().toISOString(),
         };
         await supabase.from("users").insert(newProfile);

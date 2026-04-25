@@ -4,6 +4,7 @@ import "./globals.css";
 import AuthProvider from "../components/AuthProvider";
 import KakaoButton from "../components/KakaoButton";
 import BottomTabBar from "../components/BottomTabBar";
+import NicknameSetupModal from "../components/NicknameSetupModal";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
@@ -106,6 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
         <AuthProvider>{children}</AuthProvider>
+        <NicknameSetupModal />
         <BottomTabBar />
         <Analytics />
       </body>

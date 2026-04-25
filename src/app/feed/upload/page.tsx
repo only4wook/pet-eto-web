@@ -82,6 +82,19 @@ function isHeicLike(file: File): boolean {
   return t.includes("heic") || t.includes("heif") || n.endsWith(".heic") || n.endsWith(".heif");
 }
 
+// 파일 magic bytes로 실제 HEIC/HEIF 여부 확인 (확장자가 거짓말일 때도 잡음).
+// HEIC: bytes 4~11에 "ftypheic" / "ftypheix" / "ftypmif1" / "ftypmsf1" 포함.
+async function detectHeicByMagicBytes(file: File): Promise<boolean> {
+  try {
+    const head = await file.slice(0, 16).arrayBuffer();
+    const bytes = new Uint8Array(head);
+    const txt = new TextDecoder("ascii").decode(bytes.subarray(4, 12));
+    return /^ftyp(heic|heix|hevc|hevx|mif1|msf1|heim|heis|hevm|hevs)/.test(txt);
+  } catch {
+    return false;
+  }
+}
+
 // HEIC/HEIF → JPEG 변환. heic2any를 lazy-load (~600KB) — HEIC 사진을 고른 경우에만 다운로드.
 // Chrome Android 등 HEIC를 native로 못 그리는 환경에서도 동작.
 async function convertHeicToJpeg(file: File): Promise<File> {
@@ -100,12 +113,15 @@ async function convertHeicToJpeg(file: File): Promise<File> {
 
 // 항상 브라우저가 그릴 수 있는 JPEG 파일을 반환.
 // HEIC/HEIF는 heic2any로 자동 변환 — 사용자는 카메라 설정 바꿀 필요 없음.
+// 갤럭시 등에서 확장자가 .jpg지만 실제는 HEIC인 케이스도 magic bytes로 감지.
 async function ensureJpegForUpload(
   file: File
 ): Promise<{ ok: true; file: File } | { ok: false; error: string }> {
-  // 1) HEIC/HEIF 감지 → heic2any로 변환 (Chrome Android 등 native 미지원 환경 커버)
+  // 1) HEIC/HEIF 감지 (확장자 + magic bytes 둘 다 체크)
   let workFile = file;
-  if (isHeicLike(file)) {
+  const heicByName = isHeicLike(file);
+  const heicByBytes = !heicByName ? await detectHeicByMagicBytes(file) : true;
+  if (heicByName || heicByBytes) {
     try {
       workFile = await convertHeicToJpeg(file);
     } catch (e: any) {
