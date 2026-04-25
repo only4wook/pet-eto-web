@@ -71,11 +71,28 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
       return;
     }
 
-    // DB에서 찾기
-    supabase.from("feed_posts")
-      .select("*, author:users(id, nickname, avatar_url, points, role)")
-      .eq("id", id).single()
-      .then(({ data }) => { if (data) setPost(data); });
+    // DB에서 찾기 + AI 분석이 fallback이면 자동 폴링으로 갱신
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollCount = 0;
+    const MAX_POLLS = 10; // 최대 10회 (10초 간격 = 100초)
+
+    const fetchPost = async () => {
+      const { data } = await supabase.from("feed_posts")
+        .select("*, author:users(id, nickname, avatar_url, points, role)")
+        .eq("id", id).single();
+      if (!data) return;
+      setPost(data);
+
+      // AI 분석이 아직 fallback 상태면 백그라운드 큐가 처리 중. 10초 후 재조회.
+      const isPending = data.analysis_result?.pending_ai === true ||
+        (data.analysis_result?.summary as string || "").includes("분석 중") ||
+        (data.analysis_result?.summary as string || "").includes("AI 분석이 지연");
+      if (isPending && pollCount < MAX_POLLS) {
+        pollCount++;
+        pollTimer = setTimeout(fetchPost, 10000);
+      }
+    };
+    fetchPost();
 
     supabase.from("feed_comments")
       .select("*, author:users(id, nickname, avatar_url, points)")
@@ -100,6 +117,8 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
         .eq("id", id).single()
         .then(({ data }) => { if (data) setPost(data); });
     });
+
+    return () => { if (pollTimer) clearTimeout(pollTimer); };
   }, [id]);
 
   const handleExpertAnswer = async () => {

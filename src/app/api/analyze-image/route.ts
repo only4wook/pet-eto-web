@@ -379,6 +379,9 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null;
     const description = (formData.get("description") as string) || "";
     const species = (formData.get("species") as string) || "cat";
+    // quick=1 이면 트리아지 스킵 — 인라인 호출(피드 업로드)에서 응답 빠르게 받기 위함
+    // (큐 처리 시에는 quick 없이 호출 → 풀 분석)
+    const quick = (formData.get("quick") as string) === "1";
 
     if (!file) {
       return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 });
@@ -403,24 +406,26 @@ export async function POST(req: NextRequest) {
       reason?: string;
     };
 
-    // 메인 분석 + 레드플래그 분류기를 병렬 호출 — 응답 시간 절반으로
-    const [geminiRes, triageResSettled] = await Promise.all([
-      callGemini({
-        apiKey,
-        mimeType,
-        base64,
-        systemText: PET_AI_PERSONA + "\n\n" + IMAGE_ANALYSIS_TASK,
-        userText: userContext,
-      }),
-      // 트리아지는 실패해도 전체를 막지 않음 → catch로 무시
-      callGemini({
+    // 메인 분석 (필수). quick 모드면 트리아지 스킵해서 응답 시간 절반.
+    const geminiRes = await callGemini({
+      apiKey,
+      mimeType,
+      base64,
+      systemText: PET_AI_PERSONA + "\n\n" + IMAGE_ANALYSIS_TASK,
+      userText: userContext,
+    });
+
+    // 트리아지는 quick 모드에서 스킵 (큐가 나중에 처리)
+    let triageResSettled: Response | null = null;
+    if (!quick) {
+      triageResSettled = await callGemini({
         apiKey,
         mimeType,
         base64,
         systemText: RED_FLAG_TRIAGE_TASK,
         userText: userContext,
-      }).catch(() => null),
-    ]);
+      }).catch(() => null);
+    }
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();

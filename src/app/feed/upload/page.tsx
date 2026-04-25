@@ -550,6 +550,7 @@ export default function FeedUploadPage() {
         aiFd.append("file", file);
         aiFd.append("description", description);
         aiFd.append("species", species);
+        aiFd.append("quick", "1"); // 인라인 호출은 빠른 응답 우선 (트리아지 스킵)
         const aiResult = await safeJsonFetch("/api/analyze-image", { method: "POST", body: aiFd });
         if (aiResult.ok && aiResult.data?.analysis && aiResult.data?.severity) {
           return { severity: aiResult.data.severity as "normal" | "mild" | "moderate" | "urgent", text: aiResult.data.analysis as string, data: aiResult.data };
@@ -627,14 +628,15 @@ export default function FeedUploadPage() {
         } catch { /* 멀티 프레임 실패 시 텍스트 분석 유지 */ }
       }
 
-      // 이미지/영상이 있지만 비전 분석에 실패한 경우: 정상 오판 방지용 최소 보수 판정
-      if (analysisImageFile && !visionAnalyzed && analysis.severity === "normal") {
+      // 이미지/영상이 있지만 비전 분석에 실패한 경우: 정상 오판 방지용 최소 보수 판정 + pending 플래그
+      if (analysisImageFile && !visionAnalyzed) {
         analysis = {
           ...analysis,
-          severity: "mild",
-          symptoms: ["관찰"],
-          summary: "이미지/영상 AI 분석이 지연되어 보수적으로 관찰 등급으로 분류했습니다.",
-          recommendation: "같은 증상이 지속되면 재촬영 후 다시 분석하거나 전문가 답변을 요청해주세요.",
+          severity: analysis.severity === "normal" ? "mild" : analysis.severity,
+          symptoms: analysis.severity === "normal" ? ["관찰"] : analysis.symptoms,
+          summary: "🤖 AI가 사진을 분석 중입니다... 1~2분 후 자동으로 결과가 표시됩니다.",
+          recommendation: "잠시만 기다려주세요. 이 페이지는 자동으로 새로고침됩니다.",
+          pending_ai: true, // 폴링 트리거용
         };
       }
 

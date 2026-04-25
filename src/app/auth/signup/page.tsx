@@ -58,8 +58,15 @@ export default function SignupPage() {
 
     if (data.user) {
       // nickname_set_by_user: true — 사용자가 직접 입력한 닉네임은 절대 자동 덮어쓰기 금지
+      // upsert(onConflict: id)로 AuthProvider의 자동 생성 닉네임 race condition 방지
+      // → AuthProvider가 먼저 INSERT 했더라도 사용자가 정한 닉네임으로 덮어쓰기
       const profile = { id: data.user.id, email: email.trim(), nickname, points: 100, avatar_url: null, nickname_set_by_user: true, created_at: new Date().toISOString() };
-      await supabase.from("users").insert(profile);
+      await supabase.from("users").upsert(profile, { onConflict: "id" });
+
+      // 한 번 더 명시적으로 닉네임 UPDATE — race로 AuthProvider가 또 덮어쓸 가능성 차단
+      await supabase.from("users")
+        .update({ nickname, nickname_set_by_user: true })
+        .eq("id", data.user.id);
 
       // 세션이 있으면 (Confirm email OFF) 바로 로그인 처리
       if (data.session) {
