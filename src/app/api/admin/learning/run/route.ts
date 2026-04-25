@@ -115,7 +115,9 @@ async function handleRun(req: NextRequest, source: "manual" | "cron") {
       const cases: GeneratedCase[] = await generateTestCases(count, geminiKey, model);
       if (cases.length === 0) throw new Error("케이스 0개 생성됨");
 
-      // ── 4) 답변 + 채점 (병렬, 5개씩 배치 — rate limit 보호) ──
+      // ── 4) 답변 + 채점 (직렬, 호출 사이 4.5초 대기 — Gemini Free 15 RPM 보호) ──
+      // 이전 BATCH=5 병렬은 21 호출을 30s 안에 던져 429 발생.
+      // 직렬 + 4500ms 대기 → 분당 ~13 RPM, 안전 마진 확보.
       const results: Array<{
         case: GeneratedCase;
         response: string;
@@ -125,30 +127,34 @@ async function handleRun(req: NextRequest, source: "manual" | "cron") {
         error?: string;
       }> = [];
 
-      const BATCH = 5;
-      for (let i = 0; i < cases.length; i += BATCH) {
-        const batch = cases.slice(i, i + BATCH);
-        const batchResults = await Promise.all(
-          batch.map(async (c) => {
-            try {
-              const aiResp = await generateAIResponse(c.question, geminiKey, model, fewShot);
-              if (!aiResp || aiResp.length < 50) {
-                return { case: c, response: aiResp, score: 0, breakdown: {}, weakness: "응답 너무 짧음", error: "short-response" };
-              }
-              const grading = await gradeResponse(c.question, aiResp, geminiKey, model);
-              return {
-                case: c,
-                response: aiResp,
-                score: grading.score,
-                breakdown: grading.breakdown,
-                weakness: grading.weakness,
-              };
-            } catch (err: any) {
-              return { case: c, response: "", score: 0, breakdown: {}, weakness: "", error: err.message || "unknown" };
-            }
-          })
-        );
-        results.push(...batchResults);
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const RATE_DELAY_MS = 4500;
+
+      for (let i = 0; i < cases.length; i++) {
+        const c = cases[i];
+        try {
+          const aiResp = await generateAIResponse(c.question, geminiKey, model, fewShot);
+          await sleep(RATE_DELAY_MS); // RPM 보호
+          if (!aiResp || aiResp.length < 50) {
+            results.push({ case: c, response: aiResp, score: 0, breakdown: {}, weakness: "응답 너무 짧음", error: "short-response" });
+            continue;
+          }
+          const grading = await gradeResponse(c.question, aiResp, geminiKey, model);
+          if (i < cases.length - 1) await sleep(RATE_DELAY_MS); // 마지막 케이스 후엔 대기 불필요
+          results.push({
+            case: c,
+            response: aiResp,
+            score: grading.score,
+            breakdown: grading.breakdown,
+            weakness: grading.weakness,
+          });
+        } catch (err: any) {
+          // 429 면 더 길게 백오프 후 다음 케이스 진행 (전체 실패 회피)
+          if (err.message?.includes("429")) {
+            await sleep(15000);
+          }
+          results.push({ case: c, response: "", score: 0, breakdown: {}, weakness: "", error: err.message?.slice(0, 200) || "unknown" });
+        }
       }
 
       // ── 5) 케이스 일괄 INSERT ──
