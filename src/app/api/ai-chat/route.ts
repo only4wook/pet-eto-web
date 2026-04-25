@@ -1,11 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PET_AI_PERSONA, GENERATION_CONFIG, SAFETY_SETTINGS, detectSymptomGuides } from "../../../lib/aiPrompts";
 
+// Vercel: Gemini 응답이 느려도 잘리지 않도록 60초로 확장
+export const maxDuration = 60;
+
 // P.E.T AI 채팅 - Gemini 2.0 Flash 기반 수의학 대화 엔진
 // 공통 프롬프트 모듈(aiPrompts.ts)에서 페르소나·Few-shot·파라미터를 주입.
 
 type ChatMessage = { role: "user" | "ai"; text: string };
 type PetInfo = { name: string; species: string; breed: string };
+
+// 모델 풀백 체인 — 2.0 Flash 실패 시 1.5 Flash, 그것도 실패 시 1.5 Flash-8B
+const MODEL_FALLBACKS = [
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+];
+
+async function callGeminiChat(opts: {
+  apiKey: string;
+  model: string;
+  systemText: string;
+  contents: any[];
+}): Promise<{ ok: true; reply: string } | { ok: false; status: number; error: string }> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:generateContent?key=${opts.apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.systemText }] },
+        contents: opts.contents,
+        generationConfig: GENERATION_CONFIG,
+        safetySettings: SAFETY_SETTINGS,
+      }),
+    }
+  );
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    return { ok: false, status: res.status, error: errText.slice(0, 200) };
+  }
+  const data = await res.json();
+  const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!reply) {
+    const blockReason = data?.promptFeedback?.blockReason;
+    return { ok: false, status: 0, error: blockReason ? `blocked:${blockReason}` : "empty" };
+  }
+  return { ok: true, reply: reply.trim() };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,44 +83,26 @@ export async function POST(req: NextRequest) {
       { role: "user", parts: [{ text: message }] },
     ];
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: PET_AI_PERSONA + petContext + symptomContext }],
-          },
-          contents,
-          generationConfig: GENERATION_CONFIG,
-          safetySettings: SAFETY_SETTINGS,
-        }),
+    // 모델 풀백 체인: 2.0 Flash → 1.5 Flash → 1.5 Flash-8B
+    // 429(쿼터)·5xx(일시 장애)면 다음 모델로 자동 폴백 → 룰 베이스로 떨어지기 전 마지막 방어선
+    const systemText = PET_AI_PERSONA + petContext + symptomContext;
+    let lastError = "";
+    let lastStatus = 0;
+    for (const model of MODEL_FALLBACKS) {
+      const result = await callGeminiChat({ apiKey, model, systemText, contents });
+      if (result.ok) {
+        return NextResponse.json({ success: true, reply: result.reply, model });
       }
-    );
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      return NextResponse.json({
-        error: `Gemini API 오류: ${geminiRes.status}`,
-        detail: errText.slice(0, 300),
-        fallback: true,
-      }, { status: 200 });
+      lastError = result.error;
+      lastStatus = result.status;
+      // 429/5xx는 다음 모델 시도. 4xx 기타는 의미 없으니 즉시 실패.
+      if (result.status !== 429 && result.status < 500 && result.status !== 0) break;
     }
 
-    const data = await geminiRes.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    // 안전 필터 등으로 응답이 비었을 때
-    if (!reply) {
-      const blockReason = data?.promptFeedback?.blockReason;
-      return NextResponse.json({
-        error: blockReason ? `응답 차단: ${blockReason}` : "응답을 가져올 수 없습니다.",
-        fallback: true,
-      }, { status: 200 });
-    }
-
-    return NextResponse.json({ success: true, reply: reply.trim() });
+    return NextResponse.json({
+      error: `Gemini API 오류: ${lastStatus} ${lastError}`,
+      fallback: true,
+    }, { status: 200 });
   } catch (err: any) {
     return NextResponse.json({
       error: err.message || "서버 오류",
