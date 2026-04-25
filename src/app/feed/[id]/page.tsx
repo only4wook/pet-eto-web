@@ -24,6 +24,15 @@ const SYMPTOM_I18N: Record<string, string> = {
   "설사": "feed.symptomDiarrhea",
 };
 
+function getExpertOpinionLabel(author: FeedComment["author"]): string | null {
+  if (!author?.role) return null;
+  if (author.role === "vet") return "수의사 의견";
+  if (author.role === "vet_clinic") return "동물병원 의견";
+  if (author.role === "vet_student") return "동물학과 의견";
+  if (author.role === "behaviorist") return "행동전문가 의견";
+  return null;
+}
+
 export default function FeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -66,7 +75,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
       .then(({ data }) => { if (data) setPost(data); });
 
     supabase.from("feed_comments")
-      .select("*, author:users(id, nickname, avatar_url, points)")
+      .select("*, author:users(id, nickname, avatar_url, points, role, clinic_name, school_name, specialty)")
       .eq("feed_post_id", id)
       .order("created_at", { ascending: true })
       .then(({ data }) => { if (data) setComments(data); });
@@ -80,7 +89,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
     await supabase.rpc("add_points", { uid: user.id, pts: 5 });
     setNewComment("");
     const { data } = await supabase.from("feed_comments")
-      .select("*, author:users(id, nickname, avatar_url, points)")
+      .select("*, author:users(id, nickname, avatar_url, points, role, clinic_name, school_name, specialty)")
       .eq("feed_post_id", id).order("created_at", { ascending: true });
     if (data) setComments(data);
     if (post) setPost({ ...post, comment_count: post.comment_count + 1 });
@@ -277,12 +286,9 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                       {t("feed.aiDetailedAnalysisTitle")}
                     </div>
                     <div>{renderMarkdownLite(fullAnalysisText)}</div>
-                    {((analysis as any).reanalyzedAt || (analysis as any).analyzedAt) && (
+                    {(analysis as any).reanalyzedAt && (
                       <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 12, paddingTop: 8, borderTop: "1px dashed #E5E7EB" }}>
-                        {t("feed.aiAnalyzedBy")}: {(analysis as any).reanalysisModel || (analysis as any).model || "Gemini 2.5 Flash"}
-                        {(analysis as any).reanalyzedAt && (
-                          <span> · {t("feed.aiReanalyzedAt")}: {new Date((analysis as any).reanalyzedAt).toLocaleString("ko-KR")}</span>
-                        )}
+                        {t("feed.aiReanalyzedAt")}: {new Date((analysis as any).reanalyzedAt).toLocaleString("ko-KR")}
                       </div>
                     )}
                   </>
@@ -358,13 +364,37 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
           {/* 댓글 */}
           <div style={{ padding: "0 16px 16px" }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#888" }}>{t("feed.commentsLabel")} {comments.length}{t("feed.commentsUnit")}</div>
-            {comments.map((c) => (
-              <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid #f8f8f8" }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{safeNickname(c.author?.nickname, (c.author as any)?.id)}</span>
-                <span style={{ fontSize: 13, color: "#333", marginLeft: 8 }}>{c.content}</span>
-                <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>{formatDate(c.created_at)}</div>
-              </div>
-            ))}
+            {comments.map((c) => {
+              const expertLabel = getExpertOpinionLabel(c.author);
+              const expertOrg = c.author?.clinic_name || c.author?.school_name || c.author?.specialty;
+              return (
+                <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid #f8f8f8" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>{safeNickname(c.author?.nickname, (c.author as any)?.id)}</span>
+                    {expertLabel && (
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: "#C2410C",
+                        background: "#FFF7ED",
+                        border: "1px solid #FDBA74",
+                        borderRadius: 999,
+                        padding: "2px 7px",
+                      }}>
+                        {expertLabel}
+                      </span>
+                    )}
+                  </div>
+                  {expertLabel && (
+                    <div style={{ fontSize: 11, color: "#9A3412", marginTop: 4, lineHeight: 1.5 }}>
+                      {expertOrg ? `${expertOrg} · ` : ""}전문가가 남긴 참고 의견입니다.
+                    </div>
+                  )}
+                  <div style={{ fontSize: 13, color: "#333", marginTop: 4, lineHeight: 1.6 }}>{c.content}</div>
+                  <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>{formatDate(c.created_at)}</div>
+                </div>
+              );
+            })}
             {id.startsWith("df") && comments.length === 0 && (
               <div style={{ color: "#aaa", fontSize: 12, padding: "8px 0" }}>{t("feed.demoNoComments")}</div>
             )}
