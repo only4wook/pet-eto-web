@@ -76,6 +76,8 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
     let pollCount = 0;
     const MAX_POLLS = 10; // 최대 10회 (10초 간격 = 100초)
 
+    let aiTriggered = false;
+
     const fetchPost = async () => {
       const { data } = await supabase.from("feed_posts")
         .select("*, author:users(id, nickname, avatar_url, points, role)")
@@ -83,13 +85,26 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
       if (!data) return;
       setPost(data);
 
-      // AI 분석이 아직 fallback 상태면 백그라운드 큐가 처리 중. 10초 후 재조회.
+      // AI 분석이 아직 fallback 상태면 즉시 처리 트리거 + 폴링
       const isPending = data.analysis_result?.pending_ai === true ||
         (data.analysis_result?.summary as string || "").includes("분석 중") ||
         (data.analysis_result?.summary as string || "").includes("AI 분석이 지연");
-      if (isPending && pollCount < MAX_POLLS) {
-        pollCount++;
-        pollTimer = setTimeout(fetchPost, 10000);
+
+      if (isPending) {
+        // 1) 페이지 진입 시 한 번만 AI 처리 endpoint 호출 (cron 의존성 제거)
+        if (!aiTriggered) {
+          aiTriggered = true;
+          fetch("/api/process-feed-ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          }).catch(() => { /* 실패해도 폴링이 큐를 기다림 */ });
+        }
+        // 2) 10초마다 폴링 (최대 10회 = 100초)
+        if (pollCount < MAX_POLLS) {
+          pollCount++;
+          pollTimer = setTimeout(fetchPost, 10000);
+        }
       }
     };
     fetchPost();
