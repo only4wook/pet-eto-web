@@ -1,10 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { callGemini } from "../../../lib/geminiClient";
 import { callOpenAI } from "../../../lib/openaiClient";
 import { PET_AI_PERSONA } from "../../../lib/aiPrompts";
 import { PET_AI_PERSONA_EN } from "../../../lib/aiPromptsEn";
 import { classifyQuery, mergeEnsemble } from "../../../lib/aiRouter";
 import { criticizeAndImprove } from "../../../lib/selfCritique";
+import { buildExemplarFewShot, type ExemplarRow } from "../../../lib/learning";
+
+const SUPABASE_URL = "https://akhtlrcmvftfacaroeiq.supabase.co";
+
+/**
+ * 활성 exemplar 5개 가져와서 few-shot 텍스트로 변환.
+ * service-role 키 없으면 스킵 (학습 루프 미설정 환경 호환).
+ */
+async function fetchActiveExemplars(): Promise<string> {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) return "";
+  try {
+    const sb = createClient(SUPABASE_URL, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await sb
+      .from("ai_exemplars")
+      .select("category, question, exemplar_response, score")
+      .eq("active", true)
+      .order("promoted_at", { ascending: false })
+      .limit(5);
+    if (error || !data || data.length === 0) return "";
+    return buildExemplarFewShot(data as ExemplarRow[]);
+  } catch {
+    return ""; // 학습 테이블 미존재 등 — 조용히 스킵
+  }
+}
 
 // P.E.T AI 채팅 - Hybrid Router 기반
 // 2026-04-23 업그레이드:
@@ -46,7 +74,9 @@ export async function POST(req: NextRequest) {
           : `\n\n## 이 보호자의 반려동물\n${pets.map((p) => `- ${p.name} (${p.species === "cat" ? "고양이" : p.species === "dog" ? "강아지" : p.species}, ${p.breed})`).join("\n")}\n답변 시 품종 특성을 반영하세요.`)
       : "";
 
-    const systemPersona = (isEn ? PET_AI_PERSONA_EN : PET_AI_PERSONA) + petContext;
+    // 자가강화 학습: 한국어 모드에서만 exemplar 주입 (영어 exemplar 별도 학습 필요)
+    const exemplarFewShot = isEn ? "" : await fetchActiveExemplars();
+    const systemPersona = (isEn ? PET_AI_PERSONA_EN : PET_AI_PERSONA) + petContext + (exemplarFewShot ? "\n\n" + exemplarFewShot : "");
 
     // 최근 대화 8턴 유지
     const recentHistory = (history || []).slice(-8);
