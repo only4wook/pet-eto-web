@@ -76,20 +76,52 @@ function compressImage(file: File, maxWidth = 1600): Promise<Blob> {
   });
 }
 
-// 압축은 best-effort. 실패하면 원본 그대로 반환 → Storage 직접 업로드는 50MB까지 허용.
-async function maybeCompressForUpload(file: File): Promise<File> {
-  // 1.5MB 이하는 압축 스킵 (모바일 환경에서 불필요한 디코딩 비용 방지)
-  if (file.size < 1.5 * 1024 * 1024) {
-    if (file.type === "image/jpeg") return file;
-    // PNG/HEIC 같은 큰 포맷은 작더라도 JPEG로 변환 시도
+function isHeicLike(file: File): boolean {
+  const t = (file.type || "").toLowerCase();
+  const n = (file.name || "").toLowerCase();
+  return t.includes("heic") || t.includes("heif") || n.endsWith(".heic") || n.endsWith(".heif");
+}
+
+// 항상 브라우저가 그릴 수 있는 JPEG 파일을 반환. 실패하면 명확한 에러.
+// HEIC/HEIF는 Chrome Android에서 createImageBitmap·img 모두 못 그려 → 변환 실패 시 차단.
+async function ensureJpegForUpload(
+  file: File
+): Promise<{ ok: true; file: File } | { ok: false; error: string }> {
+  // 작은 JPEG는 그대로 통과
+  if (file.type === "image/jpeg" && file.size < 1.5 * 1024 * 1024) {
+    return { ok: true, file };
   }
+
+  // 압축 시도 (createImageBitmap → img 순)
+  let compressed: Blob | null = null;
   try {
     const blob = await compressImage(file, 1600);
-    if (blob.size >= file.size) return file; // 압축 효과 없으면 원본
-    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
-  } catch {
-    return file;
+    // compressImage가 원본을 그대로 돌려준 경우는 변환 실패로 간주
+    if (blob !== file && blob.size > 0) {
+      compressed = blob;
+    }
+  } catch { /* fall through */ }
+
+  if (compressed) {
+    const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return { ok: true, file: new File([compressed], newName, { type: "image/jpeg" }) };
   }
+
+  // 압축 실패: 원본이 JPEG면 그대로라도 업로드 (브라우저가 그릴 수 있음)
+  if (file.type === "image/jpeg") {
+    return { ok: true, file };
+  }
+
+  // HEIC/HEIF + 변환 실패 → 차단
+  if (isHeicLike(file)) {
+    return {
+      ok: false,
+      error: "갤럭시 카메라 설정의 'HEIF' 옵션 때문에 브라우저가 사진을 못 읽어요.\n\n[설정 방법] 카메라 앱 → 설정 → '고효율 사진(HEIF)' 끄기 → JPEG로 다시 촬영\n\n또는 '사진 찍어 바로 올리기' 버튼으로 다시 시도해주세요.",
+    };
+  }
+
+  // 기타(PNG/GIF/WebP 변환 실패 — 매우 드뭄): 원본 그대로 시도
+  return { ok: true, file };
 }
 
 function loadWithImage(file: File): Promise<HTMLImageElement> {
@@ -334,7 +366,18 @@ export default function FeedUploadPage() {
       if (mediaType !== "image") resetSelection();
       setMediaType("image");
 
-      // 즉시 화면에 추가 — 압축은 백그라운드에서 진행
+      // HEIC/HEIF는 일부 안드로이드 브라우저에서 변환 불가 → 선택 직후 안내
+      const heicCount = usable.filter(isHeicLike).length;
+      if (heicCount > 0) {
+        alert(
+          `선택한 사진 중 ${heicCount}장이 HEIC/HEIF 형식이에요.\n` +
+          `갤럭시 카메라 설정에서 '고효율 사진(HEIF)'을 끄거나 ` +
+          `'사진 찍어 바로 올리기' 버튼으로 다시 시도하시는 게 좋아요.\n\n` +
+          `(올리기 시도해서 실패하면 알려드립니다)`
+        );
+      }
+
+      // 즉시 화면에 추가 — 압축은 제출 시에만
       const newItems = usable.map(buildPhotoItem);
       setPhotos((prev) => [...prev, ...newItems]);
     }
@@ -395,9 +438,18 @@ export default function FeedUploadPage() {
 
         for (let i = 0; i < photos.length; i++) {
           const photo = photos[i];
-          setLoadingMsg(`사진 ${i + 1}/${photos.length} 압축 중...`);
-          const compressedFile = await maybeCompressForUpload(photo.original);
-          const fileName = `feed-${ts}-${rand}-${i + 1}.${compressedFile.type === "image/jpeg" ? "jpg" : "bin"}`;
+          setLoadingMsg(`사진 ${i + 1}/${photos.length} 처리 중...`);
+          const ensured = await ensureJpegForUpload(photo.original);
+          if (!ensured.ok) {
+            alert(`사진 ${i + 1}장: ${ensured.error}`);
+            setLoading(false); return;
+          }
+          const compressedFile = ensured.file;
+          const ext = compressedFile.type === "image/jpeg" ? "jpg"
+            : compressedFile.type === "image/png" ? "png"
+            : compressedFile.type === "image/webp" ? "webp"
+            : "jpg";
+          const fileName = `feed-${ts}-${rand}-${i + 1}.${ext}`;
 
           // 압축이 끝나는 즉시 업로드 시작 (await하지 않음 — 다음 사진 압축이 동시에 진행)
           const uploadPromise = storageClient.storage

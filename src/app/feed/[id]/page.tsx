@@ -253,8 +253,19 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
               : (post.image_url ? [post.image_url] : []);
             if (galleryUrls.length <= 1) {
               return (
-                <img src={post.image_url} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  style={{ width: "100%", display: "block" }} />
+                <div style={{ position: "relative", background: "#F9FAFB" }}>
+                  <img src={post.image_url} alt=""
+                    onError={(e) => {
+                      const el = e.target as HTMLImageElement;
+                      el.style.display = "none";
+                      el.parentElement?.querySelector(".feed-detail-fallback")?.setAttribute("style", "display:flex;width:100%;height:240px;background:#F9FAFB;align-items:center;justify-content:center;color:#9CA3AF;font-size:13px;flex-direction:column;gap:8px;padding:16px;text-align:center");
+                    }}
+                    style={{ width: "100%", display: "block" }} />
+                  <div className="feed-detail-fallback" style={{ display: "none" }}>
+                    <span style={{ fontSize: 32 }}>📷</span>
+                    <span>이미지를 표시할 수 없습니다<br /><span style={{ fontSize: 11, color: "#B1B5BA" }}>(HEIC/HEIF는 일부 브라우저에서 지원되지 않아요)</span></span>
+                  </div>
+                </div>
               );
             }
             return (
