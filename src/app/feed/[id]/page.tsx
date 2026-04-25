@@ -1,5 +1,5 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "../../../components/Header";
@@ -150,53 +150,137 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
             <b>{authorNick}</b> {post.description}
           </div>
 
-          {/* AI 분석 결과 — 모든 등급 표시 */}
-          {analysis && (
-            <div style={{ margin: "0 16px 16px", borderRadius: 8, overflow: "hidden", border: `1px solid ${
-              analysis.severity === "normal" ? "#A7F3D0" : (sevColor?.bg || "#ddd") + "30"
-            }` }}>
+          {/* AI 분석 결과 — 새 analysis 필드 풀 렌더링 + 모든 severity 처리 */}
+          {analysis && (() => {
+            // Gemini 가 생성한 풀 분석 텍스트 (재분석 후 채워짐). 빈 문자열이면 legacy fallback.
+            const fullAnalysisText: string = (analysis as any).analysis || "";
+            const hasFullAnalysis = fullAnalysisText.trim().length > 50;
+            const isPending = analysis.severity === "pending" as any;
+
+            // 헤더 컬러: pending은 회색, urgent는 빨강, moderate는 주황, mild는 노랑, normal은 초록
+            const headerBg =
+              isPending ? "#6B7280" :
+              analysis.severity === "normal" ? "#059669" :
+              analysis.severity === "urgent" ? "#DC2626" :
+              analysis.severity === "moderate" ? "#F97316" :
+              analysis.severity === "mild" ? "#0369A1" : "#6B7280";
+
+            const headerText =
+              isPending ? t("feed.detailPendingTitle") :
+              analysis.severity === "normal" ? t("feed.detailNormalTitle") :
+              analysis.severity === "urgent" ? t("feed.detailUrgentTitle") :
+              analysis.severity === "moderate" ? t("feed.detailCautionTitle") :
+              t("feed.detailObserveTitle");
+
+            // 마크다운 → JSX 간이 변환: **bold** + 줄바꿈 + * 리스트 + ### 헤더
+            // (react-markdown 의존성 추가 회피, Gemini 출력 형식만 처리)
+            const renderMarkdownLite = (text: string) => {
+              const lines = text.split("\n");
+              return lines.map((line, i) => {
+                const trimmed = line.trim();
+                if (!trimmed) return <div key={i} style={{ height: 6 }} />;
+                // 구분선
+                if (/^---+$/.test(trimmed)) {
+                  return <hr key={i} style={{ border: "none", borderTop: "1px solid #E5E7EB", margin: "10px 0" }} />;
+                }
+                // ### 헤더 (사용 빈도 낮음)
+                if (/^#{1,6}\s/.test(trimmed)) {
+                  const stripped = trimmed.replace(/^#+\s/, "");
+                  return <div key={i} style={{ fontWeight: 700, fontSize: 14, margin: "10px 0 4px", color: "#111" }}>{renderInline(stripped)}</div>;
+                }
+                // 리스트 항목 (* 또는 - 또는 숫자.)
+                if (/^(\*|-|\d+\.)\s+/.test(trimmed)) {
+                  const stripped = trimmed.replace(/^(\*|-|\d+\.)\s+/, "");
+                  return (
+                    <div key={i} style={{ display: "flex", gap: 8, margin: "3px 0", fontSize: 13.5, lineHeight: 1.7, color: "#1F2937" }}>
+                      <span style={{ color: "#9CA3AF", flexShrink: 0 }}>•</span>
+                      <span style={{ flex: 1 }}>{renderInline(stripped)}</span>
+                    </div>
+                  );
+                }
+                // 일반 단락 (이모지+굵게 헤더 포함)
+                return (
+                  <div key={i} style={{ fontSize: 13.5, lineHeight: 1.75, color: "#1F2937", margin: "3px 0" }}>
+                    {renderInline(trimmed)}
+                  </div>
+                );
+              });
+            };
+            // **bold** 인라인 처리
+            const renderInline = (text: string): React.ReactNode => {
+              const parts = text.split(/(\*\*[^*]+\*\*)/g);
+              return parts.map((part, i) => {
+                if (part.startsWith("**") && part.endsWith("**")) {
+                  return <strong key={i} style={{ fontWeight: 700, color: "#111" }}>{part.slice(2, -2)}</strong>;
+                }
+                return part;
+              });
+            };
+
+            return (
+            <div style={{ margin: "0 16px 16px", borderRadius: 8, overflow: "hidden", border: "1px solid #E5E7EB" }}>
               <div style={{
-                background: analysis.severity === "normal" ? "#059669" : (sevColor?.bg || "#888"),
+                background: headerBg,
                 color: "#fff", padding: "10px 14px", fontSize: 14, fontWeight: 700,
               }}>
-                {analysis.severity === "normal" ? t("feed.detailNormalTitle")
-                  : analysis.severity === "urgent" ? t("feed.detailUrgentTitle")
-                  : analysis.severity === "moderate" ? t("feed.detailCautionTitle")
-                  : t("feed.detailObserveTitle")}
+                {headerText}
               </div>
-              <div style={{ padding: 14 }}>
-                {analysis.severity === "normal" ? (
+              <div style={{ padding: 14, background: "#fff" }}>
+                {/* 1. Pending: 분석 미완료 안내 */}
+                {isPending ? (
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#6B7280" }}>
+                    {t("feed.detailPendingDesc")}
+                  </p>
+                ) : hasFullAnalysis ? (
+                  /* 2. 새 분석: Gemini 풀 텍스트 마크다운 렌더링 */
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", marginBottom: 8, letterSpacing: "-0.01em" }}>
+                      {t("feed.aiDetailedAnalysisTitle")}
+                    </div>
+                    <div>{renderMarkdownLite(fullAnalysisText)}</div>
+                    {((analysis as any).reanalyzedAt || (analysis as any).analyzedAt) && (
+                      <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 12, paddingTop: 8, borderTop: "1px dashed #E5E7EB" }}>
+                        {t("feed.aiAnalyzedBy")}: {(analysis as any).reanalysisModel || (analysis as any).model || "Gemini 2.5 Flash"}
+                        {(analysis as any).reanalyzedAt && (
+                          <span> · {t("feed.aiReanalyzedAt")}: {new Date((analysis as any).reanalyzedAt).toLocaleString("ko-KR")}</span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : analysis.severity === "normal" ? (
+                  /* 3. Legacy normal: 기본 정상 안내 */
                   <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#059669" }}>
                     {t("feed.detailNormalDesc")}
                   </p>
                 ) : (
+                  /* 4. Legacy non-normal: 기존 summary/recommendation */
                   <>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-                      {analysis.symptoms.map((s, i) => {
-                        const symKey = SYMPTOM_I18N[s];
-                        return (
-                          <span key={i} style={{
-                            background: (sevColor?.bg || "#888") + "15", color: sevColor?.bg || "#888",
-                            padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600,
-                          }}>{symKey ? t(symKey) : s}</span>
-                        );
-                      })}
-                    </div>
+                    {analysis.symptoms && analysis.symptoms.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                        {analysis.symptoms.map((s: string, i: number) => {
+                          const symKey = SYMPTOM_I18N[s];
+                          return (
+                            <span key={i} style={{
+                              background: (sevColor?.bg || "#888") + "15", color: sevColor?.bg || "#888",
+                              padding: "2px 8px", borderRadius: 10, fontSize: 12, fontWeight: 600,
+                            }}>{symKey ? t(symKey) : s}</span>
+                          );
+                        })}
+                      </div>
+                    )}
                     <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: "#444" }}>{analysis.summary}</p>
-                    <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.7, color: "#666", fontStyle: "italic" }}>{analysis.recommendation}</p>
-                    {locale === "en" && (
-                      <p style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.5, color: "#9CA3AF" }}>
-                        (Analysis was generated in Korean. Translation coming soon.)
-                      </p>
+                    {analysis.recommendation && (
+                      <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.7, color: "#666", fontStyle: "italic" }}>{analysis.recommendation}</p>
                     )}
                   </>
                 )}
-                {/* 주변 동물병원 — 주의/긴급은 자동 표시, 정상/관찰은 버튼 클릭 */}
+
+                {/* 주변 동물병원 — 긴급/주의는 자동 노출, 그 외는 버튼 토글 */}
                 {(analysis.severity === "urgent" || analysis.severity === "moderate") ? (
-                  <div style={{ marginTop: 12 }}>
-                    <VetClinicList is24hOnly={analysis.severity === "urgent"} />
+                  <div style={{ marginTop: 14 }}>
+                    <VetClinicList is24hOnly={analysis.severity === "urgent"} emergencyMode={analysis.severity === "urgent"} />
                   </div>
-                ) : (
+                ) : !isPending && (
                   <>
                     <button onClick={() => setShowVets(!showVets)} style={{
                       marginTop: 12, width: "100%", padding: "10px",
@@ -211,7 +295,8 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                 <div style={{ fontSize: 11, color: "#aaa", marginTop: 10 }}>{t("feed.aiDisclaimer")}</div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* 댓글 */}
           <div style={{ padding: "0 16px 16px" }}>

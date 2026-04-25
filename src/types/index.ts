@@ -84,10 +84,21 @@ export interface FeedPost {
 }
 
 export interface AnalysisResult {
-  severity: "normal" | "mild" | "moderate" | "urgent";
+  // "pending" — Gemini 호출 실패로 분석 보류 상태 (가짜 normal 방지용)
+  severity: "normal" | "mild" | "moderate" | "urgent" | "pending";
   symptoms: string[];
   summary: string;
   recommendation: string;
+  // Gemini Vision 풀 분석 텍스트 (재분석 후 채워짐)
+  analysis?: string;
+  // 메타
+  source?: string;
+  model?: string;
+  analyzedAt?: string;
+  reanalyzedAt?: string;
+  reanalysisModel?: string;
+  previousSeverity?: string;
+  aiImageError?: string | null;
   // 구조화된 AI 분석 (2026-04-19)
   fgs_total?: number | null;          // 0~10 (고양이 FGS 통증 지수)
   fgs_breakdown?: {

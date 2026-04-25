@@ -204,16 +204,42 @@ export async function POST(req: NextRequest) {
           model,
         });
 
-        // UPDATE — 기존 필드 보존하면서 analysis 전문 + severity 덮어쓰기
+        // legacy summary/recommendation 도 새 분석 기반으로 갱신
+        //   (이전에는 analysis 만 덮어써서 UI 가 옛 가짜 "정상입니다" 텍스트 계속 표시)
+        const firstPara = analysis
+          .split("\n")
+          .find((l) => l.trim().length > 30 && !l.startsWith("⚡") && !l.startsWith("🔍") && !l.startsWith("🩺")) || "";
+        const newSummary = firstPara.replace(/^[*\s🚨⚠️💡✅ℹ️]+/, "").slice(0, 280);
+
+        const newRecommendation =
+          newSev === "urgent" ? "🚨 즉시 24시간 동물병원 방문을 권장합니다."
+          : newSev === "moderate" ? "⚠️ 24시간 내 동물병원 진료를 권장합니다."
+          : newSev === "mild" ? "💡 며칠간 관찰하시고 증상 지속 시 수의사 상담."
+          : "✅ 건강한 상태로 보입니다. 정기 검진을 잊지 마세요.";
+
+        const newSymptoms: string[] =
+          newSev === "urgent" ? ["긴급"]
+          : newSev === "moderate" ? ["주의"]
+          : newSev === "mild" ? ["관찰"]
+          : [];
+
+        // UPDATE — 기존 필드 보존하면서 analysis 전문 + severity + legacy 동기화
         const merged = {
           ...(post.analysis_result || {}),
+          // 신규 풀 텍스트 + severity
           analysis,
           severity: newSev,
           symptomsCount: TOTAL_SYMPTOMS,
           locale: "ko",
+          // legacy 필드 (UI 호환)
+          summary: newSummary,
+          recommendation: newRecommendation,
+          symptoms: newSymptoms,
+          // 메타
           reanalyzedAt: new Date().toISOString(),
           reanalysisModel: model,
           previousSeverity: post.analysis_result?.severity || "unknown",
+          source: "gemini-vision-reanalyze",
         };
 
         const { error } = await sb
