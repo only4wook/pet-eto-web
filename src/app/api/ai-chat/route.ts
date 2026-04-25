@@ -7,6 +7,7 @@ import { PET_AI_PERSONA_EN } from "../../../lib/aiPromptsEn";
 import { classifyQuery, mergeEnsemble } from "../../../lib/aiRouter";
 import { criticizeAndImprove } from "../../../lib/selfCritique";
 import { buildExemplarFewShot, type ExemplarRow } from "../../../lib/learning";
+import { selectMedicalReferences } from "../../../lib/medicalSources";
 
 const SUPABASE_URL = "https://akhtlrcmvftfacaroeiq.supabase.co";
 
@@ -43,6 +44,17 @@ async function fetchActiveExemplars(): Promise<string> {
 
 type ChatMessage = { role: "user" | "ai"; text: string };
 type PetInfo = { name: string; species: string; breed: string };
+
+function logOpenAIFailure(route: string, result: Awaited<ReturnType<typeof callOpenAI>>) {
+  if (result.ok) return;
+  console.warn("[ai-chat] OpenAI fallback", {
+    route,
+    model: result.model,
+    status: result.errorInfo?.status,
+    code: result.errorInfo?.code,
+    type: result.errorInfo?.type,
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -100,6 +112,7 @@ export async function POST(req: NextRequest) {
 
     // ── 2) 라우트별 처리 ──
     const route = classification.route;
+    const references = selectMedicalReferences(message, 3);
 
     // ▶ 경로 1: ENSEMBLE (생명 위험 → Gemini + GPT 병렬)
     if (route === "ensemble") {
@@ -107,6 +120,7 @@ export async function POST(req: NextRequest) {
         callGemini(contents, { locale, timeoutMs: 12000 }),
         callOpenAI(openaiMessages, { model: "gpt-4o-mini", timeoutMs: 12000 }),
       ]);
+      logOpenAIFailure(route, gptResult);
 
       // 둘 중 성공한 쪽만 쓰기
       if (geminiResult.ok && gptResult.ok) {
@@ -125,6 +139,7 @@ export async function POST(req: NextRequest) {
             confidence: ensemble.confidence,
             agreement: ensemble.agreement,
             sources: ensemble.sources,
+            references,
             classificationReasons: classification.reasons,
           },
         });
@@ -142,6 +157,8 @@ export async function POST(req: NextRequest) {
             confidence: "medium",
             agreement: false,
             sources: [geminiResult.ok ? "Gemini 2.0 Flash" : "GPT-4o (Gemini failed)"],
+            references,
+            gptStatus: gptResult.ok ? "ok" : "failed",
             classificationReasons: classification.reasons,
           },
         });
@@ -159,6 +176,7 @@ export async function POST(req: NextRequest) {
     // ▶ 경로 2: GPT-4o 단일 (복잡한 문맥)
     if (route === "gpt-single") {
       const result = await callOpenAI(openaiMessages, { model: "gpt-4o-mini", timeoutMs: 15000 });
+      logOpenAIFailure(route, result);
       if (result.ok && result.reply) {
         return NextResponse.json({
           success: true,
@@ -167,6 +185,7 @@ export async function POST(req: NextRequest) {
             route,
             urgency: classification.urgency,
             sources: ["GPT-4o mini"],
+            references,
             classificationReasons: classification.reasons,
           },
         });
@@ -182,6 +201,8 @@ export async function POST(req: NextRequest) {
             route: "gpt-fallback-gemini",
             urgency: classification.urgency,
             sources: ["Gemini 2.0 Flash (GPT failed)"],
+            references,
+            gptStatus: "failed",
           },
         });
       }
@@ -202,6 +223,7 @@ export async function POST(req: NextRequest) {
           route,
           urgency: classification.urgency,
           sources: ["Gemini 2.0 Flash"],
+          references,
           classificationReasons: classification.reasons,
         },
       });
@@ -210,6 +232,7 @@ export async function POST(req: NextRequest) {
     // Gemini 실패 → GPT로 폴백 (OPENAI_API_KEY 있을 때만)
     if (process.env.OPENAI_API_KEY) {
       const gptFallback = await callOpenAI(openaiMessages, { model: "gpt-4o-mini" });
+      logOpenAIFailure("gemini-fallback-gpt", gptFallback);
       if (gptFallback.ok && gptFallback.reply) {
         return NextResponse.json({
           success: true,
@@ -218,6 +241,7 @@ export async function POST(req: NextRequest) {
             route: "gemini-fallback-gpt",
             urgency: classification.urgency,
             sources: ["GPT-4o mini (Gemini failed)"],
+            references,
           },
         });
       }

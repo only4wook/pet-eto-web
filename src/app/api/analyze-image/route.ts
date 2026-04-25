@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PET_AI_PERSONA, IMAGE_ANALYSIS_CONFIG, SAFETY_SETTINGS } from "../../../lib/aiPrompts";
 import { PET_AI_PERSONA_EN, IMAGE_ANALYSIS_CONFIG_EN } from "../../../lib/aiPromptsEn";
 import { buildSymptomChecklistKo, buildSymptomChecklistEn, TOTAL_SYMPTOMS } from "../../../lib/symptomTaxonomy";
+import { selectMedicalReferences } from "../../../lib/medicalSources";
 
 type Severity = "normal" | "mild" | "moderate" | "urgent";
 
@@ -143,11 +144,14 @@ export async function POST(req: NextRequest) {
     // 모델은 GEMINI_MODEL 환경변수로 교체 가능 (geminiClient.ts와 동일 기본값)
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 28000);
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemText }] },
           contents: [{
@@ -161,7 +165,7 @@ export async function POST(req: NextRequest) {
           safetySettings: SAFETY_SETTINGS,
         }),
       }
-    );
+    ).finally(() => clearTimeout(timeoutId));
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
@@ -180,6 +184,7 @@ export async function POST(req: NextRequest) {
     // 심각도 추출 — AI 출력의 명시적 라벨에서만 enum 추출 (loose match 금지)
     // 이전 버그: "관찰되지 않습니다"(부정문)을 mild로 오매칭해 건강한 펫이 "관찰" 표시됨
     const severity = extractSeverity(analysisText);
+    const references = selectMedicalReferences(`${species} ${description} ${analysisText}`, 3);
 
     return NextResponse.json({
       success: true,
@@ -187,8 +192,13 @@ export async function POST(req: NextRequest) {
       severity,
       symptomsCount: TOTAL_SYMPTOMS,
       locale,
+      model,
+      references,
     });
   } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return NextResponse.json({ error: "AI 분석 시간이 초과되었습니다." }, { status: 504 });
+    }
     return NextResponse.json({ error: err.message || "server error" }, { status: 500 });
   }
 }

@@ -94,6 +94,14 @@ export interface AnalysisResult {
   // 메타
   source?: string;
   model?: string;
+  references?: Array<{
+    title: string;
+    titleEn: string;
+    organization: string;
+    organizationEn: string;
+    url: string;
+    category: string;
+  }>;
   analyzedAt?: string;
   reanalyzedAt?: string;
   reanalysisModel?: string;

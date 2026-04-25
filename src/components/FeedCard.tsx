@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import GradeBadge from "./GradeBadge";
-import { formatDate, safeNickname } from "../lib/utils";
+import { formatDate, safeNickname, stripInlineAiAnalysis } from "../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../lib/symptomAnalyzer";
 import { useI18n } from "./I18nProvider";
 import type { FeedPost } from "../types";
@@ -19,6 +19,7 @@ export default function FeedCard({ post }: { post: FeedPost }) {
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
   const displayNickname = safeNickname(post.author?.nickname, (post.author as any)?.id);
   const { t, locale } = useI18n();
+  const userDescription = stripInlineAiAnalysis(post.description);
 
   return (
     <div style={{
@@ -90,76 +91,17 @@ export default function FeedCard({ post }: { post: FeedPost }) {
         </Link>
       </div>
 
-      {/* 설명 + AI 분석 */}
+      {/* 설명: 피드 목록에서는 사용자가 쓴 글만 표시하고, AI 전문은 상세 페이지에서만 표시 */}
       <Link href={`/feed/${post.id}`} style={{ textDecoration: "none", display: "block" }}>
         <div style={{ padding: "8px 16px 12px" }}>
           {/* 사용자 설명 */}
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "#333" }}>
             <b style={{ marginRight: 6 }}>{displayNickname}</b>
-            {(post.description?.split("---")[0] || post.description || "").slice(0, 120)}
-            {(post.description?.length || 0) > 120 ? "..." : ""}
+            {userDescription.slice(0, 120)}
+            {userDescription.length > 120 ? "..." : ""}
           </p>
-          {/* Gemini AI 이미지 분석 결과 (있으면 표시) */}
-          {post.description?.includes("🤖 AI 이미지 분석:") && (
-            <div style={{
-              marginTop: 8, padding: "10px 12px", borderRadius: 8,
-              background: "#F0F9FF", border: "1px solid #BAE6FD", fontSize: 12,
-              color: "#0369A1", lineHeight: 1.7, whiteSpace: "pre-line",
-            }}>
-              🤖 <b>{t("feed.aiImageLabel")}</b>
-              <div style={{ marginTop: 4, color: "#374151" }}>
-                {post.description.split("🤖 AI 이미지 분석:")[1]?.slice(0, 200)}...
-              </div>
-              <span style={{ color: "#FF6B35", fontWeight: 600, fontSize: 11 }}>{t("feed.viewDetails")}</span>
-            </div>
-          )}
         </div>
       </Link>
-
-      {/* AI 분석 결과 미리보기 */}
-      {analysis && (
-        <Link href={`/feed/${post.id}`} style={{ textDecoration: "none" }}>
-          <div style={{
-            margin: "0 16px 12px", padding: "10px 12px", borderRadius: 6,
-            background: analysis.severity === "normal" ? "#ECFDF5"
-              : analysis.severity === "urgent" ? "#FEF2F2"
-              : analysis.severity === "moderate" ? "#FFFBEB"
-              : "#F0F9FF",
-            border: `1px solid ${
-              analysis.severity === "normal" ? "#A7F3D0"
-              : analysis.severity === "urgent" ? "#FECACA"
-              : analysis.severity === "moderate" ? "#FDE68A"
-              : "#BAE6FD"
-            }`,
-          }}>
-            <div style={{
-              fontSize: 12, fontWeight: 700, marginBottom: 4,
-              color: analysis.severity === "normal" ? "#059669"
-                : analysis.severity === "urgent" ? "#DC2626"
-                : analysis.severity === "moderate" ? "#D97706"
-                : "#0369A1",
-            }}>
-              {analysis.severity === "normal" ? t("feed.cardNormalTitle")
-                : analysis.severity === "urgent" ? t("feed.cardUrgentTitle")
-                : analysis.severity === "moderate" ? t("feed.cardCautionTitle")
-                : t("feed.cardObserveTitle")}
-            </div>
-            <div style={{ fontSize: 12, color: "#666", lineHeight: 1.5 }}>
-              {analysis.severity === "normal"
-                ? t("feed.cardNormalDesc")
-                : (analysis.summary?.slice(0, 80) || "") + "..."}
-            </div>
-            {analysis.severity !== "normal" && (
-              <div style={{
-                fontSize: 11, marginTop: 4, fontWeight: 600,
-                color: analysis.severity === "urgent" ? "#DC2626" : "#D97706",
-              }}>
-                {t("feed.viewDetails")}
-              </div>
-            )}
-          </div>
-        </Link>
-      )}
     </div>
   );
 }

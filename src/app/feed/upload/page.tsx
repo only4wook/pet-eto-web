@@ -85,6 +85,35 @@ function extractVideoThumbnail(file: File): Promise<Blob> {
 
 type MediaType = "image" | "video";
 
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} 시간이 초과되었습니다.`)), ms);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+async function fetchJsonWithTimeout(url: string, init: RequestInit, ms: number) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ms);
+
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    const contentType = res.headers.get("content-type") || "";
+    const data = contentType.includes("application/json")
+      ? await res.json()
+      : { error: (await res.text()).slice(0, 300) || `HTTP ${res.status}` };
+    return { res, data };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export default function FeedUploadPage() {
   const router = useRouter();
   const user = useAppStore((s) => s.user);
@@ -152,13 +181,17 @@ export default function FeedUploadPage() {
       const ts = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
       let imageUrl = "";
+      let imageForAnalysis: Blob | File = mediaFile;
 
       if (mediaType === "video") {
         // 동영상: 원본 업로드 + 썸네일 추출
         setLoadingMsg("동영상 업로드 중...");
         const videoName = `feed-${ts}-${rand}.mp4`;
-        const { error: vErr } = await storageClient.storage
-          .from("feed-images").upload(videoName, mediaFile, { contentType: mediaFile.type, upsert: true });
+        const { error: vErr } = await withTimeout(
+          storageClient.storage.from("feed-images").upload(videoName, mediaFile, { contentType: mediaFile.type, upsert: true }),
+          30000,
+          "동영상 업로드",
+        );
         if (vErr) { alert("동영상 업로드 실패: " + vErr.message); setLoading(false); return; }
 
         // 썸네일 추출 & 업로드
@@ -177,12 +210,17 @@ export default function FeedUploadPage() {
       } else {
         // 이미지: 서버 API로 업로드 (HEIC 자동 처리)
         setLoadingMsg("이미지 업로드 중...");
+        const compressed = await compressImage(mediaFile, 1600);
+        imageForAnalysis = compressed;
         const fd = new FormData();
-        fd.append("file", mediaFile);
+        fd.append("file", compressed, "feed.jpg");
 
         try {
-          const uploadRes = await fetch("/api/upload-image", { method: "POST", body: fd });
-          const uploadData = await uploadRes.json();
+          const { res: uploadRes, data: uploadData } = await fetchJsonWithTimeout(
+            "/api/upload-image",
+            { method: "POST", body: fd },
+            30000,
+          );
           if (uploadRes.ok && uploadData.url) {
             imageUrl = uploadData.url;
           } else {
@@ -207,11 +245,14 @@ export default function FeedUploadPage() {
       if (mediaType === "image" && mediaFile) {
         try {
           const aiFd = new FormData();
-          aiFd.append("file", mediaFile);
+          aiFd.append("file", imageForAnalysis, "analysis.jpg");
           aiFd.append("description", description);
           aiFd.append("species", species);
-          const aiRes = await fetch("/api/analyze-image", { method: "POST", body: aiFd });
-          const aiData = await aiRes.json();
+          const { res: aiRes, data: aiData } = await fetchJsonWithTimeout(
+            "/api/analyze-image",
+            { method: "POST", body: aiFd },
+            35000,
+          );
           if (aiRes.ok && aiData.analysis) {
             aiImageAnalysis = aiData.analysis;
             aiImageSeverity = (aiData.severity as typeof aiImageSeverity) || "normal";
@@ -229,6 +270,7 @@ export default function FeedUploadPage() {
               analysis: aiImageAnalysis, // ← 전문을 JSONB 에 직접 저장 (description 에 섞지 않음)
               source: "gemini-vision",
               model: aiData.model || "gemini-2.5-flash",
+              references: aiData.references || [],
               analyzedAt: new Date().toISOString(),
             };
           } else {
@@ -254,28 +296,41 @@ export default function FeedUploadPage() {
       // DB 저장
       // description 에는 유저 원본만 저장 (AI 분석 섞지 않음 — 재분석/표시 깔끔하게)
       setLoadingMsg("저장 중...");
-      const { error: insertError } = await supabase.from("feed_posts").insert({
-        author_id: user.id,
-        image_url: imageUrl,
-        description: description.trim(),
-        pet_name: petName.trim(),
-        pet_species: species,
-        analysis_result: analysis,
-      });
+      const { error: insertError } = await withTimeout<any>(
+        Promise.resolve(supabase.from("feed_posts").insert({
+          author_id: user.id,
+          image_url: imageUrl,
+          description: description.trim(),
+          pet_name: petName.trim(),
+          pet_species: species,
+          analysis_result: analysis,
+        })),
+        20000,
+        "피드 저장",
+      );
 
       if (insertError) { alert("저장 실패: " + insertError.message); setLoading(false); return; }
 
       // 포인트 +10P (첫 피드 +100P 보너스)
       let feedPts = 10;
       let feedBonus = "";
-      const { count: feedCount } = await supabase.from("feed_posts").select("id", { count: "exact", head: true })
-        .eq("author_id", user.id);
-      if (feedCount === 1) { // 방금 올린 게 첫 번째
-        feedPts += 100;
-        feedBonus = "\n🎉 첫 피드 보너스 +100P!";
+      try {
+        const { count: feedCount } = await withTimeout<any>(
+          Promise.resolve(supabase.from("feed_posts").select("id", { count: "exact", head: true }).eq("author_id", user.id)),
+          10000,
+          "포인트 계산",
+        );
+        if (feedCount === 1) { // 방금 올린 게 첫 번째
+          feedPts += 100;
+          feedBonus = "\n🎉 첫 피드 보너스 +100P!";
+        }
+      } catch (pointErr) {
+        console.warn("[feed-upload] first feed bonus check skipped", pointErr);
       }
-      await supabase.from("point_logs").insert({ user_id: user.id, amount: feedPts, reason: feedBonus ? "피드 작성 (첫 피드 보너스)" : "피드 작성" });
-      await supabase.rpc("add_points", { uid: user.id, pts: feedPts });
+      Promise.allSettled([
+        supabase.from("point_logs").insert({ user_id: user.id, amount: feedPts, reason: feedBonus ? "피드 작성 (첫 피드 보너스)" : "피드 작성" }),
+        supabase.rpc("add_points", { uid: user.id, pts: feedPts }),
+      ]).catch((pointErr) => console.warn("[feed-upload] point update skipped", pointErr));
 
       setLoading(false);
       setLoadingMsg("");

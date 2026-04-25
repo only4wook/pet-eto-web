@@ -14,6 +14,27 @@ export function formatDate(dateStr: string): string {
   return `${m}.${d} ${h}:${min}`;
 }
 
+// 피드 표시용: 과거 업로드 데이터에 description 안으로 섞여 들어간 AI 분석 전문 제거.
+// AI 분석은 analysis_result에서 상세 카드로만 보여주고, 작성자 본문에는 사용자 글만 남긴다.
+export function stripInlineAiAnalysis(description: string | null | undefined): string {
+  const text = String(description || "");
+  const markers = [
+    /\s*🤖\s*/i,
+    /\s*(?:-{2,}|—+|–+)\s*(?:🤖\s*)?AI\s*(?:이미지\s*)?분석\s*[:：]?/i,
+    /\s*(?:🤖\s*)?AI\s*(?:이미지\s*)?분석\s*[:：]?/i,
+    /\s*사진\s*\d+\s*장\s*분석\s*결과/i,
+    /\s*\[\s*사진\s*\d+\s*\]/i,
+  ];
+
+  let cutAt = text.length;
+  for (const marker of markers) {
+    const match = marker.exec(text);
+    if (match && match.index < cutAt) cutAt = match.index;
+  }
+
+  return text.slice(0, cutAt).replace(/[\s\-—–|:：]+$/g, "").trim();
+}
+
 export function getCategoryColor(cat: string): string {
   switch (cat) {
     case "질문": return "#3B82F6";

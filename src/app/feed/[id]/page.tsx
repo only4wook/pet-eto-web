@@ -9,7 +9,7 @@ import VetClinicList from "../../../components/VetClinicList";
 import { supabase } from "../../../lib/supabase";
 import { useAppStore } from "../../../lib/store";
 import { DEMO_FEED } from "../../../lib/demoFeed";
-import { formatDate, safeNickname } from "../../../lib/utils";
+import { formatDate, safeNickname, stripInlineAiAnalysis } from "../../../lib/utils";
 import { getSeverityColor, getSeverityLabel } from "../../../lib/symptomAnalyzer";
 import { useI18n } from "../../../components/I18nProvider";
 import type { FeedPost, FeedComment } from "../../../types";
@@ -96,6 +96,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
   const analysis = post.analysis_result;
   const sevColor = analysis ? getSeverityColor(analysis.severity) : null;
   const authorNick = safeNickname(post.author?.nickname, (post.author as any)?.id);
+  const userDescription = stripInlineAiAnalysis(post.description);
 
   return (
     <>
@@ -147,7 +148,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
 
           {/* 설명 */}
           <div style={{ padding: "0 16px 12px", fontSize: 14, lineHeight: 1.7 }}>
-            <b>{authorNick}</b> {post.description}
+            <b>{authorNick}</b> {userDescription}
           </div>
 
           {/* AI 분석 결과 — 새 analysis 필드 풀 렌더링 + 모든 severity 처리 */}
@@ -156,6 +157,7 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
             const fullAnalysisText: string = (analysis as any).analysis || "";
             const hasFullAnalysis = fullAnalysisText.trim().length > 50;
             const isPending = analysis.severity === "pending" as any;
+            const references = (analysis as any).references || [];
 
             // 헤더 컬러: pending은 회색, urgent는 빨강, moderate는 주황, mild는 노랑, normal은 초록
             const headerBg =
@@ -291,6 +293,24 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
                     </button>
                     {showVets && <div style={{ marginTop: 12 }}><VetClinicList /></div>}
                   </>
+                )}
+                {references.length > 0 && (
+                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed #E5E7EB" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", marginBottom: 5 }}>
+                      {locale === "en" ? "References" : "참고 출처"}
+                    </div>
+                    {references.map((ref: any) => (
+                      <a
+                        key={ref.url}
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: "block", fontSize: 11, lineHeight: 1.6, color: "#6B7280", textDecoration: "underline", textUnderlineOffset: 2 }}
+                      >
+                        {locale === "en" ? ref.titleEn : ref.title} — {locale === "en" ? ref.organizationEn : ref.organization}
+                      </a>
+                    ))}
+                  </div>
                 )}
                 <div style={{ fontSize: 11, color: "#aaa", marginTop: 10 }}>{t("feed.aiDisclaimer")}</div>
               </div>

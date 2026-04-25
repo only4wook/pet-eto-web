@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 import { DEMO_FEED } from "../lib/demoFeed";
-import { formatDate, safeNickname } from "../lib/utils";
+import { formatDate, safeNickname, stripInlineAiAnalysis } from "../lib/utils";
 import { getSafeSeverity } from "../lib/analysisSafety";
 import type { FeedPost } from "../types";
 import { useI18n } from "./I18nProvider";
@@ -228,7 +228,7 @@ function FeedCardMini({ post, delayClass }: { post: FeedPost; delayClass: string
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
           overflow: "hidden", textOverflow: "ellipsis",
         }}>
-          {(post.description?.split("---")[0] || post.description || "").trim()}
+          {stripInlineAiAnalysis(post.description)}
         </div>
         <div style={{ display: "flex", gap: 12, marginTop: 10, fontSize: 12, color: "#6B7280" }}>
           <span>❤️ {post.like_count}</span>

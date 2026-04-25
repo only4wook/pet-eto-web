@@ -13,17 +13,40 @@ export interface OpenAIChatOptions {
   timeoutMs?: number;      // default: 15000
 }
 
+export interface OpenAIErrorInfo {
+  status?: number;
+  code?: string;
+  type?: string;
+  message: string;
+}
+
+function parseOpenAIError(status: number, raw: string): OpenAIErrorInfo {
+  try {
+    const parsed = JSON.parse(raw);
+    const err = parsed?.error || {};
+    return {
+      status,
+      code: typeof err.code === "string" ? err.code : undefined,
+      type: typeof err.type === "string" ? err.type : undefined,
+      message: typeof err.message === "string" ? err.message.slice(0, 240) : `OpenAI API 오류: ${status}`,
+    };
+  } catch {
+    return { status, message: raw.slice(0, 240) || `OpenAI API 오류: ${status}` };
+  }
+}
+
 export async function callOpenAI(
   messages: OpenAIMessage[],
   options: OpenAIChatOptions = {}
-): Promise<{ ok: boolean; reply?: string; error?: string }> {
+): Promise<{ ok: boolean; reply?: string; error?: string; errorInfo?: OpenAIErrorInfo; model?: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return { ok: false, error: "OPENAI_API_KEY 미설정 (Vercel 환경변수 대문자 확인)" };
+    const errorInfo = { code: "missing_api_key", message: "OPENAI_API_KEY 미설정 (Vercel 환경변수 대문자 확인)" };
+    return { ok: false, error: errorInfo.message, errorInfo };
   }
 
   const {
-    model = "gpt-4o-mini",
+    model = process.env.OPENAI_MODEL || "gpt-4o-mini",
     temperature = 0.6,
     maxTokens = 2000,
     timeoutMs = 15000,
@@ -51,21 +74,33 @@ export async function callOpenAI(
 
     if (!res.ok) {
       const errText = await res.text();
-      return { ok: false, error: `OpenAI API 오류: ${res.status} — ${errText.slice(0, 200)}` };
+      const errorInfo = parseOpenAIError(res.status, errText);
+      console.warn("[OpenAI]", {
+        status: errorInfo.status,
+        code: errorInfo.code,
+        type: errorInfo.type,
+        model,
+      });
+      return { ok: false, error: errorInfo.message, errorInfo, model };
     }
 
     const data = await res.json();
     const reply = data?.choices?.[0]?.message?.content;
     if (!reply) {
-      return { ok: false, error: "OpenAI 응답이 비어있습니다." };
+      const errorInfo = { code: "empty_response", message: "OpenAI 응답이 비어있습니다." };
+      return { ok: false, error: errorInfo.message, errorInfo, model };
     }
 
-    return { ok: true, reply: reply.trim() };
+    return { ok: true, reply: reply.trim(), model };
   } catch (err: any) {
     clearTimeout(timeout);
     if (err.name === "AbortError") {
-      return { ok: false, error: "OpenAI 응답 시간 초과" };
+      const errorInfo = { code: "timeout", message: "OpenAI 응답 시간 초과" };
+      console.warn("[OpenAI]", { code: errorInfo.code, model });
+      return { ok: false, error: errorInfo.message, errorInfo, model };
     }
-    return { ok: false, error: err.message || "OpenAI 호출 실패" };
+    const errorInfo = { code: "request_failed", message: err.message || "OpenAI 호출 실패" };
+    console.warn("[OpenAI]", { code: errorInfo.code, model });
+    return { ok: false, error: errorInfo.message, errorInfo, model };
   }
 }

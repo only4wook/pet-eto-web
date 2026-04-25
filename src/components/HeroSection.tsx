@@ -10,6 +10,7 @@ import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { useI18n } from "./I18nProvider";
 import { findEnglishFallback, defaultEnglishResponse } from "../lib/aiFallbackEn";
+import type { MedicalReference } from "../lib/medicalSources";
 
 // 지역 키워드 추출 (세부 지역 우선 매칭, 동물 이름 혼동 방지)
 function findArea(q: string): string | null {
@@ -390,7 +391,7 @@ function generateAIResponse(query: string): string {
   return "안녕하세요! P.E.T AI입니다 🐾\n\n이런 것들을 물어보세요:\n\n🔍 증상: \"고양이가 토해요\", \"강아지가 다리를 절어요\"\n🍽️ 음식: \"강아지가 초콜릿 먹었어\", \"참치 줘도 돼?\"\n📖 품종: \"말티즈 특징\", \"코숏 건강\"\n💰 비용: \"슬개골 수술비\", \"중성화 비용\"\n🏥 병원: \"강남 동물병원\", \"파주 24시\"\n💉 건강: \"예방접종\", \"펫보험\"\n🐾 관리: \"산책 시간\", \"사료 추천\"\n🏠 입양: \"처음 키우기 가이드\"";
 }
 
-type ChatMsg = { role: "user" | "ai"; text: string };
+type ChatMsg = { role: "user" | "ai"; text: string; references?: MedicalReference[] };
 type PetInfo = { id: string; name: string; species: string; breed: string };
 
 export default function HeroSection() {
@@ -469,7 +470,7 @@ export default function HeroSection() {
       const data = await res.json();
 
       if (data.success && data.reply) {
-        setMessages((prev) => [...prev, { role: "ai", text: data.reply }]);
+        setMessages((prev) => [...prev, { role: "ai", text: data.reply, references: data.meta?.references || [] }]);
         setThinking(false);
         return;
       }
@@ -598,6 +599,31 @@ export default function HeroSection() {
                 borderBottomLeftRadius: msg.role === "ai" ? 4 : 16,
               }}>
                 {msg.text}
+                {msg.role === "ai" && msg.references && msg.references.length > 0 && (
+                  <div style={{
+                    marginTop: 12,
+                    paddingTop: 10,
+                    borderTop: "1px solid rgba(255,255,255,0.12)",
+                    fontSize: 11,
+                    lineHeight: 1.6,
+                    color: "rgba(255,255,255,0.58)",
+                  }}>
+                    <div style={{ fontWeight: 700, color: "rgba(255,255,255,0.72)", marginBottom: 4 }}>
+                      {locale === "en" ? "References" : "참고 출처"}
+                    </div>
+                    {msg.references.map((ref) => (
+                      <a
+                        key={ref.url}
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: "block", color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}
+                      >
+                        {locale === "en" ? ref.titleEn : ref.title} — {locale === "en" ? ref.organizationEn : ref.organization}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}

@@ -3,6 +3,69 @@
 > 이 파일은 **Claude Code와 Cursor가 번갈아 작업할 때** 서로에게 남기는 인수인계서입니다.
 > 작업을 시작하기 전에 **맨 위 2~3개 항목**을 반드시 읽고, 작업이 끝나면 맨 위에 새 항목을 추가하세요.
 
+## [2026-04-25 18:52] — Cursor
+**작업**: 사용자가 표시한 피드 본문 AI 분석 노출 제거 재점검
+**상태**: 완료 ✅
+**변경 파일**: `src/lib/utils.ts`, `src/components/FeedPreviewStream.tsx`, `.ai-context/handoff.md`
+**다음 단계**: 현재 수정은 로컬 워킹트리에만 있음. `peteto.kr` 반영을 위해 커밋/푸시/배포 필요.
+**주의사항**: `stripInlineAiAnalysis()`가 `🤖` 단독, `AI 이미지 분석`, `사진 N장 분석 결과`, `[사진 N]` 패턴과 뒤에 남는 구분자까지 제거하도록 강화. `FeedCard`, 상세 페이지, 홈 피드 미리보기 모두 공통 유틸 사용. 빌드 통과.
+
+---
+
+## [2026-04-25 18:47] — Cursor
+**작업**: 피드 본문 내 AI 분석 텍스트 제거 로직 강화
+**상태**: 완료 ✅
+**변경 파일**: `src/lib/utils.ts`, `src/components/FeedCard.tsx`, `src/app/feed/[id]/page.tsx`, `.ai-context/handoff.md`
+**다음 단계**: 배포 후 대욱님이 표시한 빨간 원 영역이 `/feed`와 `/feed/[id]` 본문에서 사라졌는지 확인
+**주의사항**: `--- AI 이미지 분석`, `🤖 AI 분석`, `사진 3장 분석 결과`, `[사진 1]` 같은 과거 저장 데이터 패턴까지 공통 유틸 `stripInlineAiAnalysis()`로 제거. AI 분석 전문은 상세 분석 카드에서만 유지. 빌드 통과.
+
+---
+
+## [2026-04-25 18:43] — Cursor
+**작업**: 피드 목록에서 AI 분석 전문 중복 노출 제거
+**상태**: 완료 ✅
+**변경 파일**: `src/components/FeedCard.tsx`, `src/app/feed/[id]/page.tsx`, `.ai-context/handoff.md`
+**다음 단계**: 배포 후 `/feed` 목록에서 사용자 본문만 보이고, `/feed/[id]` 상세에서만 AI 상세 분석이 보이는지 모바일 QA
+**주의사항**: 과거 데이터처럼 `description`에 `---` 또는 `🤖 AI 이미지 분석:`이 섞인 글도 사용자 작성 부분만 표시하도록 방어 처리. `npm --prefix "/Users/wook/Developer/pet-eto-web" run build` 통과.
+
+---
+
+## [2026-04-25 18:38] — Cursor
+**작업**: `/feed/upload` 사진 업로드 무한로딩 방지
+**상태**: 완료 ✅
+**변경 파일**: `src/app/feed/upload/page.tsx`, `src/app/api/analyze-image/route.ts`, `.ai-context/handoff.md`
+**다음 단계**: 배포 후 갤럭시 앨범 사진/아이폰 사진 각각 실제 업로드 QA
+**주의사항**: 원본 대용량 사진을 그대로 보내던 흐름을 압축본 업로드/분석으로 변경했고, 업로드·AI 분석·DB 저장에 타임아웃을 추가. AI 분석이 늦거나 실패해도 피드는 `pending` 분석 상태로 저장되도록 유지.
+
+---
+
+## [2026-04-25 18:30] — Cursor
+**작업**: GPT 앙상블 운영 검수 + AI 답변 참고 출처 표시 1차 구현
+**상태**: 완료 ✅
+**변경 파일**: `src/lib/medicalSources.ts`, `src/lib/openaiClient.ts`, `src/app/api/ai-chat/route.ts`, `src/app/api/analyze-image/route.ts`, `src/components/HeroSection.tsx`, `src/app/feed/[id]/page.tsx`, `src/app/feed/upload/page.tsx`, `src/types/index.ts`, `.ai-context/handoff.md`
+**다음 단계**: 배포 후 Vercel Function 로그에서 `[ai-chat] OpenAI fallback` / `[OpenAI]` 항목 확인, 긴급 질문에서 `meta.sources`가 Gemini+GPT로 바뀌는지 재검수
+**주의사항**: 라이브 검수 결과 normal=Gemini 단일, complex=GPT 실패 후 Gemini 폴백, critical=ensemble 진입 후 Gemini만 성공. 로컬 Vercel 프로젝트 링크가 없어 env 목록 직접 조회는 불가했고, `npm --prefix "/Users/wook/Developer/pet-eto-web" run build` 통과 확인.
+
+---
+
+## [2026-04-25 18:20] — Cursor
+**작업**: `peteto.kr` 라이브 AI 기능 및 Claude Code 개선 내용 평가
+**상태**: 완료 ✅
+**변경 파일**: `.ai-context/handoff.md`
+**다음 단계**: 운영 환경에서 GPT/OpenAI 키 연결 상태 확인 시 앙상블 완성도 검증
+**주의사항**: 라이브 `/api/ai-chat` 테스트에서 critical 질문은 ensemble 경로로 분류됐지만 응답 sources는 Gemini만 표시됨
+
+---
+
+## [2026-04-25 18:18] — Cursor
+**작업**: `pet-eto-web` 프로젝트 폴더 위치 확인
+**상태**: 완료 ✅
+**변경 파일**: `.ai-context/handoff.md`
+**다음 단계**: 실제 코드 작업 필요 시 `/Users/wook/Developer/pet-eto-web`에서 이어서 진행
+**주의사항**: 단순 위치 확인 작업이며 코드 변경 없음
+
+---
+
 ## 📝 형식
 ```markdown
 ## [YYYY-MM-DD HH:MM] — [AI 이름: Claude Code / Cursor]
