@@ -71,9 +71,25 @@ function compressImage(file: File, maxWidth = 1600): Promise<Blob> {
       loadWithImage(file).then(drawToCanvas).catch(() => done(file));
     }
 
-    // 25초 안에 못 끝내면 원본 반환 (압축 실패해도 직접 업로드로 진행)
-    setTimeout(() => done(file), 25000);
+    // 6초 안에 못 끝내면 원본 반환 (UI 멈춤 방지 — Storage 한도 50MB라 원본도 OK)
+    setTimeout(() => done(file), 6000);
   });
+}
+
+// 압축은 best-effort. 실패하면 원본 그대로 반환 → Storage 직접 업로드는 50MB까지 허용.
+async function maybeCompressForUpload(file: File): Promise<File> {
+  // 1.5MB 이하는 압축 스킵 (모바일 환경에서 불필요한 디코딩 비용 방지)
+  if (file.size < 1.5 * 1024 * 1024) {
+    if (file.type === "image/jpeg") return file;
+    // PNG/HEIC 같은 큰 포맷은 작더라도 JPEG로 변환 시도
+  }
+  try {
+    const blob = await compressImage(file, 1600);
+    if (blob.size >= file.size) return file; // 압축 효과 없으면 원본
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
 }
 
 function loadWithImage(file: File): Promise<HTMLImageElement> {
@@ -192,11 +208,12 @@ function extractVideoFrames(file: File, frameCount = 5): Promise<File[]> {
 }
 
 type MediaType = "image" | "video";
-// 사진 1장당 보관할 정보. 미리보기 시점에 미리 압축까지 끝내 두면 업로드가 즉시 시작됨.
+// 사진 1장당 보관할 최소 정보. 압축은 제출 시점에만 — 선택 즉시 메인 스레드 막힘 방지.
 type PhotoItem = {
+  id: string;
   original: File;
-  compressed: File; // 항상 image/jpeg
   previewUrl: string;
+  previewFailed: boolean; // HEIC 등 브라우저가 못 그리는 경우
 };
 
 // 응답이 JSON이 아닐 수도 있는 fetch 래퍼 (Vercel 413 등 대비)
@@ -234,7 +251,6 @@ export default function FeedUploadPage() {
   const [videoFile, setVideoFile] = useState<File | null>(null); // 동영상 (단일)
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<MediaType>("image");
-  const [preparingPreview, setPreparingPreview] = useState(false);
   const [petName, setPetName] = useState("");
   const [species, setSpecies] = useState("cat");
   const [description, setDescription] = useState("");
@@ -271,30 +287,25 @@ export default function FeedUploadPage() {
     setVideoPreview(null);
   };
 
-  // 한 장씩 즉시 압축 → 미리보기로 만들어 PhotoItem 반환.
-  // 압축본을 미리보기로 쓰면 HEIC도 보이고, 갤럭시 100MP 사진도 부드럽게 렌더링됨.
-  const buildPhotoItem = async (file: File): Promise<PhotoItem> => {
-    let blob: Blob = file;
-    try {
-      blob = await compressImage(file, 1600);
-      if (blob.size > 4 * 1024 * 1024) blob = await compressImage(file, 1100);
-      if (blob.size > 4 * 1024 * 1024) blob = await compressImage(file, 800);
-    } catch {
-      blob = file;
-    }
-    const compressed = new File(
-      [blob],
-      `feed-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.jpg`,
-      { type: "image/jpeg" }
-    );
+  // 사진 1장 → 즉시 표시할 PhotoItem. 압축 없음, 메인 스레드 안 막음.
+  const buildPhotoItem = (file: File): PhotoItem => {
+    const id = (typeof crypto !== "undefined" && (crypto as any).randomUUID)
+      ? (crypto as any).randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     return {
+      id,
       original: file,
-      compressed,
-      previewUrl: URL.createObjectURL(compressed),
+      previewUrl: URL.createObjectURL(file),
+      previewFailed: false,
     };
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 미리보기 로드 실패(HEIC 등) 시 표시 상태 업데이트
+  const markPreviewFailed = (id: string) => {
+    setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, previewFailed: true } : p));
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
 
@@ -302,17 +313,14 @@ export default function FeedUploadPage() {
     const isVideo = first.type.startsWith("video/");
 
     if (isVideo) {
-      // 동영상은 단일 파일만 (원본 그대로 — Storage 직접 업로드)
       resetSelection();
       setMediaType("video");
       setVideoFile(first);
       setVideoPreview(URL.createObjectURL(first));
     } else {
-      // 사진: 다중 선택, 최대 MAX_PHOTOS. 기존 사진에 추가 가능.
       const incoming = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
       if (incoming.length === 0) { alert("이미지 파일을 선택해주세요."); e.target.value = ""; return; }
 
-      // 기존 사진 + 새 사진 합쳐서 MAX_PHOTOS까지만
       const slotsLeft = MAX_PHOTOS - (mediaType === "image" ? photos.length : 0);
       const usable = incoming.slice(0, Math.max(0, slotsLeft));
       if (slotsLeft <= 0) {
@@ -323,25 +331,13 @@ export default function FeedUploadPage() {
         alert(`최대 ${MAX_PHOTOS}장까지 선택할 수 있어 ${usable.length}장만 추가합니다.`);
       }
 
-      // 모드가 동영상이었으면 정리
       if (mediaType !== "image") resetSelection();
       setMediaType("image");
 
-      setPreparingPreview(true);
-      try {
-        // 사진들을 병렬 압축 (모바일 메모리 부담 줄이려고 동시 2개씩만)
-        const newItems: PhotoItem[] = [];
-        for (let i = 0; i < usable.length; i += 2) {
-          const batch = usable.slice(i, i + 2);
-          const built = await Promise.all(batch.map((f) => buildPhotoItem(f)));
-          newItems.push(...built);
-        }
-        setPhotos((prev) => [...prev, ...newItems]);
-      } finally {
-        setPreparingPreview(false);
-      }
+      // 즉시 화면에 추가 — 압축은 백그라운드에서 진행
+      const newItems = usable.map(buildPhotoItem);
+      setPhotos((prev) => [...prev, ...newItems]);
     }
-    // input 초기화 (같은 파일 다시 선택 가능)
     e.target.value = "";
   };
 
@@ -392,20 +388,34 @@ export default function FeedUploadPage() {
           primaryImageUrl = vUrl.publicUrl;
         }
       } else {
-        // 사진: 미리 압축돼 있으니 바로 병렬 업로드. Vercel 우회 (Storage 한도 50MB).
-        setLoadingMsg(photos.length === 1 ? "사진 업로드 중..." : `사진 ${photos.length}장 동시 업로드 중...`);
+        // 사진: 압축 → 업로드를 한 장씩 파이프라인. 압축은 순차(메인 스레드 보호), 업로드는 시작되는 대로 병렬.
+        setLoadingMsg(`사진 ${photos.length}장 처리 중... (1/${photos.length})`);
 
-        const uploadResults = await Promise.all(
-          photos.map(async (photo, i) => {
-            const fileName = `feed-${ts}-${rand}-${i + 1}.jpg`;
-            const { error } = await storageClient.storage
-              .from("feed-images")
-              .upload(fileName, photo.compressed, { contentType: "image/jpeg", upsert: true });
-            if (error) return { ok: false as const, error: error.message, idx: i };
-            const { data: pub } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
-            return { ok: true as const, url: pub.publicUrl, file: photo.compressed, idx: i };
-          })
-        );
+        const uploadPromises: Promise<{ ok: true; url: string; file: File; idx: number } | { ok: false; error: string; idx: number }>[] = [];
+
+        for (let i = 0; i < photos.length; i++) {
+          const photo = photos[i];
+          setLoadingMsg(`사진 ${i + 1}/${photos.length} 압축 중...`);
+          const compressedFile = await maybeCompressForUpload(photo.original);
+          const fileName = `feed-${ts}-${rand}-${i + 1}.${compressedFile.type === "image/jpeg" ? "jpg" : "bin"}`;
+
+          // 압축이 끝나는 즉시 업로드 시작 (await하지 않음 — 다음 사진 압축이 동시에 진행)
+          const uploadPromise = storageClient.storage
+            .from("feed-images")
+            .upload(fileName, compressedFile, {
+              contentType: compressedFile.type.startsWith("image/") ? compressedFile.type : "image/jpeg",
+              upsert: true,
+            })
+            .then((res) => {
+              if (res.error) return { ok: false as const, error: res.error.message, idx: i };
+              const { data: pub } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
+              return { ok: true as const, url: pub.publicUrl, file: compressedFile, idx: i };
+            });
+          uploadPromises.push(uploadPromise);
+        }
+
+        setLoadingMsg("사진 업로드 마무리 중...");
+        const uploadResults = await Promise.all(uploadPromises);
 
         const failed = uploadResults.find((r) => !r.ok);
         if (failed && !failed.ok) {
@@ -733,17 +743,28 @@ export default function FeedUploadPage() {
                       gap: 6,
                     }}>
                       {photos.map((p, idx) => (
-                        <div key={p.previewUrl} style={{
+                        <div key={p.id} style={{
                           position: "relative",
                           paddingBottom: photos.length === 1 ? "75%" : "100%",
                           borderRadius: 10, overflow: "hidden", border: "1px solid #e0e0e0",
                           background: "#f9f9f9",
                         }}>
-                          <img src={p.previewUrl} alt={`미리보기 ${idx + 1}`}
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }}
-                            style={{
-                              position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
-                            }} />
+                          {p.previewFailed ? (
+                            <div style={{
+                              position: "absolute", inset: 0,
+                              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                              color: "#9CA3AF", fontSize: 11, gap: 4, padding: 6, textAlign: "center",
+                            }}>
+                              <span style={{ fontSize: 28 }}>📷</span>
+                              <span>미리보기 불가<br />(올리기는 정상)</span>
+                            </div>
+                          ) : (
+                            <img src={p.previewUrl} alt={`미리보기 ${idx + 1}`}
+                              onError={() => markPreviewFailed(p.id)}
+                              style={{
+                                position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+                              }} />
+                          )}
                           {idx === 0 && (
                             <span style={{
                               position: "absolute", top: 6, left: 6,
@@ -760,21 +781,20 @@ export default function FeedUploadPage() {
                           }}>×</button>
                         </div>
                       ))}
-                      {/* 사진 추가 버튼 (MAX 미만일 때) */}
                       {photos.length < MAX_PHOTOS && (
-                        <button onClick={() => albumRef.current?.click()} disabled={preparingPreview} style={{
+                        <button onClick={() => albumRef.current?.click()} style={{
                           paddingBottom: "100%",
                           position: "relative",
                           borderRadius: 10, border: "2px dashed #FDBA74",
-                          background: preparingPreview ? "#FFEED5" : "#FFF7ED",
-                          cursor: preparingPreview ? "wait" : "pointer", fontFamily: "inherit",
+                          background: "#FFF7ED",
+                          cursor: "pointer", fontFamily: "inherit",
                         }}>
                           <span style={{
                             position: "absolute", inset: 0,
                             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                             color: "#B45309", fontSize: 12, fontWeight: 600, gap: 4,
                           }}>
-                            <span style={{ fontSize: 24 }}>{preparingPreview ? "⏳" : "＋"}</span>
+                            <span style={{ fontSize: 24 }}>＋</span>
                             <span>{photos.length}/{MAX_PHOTOS}</span>
                           </span>
                         </button>
@@ -785,9 +805,7 @@ export default function FeedUploadPage() {
                       marginTop: 8, fontSize: 12, color: "#6B7280",
                     }}>
                       <span>
-                        {preparingPreview
-                          ? "📷 사진 준비 중..."
-                          : `📷 ${photos.length}장 선택됨${photos.length > 1 ? " · AI가 모든 사진을 동시 분석" : ""}`}
+                        📷 {photos.length}장 선택됨{photos.length > 1 ? " · AI가 모든 사진을 동시 분석" : ""}
                       </span>
                       <button onClick={resetSelection} style={{
                         background: "transparent", border: "none", color: "#FF6B35",
