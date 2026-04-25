@@ -1,8 +1,19 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import React, { useState } from "react";
 import type { AnalysisResult, BBox } from "../types";
 import { useAppStore } from "../lib/store";
+
+// 인라인 마크다운 — **bold** 만 처리
+function renderInlineMd(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i} style={{ fontWeight: 700, color: "#111" }}>{part.slice(2, -2)}</strong>;
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
 
 // 피드 상세 페이지 전용 AI 분석 결과 카드
 // 구성:
@@ -198,12 +209,46 @@ export default function AIResultCard({
         </div>
       )}
 
-      {/* ── 본문 분석 ── */}
-      {!compact && analysis.summary && (
-        <div style={{ padding: "14px 18px 4px", fontSize: 13, color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-          {analysis.summary}
-        </div>
-      )}
+      {/* ── 본문 분석 ── analysis.analysis(풀 텍스트)가 있으면 마크다운 렌더링 우선 */}
+      {!compact && (() => {
+        const fullAnalysis = (analysis as any)?.analysis as string | undefined;
+        if (fullAnalysis && fullAnalysis.length > 50) {
+          // Gemini 풀 텍스트 — 간이 마크다운(**bold**, * 리스트, --- 구분선) 렌더링
+          return (
+            <div style={{ padding: "14px 18px 4px" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 8 }}>
+                🤖 AI 상세 분석
+              </div>
+              <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.75 }}>
+                {fullAnalysis.split("\n").map((line, i) => {
+                  const trimmed = line.trim();
+                  if (trimmed === "---") {
+                    return <hr key={i} style={{ border: "none", borderTop: "1px dashed #E5E7EB", margin: "10px 0" }} />;
+                  }
+                  if (trimmed === "") {
+                    return <div key={i} style={{ height: 6 }} />;
+                  }
+                  if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+                    const item = trimmed.slice(2);
+                    return (
+                      <div key={i} style={{ display: "flex", gap: 6, marginLeft: 4 }}>
+                        <span style={{ color: "#9CA3AF" }}>•</span>
+                        <span>{renderInlineMd(item)}</span>
+                      </div>
+                    );
+                  }
+                  return <div key={i}>{renderInlineMd(line)}</div>;
+                })}
+              </div>
+            </div>
+          );
+        }
+        return analysis.summary ? (
+          <div style={{ padding: "14px 18px 4px", fontSize: 13, color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+            {analysis.summary}
+          </div>
+        ) : null;
+      })()}
 
       {/* ── O2O 원스톱 CTA (핵심 차별점) ── */}
       {(severity === "urgent" || severity === "moderate") && (

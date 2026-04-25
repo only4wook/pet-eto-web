@@ -110,6 +110,8 @@ export async function POST(req: NextRequest) {
       ],
       summary: (analyze.analysis || "").slice(0, 300),
       recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
+      // 풀 텍스트 — 카드 컴포넌트가 마크다운 렌더링
+      analysis: analyze.analysis || "",
       fgs_total: analyze.fgs_total ?? null,
       fgs_breakdown: analyze.fgs_breakdown ?? null,
       severity_score: analyze.severity_score ?? null,
@@ -117,6 +119,9 @@ export async function POST(req: NextRequest) {
       // 다중 사진 정보 보존
       image_urls: post.analysis_result?.image_urls,
       photo_count: post.analysis_result?.photo_count,
+      // 모델 정보
+      model: analyze.model || null,
+      reanalyzedAt: new Date().toISOString(),
       // pending_ai 제거됨
     };
 

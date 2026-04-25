@@ -587,6 +587,8 @@ export default function FeedUploadPage() {
             symptoms: [mergedSeverity === "urgent" ? "긴급" : mergedSeverity === "moderate" ? "주의" : mergedSeverity === "mild" ? "관찰" : "정상"],
             summary: aiImageAnalysis.slice(0, 300),
             recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
+            // 풀 텍스트 — AIResultCard 가 이 필드를 우선 렌더링 (마크다운 지원)
+            analysis: aiImageAnalysis,
             fgs_total: worstFrame.data.fgs_total ?? null,
             fgs_breakdown: worstFrame.data.fgs_breakdown ?? null,
             severity_score: worstFrame.data.severity_score ?? null,
@@ -623,6 +625,7 @@ export default function FeedUploadPage() {
               symptoms: [mergedSeverity === "urgent" ? "긴급" : mergedSeverity === "moderate" ? "주의" : mergedSeverity === "mild" ? "관찰" : "정상"],
               summary: aiImageAnalysis.slice(0, 300),
               recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
+              analysis: aiImageAnalysis, // 풀 텍스트
             };
           }
         } catch { /* 멀티 프레임 실패 시 텍스트 분석 유지 */ }
