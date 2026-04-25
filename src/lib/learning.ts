@@ -190,7 +190,7 @@ export async function gradeResponse(
       contents: [{ role: "user", parts: [{ text: userMsg }] }],
       generationConfig: {
         temperature: 0.2, // 일관된 채점
-        maxOutputTokens: 1000,
+        maxOutputTokens: 2000, // truncation 방지 (1000→2000)
         responseMimeType: "application/json",
       },
       safetySettings: SAFETY_SETTINGS,
@@ -203,40 +203,52 @@ export async function gradeResponse(
   const data = await res.json();
   const raw = (data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}").trim();
 
-  // JSON 파싱 — 3단계 fallback
-  //   1) 그대로 파싱
-  //   2) ```json ... ``` 코드블록 제거 후 파싱
-  //   3) 마지막 `}` 까지 잘라서 파싱 (truncation 대응)
+  // JSON 파싱 — 모든 fallback 실패 시에도 정규식으로 점수만이라도 건짐
   let parsed: any = null;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    // 코드블록 마커 제거
+
+  // 1) 그대로
+  try { parsed = JSON.parse(raw); } catch {}
+
+  // 2) 코드블록 마커 제거
+  if (!parsed) {
     const stripped = raw
       .replace(/^```(?:json)?\s*/i, "")
       .replace(/```\s*$/, "")
       .trim();
-    try {
-      parsed = JSON.parse(stripped);
-    } catch {
-      // 마지막 } 까지 잘라서 시도 (일부만 잘린 응답 대응)
-      const lastBrace = stripped.lastIndexOf("}");
+    try { parsed = JSON.parse(stripped); } catch {}
+
+    // 3) { ~ } 슬라이스 (}있을 때만)
+    if (!parsed) {
       const firstBrace = stripped.indexOf("{");
-      if (lastBrace > firstBrace) {
+      const lastBrace = stripped.lastIndexOf("}");
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
         const sliced = stripped.slice(firstBrace, lastBrace + 1);
-        try {
-          parsed = JSON.parse(sliced);
-        } catch {
-          // 마지막 시도: 키 순서 깨진 경우 등 — 정규식으로 score 만이라도 추출
-          const scoreMatch = sliced.match(/"score"\s*:\s*(\d+)/);
-          if (scoreMatch) {
-            parsed = { score: parseInt(scoreMatch[1], 10), breakdown: {}, weakness: "JSON 부분 파싱" };
-          }
-        }
+        try { parsed = JSON.parse(sliced); } catch {}
       }
     }
   }
-  if (!parsed) throw new Error(`grade JSON parse failed: ${raw.slice(0, 200)}`);
+
+  // 4) 모든 파싱 실패 — raw 전체에서 정규식으로 score + breakdown 추출
+  //    이전 버그: }가 없으면 (truncation) 이 단계까지 못 갔음. 이제 항상 도달.
+  if (!parsed) {
+    const scoreMatch = raw.match(/"score"\s*:\s*(\d+)/);
+    if (scoreMatch) {
+      const breakdown: any = {};
+      const fields = ["empathy", "severity", "causes", "homecare", "vet_timing", "cost", "followup"];
+      for (const f of fields) {
+        const m = raw.match(new RegExp(`"${f}"\\s*:\\s*(\\d+)`));
+        if (m) breakdown[f] = parseInt(m[1], 10);
+      }
+      const weaknessMatch = raw.match(/"weakness"\s*:\s*"([^"]*)"/);
+      parsed = {
+        score: parseInt(scoreMatch[1], 10),
+        breakdown,
+        weakness: weaknessMatch ? weaknessMatch[1] : "정규식 부분 파싱",
+      };
+    }
+  }
+
+  if (!parsed) throw new Error(`grade parse failed: ${raw.slice(0, 300)}`);
 
   // 검증·기본값
   const breakdown: ScoreBreakdown = {
