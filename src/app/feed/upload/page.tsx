@@ -82,46 +82,66 @@ function isHeicLike(file: File): boolean {
   return t.includes("heic") || t.includes("heif") || n.endsWith(".heic") || n.endsWith(".heif");
 }
 
-// 항상 브라우저가 그릴 수 있는 JPEG 파일을 반환. 실패하면 명확한 에러.
-// HEIC/HEIF는 Chrome Android에서 createImageBitmap·img 모두 못 그려 → 변환 실패 시 차단.
+// HEIC/HEIF → JPEG 변환. heic2any를 lazy-load (~600KB) — HEIC 사진을 고른 경우에만 다운로드.
+// Chrome Android 등 HEIC를 native로 못 그리는 환경에서도 동작.
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const mod = await import("heic2any");
+  const heic2any = (mod as any).default || (mod as any);
+  const result = await heic2any({
+    blob: file,
+    toType: "image/jpeg",
+    quality: 0.85,
+  });
+  // heic2any는 Blob 또는 Blob[] (multi-frame HEIC) 반환
+  const blob: Blob = Array.isArray(result) ? result[0] : result;
+  const newName = file.name.replace(/\.(heic|heif)$/i, "") + ".jpg";
+  return new File([blob], newName, { type: "image/jpeg" });
+}
+
+// 항상 브라우저가 그릴 수 있는 JPEG 파일을 반환.
+// HEIC/HEIF는 heic2any로 자동 변환 — 사용자는 카메라 설정 바꿀 필요 없음.
 async function ensureJpegForUpload(
   file: File
 ): Promise<{ ok: true; file: File } | { ok: false; error: string }> {
-  // 작은 JPEG는 그대로 통과
-  if (file.type === "image/jpeg" && file.size < 1.5 * 1024 * 1024) {
-    return { ok: true, file };
+  // 1) HEIC/HEIF 감지 → heic2any로 변환 (Chrome Android 등 native 미지원 환경 커버)
+  let workFile = file;
+  if (isHeicLike(file)) {
+    try {
+      workFile = await convertHeicToJpeg(file);
+    } catch (e: any) {
+      return {
+        ok: false,
+        error: `HEIC 사진 변환 중 오류가 발생했어요 (${e?.message || "unknown"}). 다른 사진을 시도해주세요.`,
+      };
+    }
   }
 
-  // 압축 시도 (createImageBitmap → img 순)
+  // 2) 작은 JPEG는 그대로 통과
+  if (workFile.type === "image/jpeg" && workFile.size < 1.5 * 1024 * 1024) {
+    return { ok: true, file: workFile };
+  }
+
+  // 3) 압축 시도 (createImageBitmap → img 순)
   let compressed: Blob | null = null;
   try {
-    const blob = await compressImage(file, 1600);
-    // compressImage가 원본을 그대로 돌려준 경우는 변환 실패로 간주
-    if (blob !== file && blob.size > 0) {
+    const blob = await compressImage(workFile, 1600);
+    if (blob !== workFile && blob.size > 0) {
       compressed = blob;
     }
   } catch { /* fall through */ }
 
   if (compressed) {
-    const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    const newName = workFile.name.replace(/\.[^.]+$/, "") + ".jpg";
     return { ok: true, file: new File([compressed], newName, { type: "image/jpeg" }) };
   }
 
-  // 압축 실패: 원본이 JPEG면 그대로라도 업로드 (브라우저가 그릴 수 있음)
-  if (file.type === "image/jpeg") {
-    return { ok: true, file };
+  // 4) 압축 실패해도 원본이 JPEG면 그대로 업로드 (브라우저가 그릴 수 있음)
+  if (workFile.type === "image/jpeg") {
+    return { ok: true, file: workFile };
   }
 
-  // HEIC/HEIF + 변환 실패 → 차단
-  if (isHeicLike(file)) {
-    return {
-      ok: false,
-      error: "갤럭시 카메라 설정의 'HEIF' 옵션 때문에 브라우저가 사진을 못 읽어요.\n\n[설정 방법] 카메라 앱 → 설정 → '고효율 사진(HEIF)' 끄기 → JPEG로 다시 촬영\n\n또는 '사진 찍어 바로 올리기' 버튼으로 다시 시도해주세요.",
-    };
-  }
-
-  // 기타(PNG/GIF/WebP 변환 실패 — 매우 드뭄): 원본 그대로 시도
-  return { ok: true, file };
+  // 5) PNG/GIF/WebP 압축 실패 (매우 드뭄): 원본 그대로 시도
+  return { ok: true, file: workFile };
 }
 
 function loadWithImage(file: File): Promise<HTMLImageElement> {
@@ -332,9 +352,30 @@ export default function FeedUploadPage() {
     };
   };
 
-  // 미리보기 로드 실패(HEIC 등) 시 표시 상태 업데이트
+  // 미리보기 로드 실패(HEIC 등) 시: HEIC면 백그라운드로 변환해서 미리보기 교체.
+  // 일반 사용자는 "변환 중..." → 정상 미리보기 → 그대로 업로드 흐름을 알 필요 없음.
   const markPreviewFailed = (id: string) => {
-    setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, previewFailed: true } : p));
+    const target = photos.find((p) => p.id === id);
+    if (!target) {
+      setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, previewFailed: true } : p));
+      return;
+    }
+    if (isHeicLike(target.original)) {
+      // 백그라운드 변환 — 메인 스레드 영향 최소화 (heic2any 내부 WASM)
+      setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, previewFailed: true } : p));
+      convertHeicToJpeg(target.original)
+        .then((converted) => {
+          const newPreview = URL.createObjectURL(converted);
+          setPhotos((prev) => prev.map((p) => {
+            if (p.id !== id) return p;
+            if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl);
+            return { ...p, previewUrl: newPreview, previewFailed: false };
+          }));
+        })
+        .catch(() => { /* 변환 실패하면 placeholder 유지, 제출 시 다시 안내 */ });
+    } else {
+      setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, previewFailed: true } : p));
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,18 +407,7 @@ export default function FeedUploadPage() {
       if (mediaType !== "image") resetSelection();
       setMediaType("image");
 
-      // HEIC/HEIF는 일부 안드로이드 브라우저에서 변환 불가 → 선택 직후 안내
-      const heicCount = usable.filter(isHeicLike).length;
-      if (heicCount > 0) {
-        alert(
-          `선택한 사진 중 ${heicCount}장이 HEIC/HEIF 형식이에요.\n` +
-          `갤럭시 카메라 설정에서 '고효율 사진(HEIF)'을 끄거나 ` +
-          `'사진 찍어 바로 올리기' 버튼으로 다시 시도하시는 게 좋아요.\n\n` +
-          `(올리기 시도해서 실패하면 알려드립니다)`
-        );
-      }
-
-      // 즉시 화면에 추가 — 압축은 제출 시에만
+      // 즉시 화면에 추가 — 압축/HEIC 변환은 제출 시점에 처리
       const newItems = usable.map(buildPhotoItem);
       setPhotos((prev) => [...prev, ...newItems]);
     }
@@ -438,7 +468,12 @@ export default function FeedUploadPage() {
 
         for (let i = 0; i < photos.length; i++) {
           const photo = photos[i];
-          setLoadingMsg(`사진 ${i + 1}/${photos.length} 처리 중...`);
+          const isHeic = isHeicLike(photo.original);
+          setLoadingMsg(
+            isHeic
+              ? `사진 ${i + 1}/${photos.length} HEIC 변환 중... (시간 약간 걸려요)`
+              : `사진 ${i + 1}/${photos.length} 처리 중...`
+          );
           const ensured = await ensureJpegForUpload(photo.original);
           if (!ensured.ok) {
             alert(`사진 ${i + 1}장: ${ensured.error}`);
@@ -805,10 +840,15 @@ export default function FeedUploadPage() {
                             <div style={{
                               position: "absolute", inset: 0,
                               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                              color: "#9CA3AF", fontSize: 11, gap: 4, padding: 6, textAlign: "center",
+                              color: "#9CA3AF", fontSize: 11, gap: 6, padding: 6, textAlign: "center",
                             }}>
-                              <span style={{ fontSize: 28 }}>📷</span>
-                              <span>미리보기 불가<br />(올리기는 정상)</span>
+                              <span style={{
+                                display: "inline-block", width: 22, height: 22,
+                                border: "2px solid #FFE0CC", borderTopColor: "#FF6B35",
+                                borderRadius: "50%", animation: "spin 0.7s linear infinite",
+                              }} />
+                              <span>HEIC 변환 중...<br /><span style={{ color: "#B1B5BA" }}>잠시만요</span></span>
+                              <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                             </div>
                           ) : (
                             <img src={p.previewUrl} alt={`미리보기 ${idx + 1}`}
