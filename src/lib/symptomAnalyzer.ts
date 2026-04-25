@@ -112,12 +112,15 @@ export function analyzeSymptoms(description: string, petSpecies: string): Analys
   return { severity, symptoms, summary, recommendation };
 }
 
+// 모든 severity 값에 대해 항상 객체 리턴 (undefined 방지 — 빌드 타입 에러 회피)
 export function getSeverityColor(severity: AnalysisResult["severity"]) {
   switch (severity) {
     case "urgent": return { color: "#fff", bg: "#EF4444", border: "#DC2626" };
     case "moderate": return { color: "#fff", bg: "#F59E0B", border: "#D97706" };
     case "mild": return { color: "#fff", bg: "#3B82F6", border: "#2563EB" };
     case "normal": return { color: "#fff", bg: "#22C55E", border: "#16A34A" };
+    case "pending": return { color: "#fff", bg: "#6B7280", border: "#4B5563" };
+    default: return { color: "#fff", bg: "#6B7280", border: "#4B5563" };
   }
 }
 
@@ -127,5 +130,7 @@ export function getSeverityLabel(severity: AnalysisResult["severity"]) {
     case "moderate": return "주의";
     case "mild": return "관찰";
     case "normal": return "정상";
+    case "pending": return "분석 보류";
+    default: return "분석 보류";
   }
 }
