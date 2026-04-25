@@ -94,6 +94,8 @@ export interface AnalysisResult {
   // 메타
   source?: string;
   model?: string;
+  image_urls?: string[];
+  photo_count?: number;
   references?: Array<{
     title: string;
     titleEn: string;

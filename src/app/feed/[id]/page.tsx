@@ -135,10 +135,47 @@ export default function FeedDetailPage({ params }: { params: Promise<{ id: strin
           {/* 이미지 / 동영상 */}
           {post.image_url?.endsWith(".mp4") ? (
             <video src={post.image_url} controls playsInline style={{ width: "100%", display: "block" }} />
-          ) : (
-            <img src={post.image_url} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              style={{ width: "100%", display: "block" }} />
-          )}
+          ) : (() => {
+            const galleryUrls: string[] = Array.isArray((analysis as any)?.image_urls) && (analysis as any).image_urls.length > 1
+              ? (analysis as any).image_urls
+              : (post.image_url ? [post.image_url] : []);
+
+            if (galleryUrls.length <= 1) {
+              return (
+                <img src={post.image_url} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  style={{ width: "100%", display: "block" }} />
+              );
+            }
+
+            return (
+              <div style={{ position: "relative" }}>
+                <div style={{
+                  display: "flex",
+                  overflowX: "auto",
+                  scrollSnapType: "x mandatory",
+                  WebkitOverflowScrolling: "touch",
+                }}>
+                  {galleryUrls.map((url, i) => (
+                    <img key={url} src={url} alt={`사진 ${i + 1}`}
+                      style={{ width: "100%", flex: "0 0 100%", scrollSnapAlign: "start", display: "block" }} />
+                  ))}
+                </div>
+                <span style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  background: "rgba(0,0,0,0.62)",
+                  color: "#fff",
+                  padding: "3px 10px",
+                  borderRadius: 12,
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}>
+                  📷 {galleryUrls.length}장 · 좌우로 넘기기
+                </span>
+              </div>
+            );
+          })()}
 
           {/* 좋아요/댓글 */}
           <div style={{ padding: "10px 16px", display: "flex", gap: 16 }}>

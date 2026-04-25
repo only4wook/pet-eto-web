@@ -3,6 +3,24 @@
 > 이 파일은 **Claude Code와 Cursor가 번갈아 작업할 때** 서로에게 남기는 인수인계서입니다.
 > 작업을 시작하기 전에 **맨 위 2~3개 항목**을 반드시 읽고, 작업이 끝나면 맨 위에 새 항목을 추가하세요.
 
+## [2026-04-25 19:05] — Cursor
+**작업**: 여러 장 사진 업로드 기능 복구
+**상태**: 완료 ✅
+**변경 파일**: `src/app/feed/upload/page.tsx`, `src/app/feed/[id]/page.tsx`, `src/types/index.ts`, `.ai-context/handoff.md`
+**다음 단계**: 커밋/푸시/Production Promote 후 모바일에서 앨범 다중 선택 테스트
+**주의사항**: 최대 5장 선택, 첫 장 대표 이미지, `analysis_result.image_urls`에 전체 URL 저장, 상세 페이지에서 좌우 스와이프 갤러리 표시. AI 분석은 여러 장을 각각 분석해 가장 심각한 등급을 적용. 빌드 통과.
+
+---
+
+## [2026-04-25 18:56] — Cursor
+**작업**: 피드 본문 AI 텍스트 제거 수정분 Production Promote
+**상태**: 완료 ✅
+**변경 파일**: `.ai-context/handoff.md`
+**다음 단계**: 모바일에서 `peteto.kr/feed` 또는 해당 상세 페이지 새로고침 후 빨간 표시 영역 제거 확인
+**주의사항**: 원인: `design/awwwards-redesign` 푸시는 Preview만 만들고 Production 자동 반영이 아니었음. `vercel promote https://pet-3m2b6h2z3-only4wooks-projects.vercel.app --yes` 실행했고 최신 Production `pet-by1ufh2u4-only4wooks-projects.vercel.app` Ready 확인.
+
+---
+
 ## [2026-04-25 18:52] — Cursor
 **작업**: 사용자가 표시한 피드 본문 AI 분석 노출 제거 재점검
 **상태**: 완료 ✅
