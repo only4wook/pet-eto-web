@@ -32,6 +32,13 @@ export default function MyPage() {
   const [withdrawHolder, setWithdrawHolder] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
 
+  const handleLogout = async () => {
+    if (!confirm("로그아웃 하시겠습니까?")) return;
+    await supabase.auth.signOut();
+    setUser(null);
+    setTimeout(() => { window.location.href = "/"; }, 200);
+  };
+
   const saveNickname = async () => {
     if (!user) return;
     const n = newNick.trim();
@@ -558,6 +565,29 @@ export default function MyPage() {
               </div>
             )}
           </div>
+
+          {/* 로그아웃 — 모바일 사용자도 쉽게 접근 */}
+          {user && (
+            <div style={{ marginTop: 20 }}>
+              <button
+                onClick={handleLogout}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: "#fff",
+                  color: "#DC2626",
+                  border: "1px solid #FCA5A5",
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                🚪 로그아웃
+              </button>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

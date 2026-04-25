@@ -192,6 +192,12 @@ function extractVideoFrames(file: File, frameCount = 5): Promise<File[]> {
 }
 
 type MediaType = "image" | "video";
+// 사진 1장당 보관할 정보. 미리보기 시점에 미리 압축까지 끝내 두면 업로드가 즉시 시작됨.
+type PhotoItem = {
+  original: File;
+  compressed: File; // 항상 image/jpeg
+  previewUrl: string;
+};
 
 // 응답이 JSON이 아닐 수도 있는 fetch 래퍼 (Vercel 413 등 대비)
 async function safeJsonFetch(url: string, init: RequestInit): Promise<{ ok: boolean; status: number; data: any; rawText?: string }> {
@@ -224,9 +230,11 @@ export default function FeedUploadPage() {
   const albumRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]); // 사진 (다중)
+  const [videoFile, setVideoFile] = useState<File | null>(null); // 동영상 (단일)
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<MediaType>("image");
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [preparingPreview, setPreparingPreview] = useState(false);
   const [petName, setPetName] = useState("");
   const [species, setSpecies] = useState("cat");
   const [description, setDescription] = useState("");
@@ -256,9 +264,34 @@ export default function FeedUploadPage() {
   }, [user, router]);
 
   const resetSelection = () => {
-    previews.forEach((u) => { if (u.startsWith("blob:")) URL.revokeObjectURL(u); });
-    setMediaFiles([]);
-    setPreviews([]);
+    photos.forEach((p) => { if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl); });
+    if (videoPreview?.startsWith("blob:")) URL.revokeObjectURL(videoPreview);
+    setPhotos([]);
+    setVideoFile(null);
+    setVideoPreview(null);
+  };
+
+  // 한 장씩 즉시 압축 → 미리보기로 만들어 PhotoItem 반환.
+  // 압축본을 미리보기로 쓰면 HEIC도 보이고, 갤럭시 100MP 사진도 부드럽게 렌더링됨.
+  const buildPhotoItem = async (file: File): Promise<PhotoItem> => {
+    let blob: Blob = file;
+    try {
+      blob = await compressImage(file, 1600);
+      if (blob.size > 4 * 1024 * 1024) blob = await compressImage(file, 1100);
+      if (blob.size > 4 * 1024 * 1024) blob = await compressImage(file, 800);
+    } catch {
+      blob = file;
+    }
+    const compressed = new File(
+      [blob],
+      `feed-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.jpg`,
+      { type: "image/jpeg" }
+    );
+    return {
+      original: file,
+      compressed,
+      previewUrl: URL.createObjectURL(compressed),
+    };
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,57 +302,65 @@ export default function FeedUploadPage() {
     const isVideo = first.type.startsWith("video/");
 
     if (isVideo) {
-      // 동영상은 단일 파일만
+      // 동영상은 단일 파일만 (원본 그대로 — Storage 직접 업로드)
       resetSelection();
       setMediaType("video");
-      setMediaFiles([first]);
-      setPreviews([URL.createObjectURL(first)]);
+      setVideoFile(first);
+      setVideoPreview(URL.createObjectURL(first));
     } else {
-      // 사진: 다중 선택 지원, 최대 MAX_PHOTOS
-      const filesArray = Array.from(fileList).filter((f) => f.type.startsWith("image/")).slice(0, MAX_PHOTOS);
-      if (filesArray.length === 0) { alert("이미지 파일을 선택해주세요."); return; }
-      if (fileList.length > MAX_PHOTOS) {
-        alert(`사진은 최대 ${MAX_PHOTOS}장까지 선택할 수 있습니다. 처음 ${MAX_PHOTOS}장만 사용합니다.`);
+      // 사진: 다중 선택, 최대 MAX_PHOTOS. 기존 사진에 추가 가능.
+      const incoming = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
+      if (incoming.length === 0) { alert("이미지 파일을 선택해주세요."); e.target.value = ""; return; }
+
+      // 기존 사진 + 새 사진 합쳐서 MAX_PHOTOS까지만
+      const slotsLeft = MAX_PHOTOS - (mediaType === "image" ? photos.length : 0);
+      const usable = incoming.slice(0, Math.max(0, slotsLeft));
+      if (slotsLeft <= 0) {
+        alert(`이미 ${MAX_PHOTOS}장 선택되어 있습니다.`);
+        e.target.value = ""; return;
+      }
+      if (incoming.length > slotsLeft) {
+        alert(`최대 ${MAX_PHOTOS}장까지 선택할 수 있어 ${usable.length}장만 추가합니다.`);
       }
 
-      resetSelection();
+      // 모드가 동영상이었으면 정리
+      if (mediaType !== "image") resetSelection();
       setMediaType("image");
-      setMediaFiles(filesArray);
 
-      // 미리보기 URL 생성 (HEIC는 서버 변환 후 표시)
-      const newPreviews: string[] = [];
-      for (const file of filesArray) {
-        const isHeic = file.type.includes("heic") || file.type.includes("heif") || file.name.toLowerCase().endsWith(".heic");
-        if (isHeic) {
-          // HEIC: 압축본을 미리보기로 사용 (서버 왕복 없이)
-          try {
-            const blob = await compressImage(file);
-            newPreviews.push(URL.createObjectURL(blob));
-          } catch {
-            newPreviews.push(URL.createObjectURL(file));
-          }
-        } else {
-          newPreviews.push(URL.createObjectURL(file));
+      setPreparingPreview(true);
+      try {
+        // 사진들을 병렬 압축 (모바일 메모리 부담 줄이려고 동시 2개씩만)
+        const newItems: PhotoItem[] = [];
+        for (let i = 0; i < usable.length; i += 2) {
+          const batch = usable.slice(i, i + 2);
+          const built = await Promise.all(batch.map((f) => buildPhotoItem(f)));
+          newItems.push(...built);
         }
+        setPhotos((prev) => [...prev, ...newItems]);
+      } finally {
+        setPreparingPreview(false);
       }
-      setPreviews(newPreviews);
     }
     // input 초기화 (같은 파일 다시 선택 가능)
     e.target.value = "";
   };
 
   const removePhoto = (idx: number) => {
-    const targetUrl = previews[idx];
-    if (targetUrl?.startsWith("blob:")) URL.revokeObjectURL(targetUrl);
-    setMediaFiles((arr) => arr.filter((_, i) => i !== idx));
-    setPreviews((arr) => arr.filter((_, i) => i !== idx));
+    const target = photos[idx];
+    if (target?.previewUrl.startsWith("blob:")) URL.revokeObjectURL(target.previewUrl);
+    setPhotos((arr) => arr.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async () => {
-    if (mediaFiles.length === 0) { alert("사진 또는 동영상을 선택해주세요."); return; }
+    const hasMedia = mediaType === "video" ? !!videoFile : photos.length > 0;
+    if (!hasMedia) { alert("사진 또는 동영상을 선택해주세요."); return; }
     if (!description.trim()) { alert("설명을 입력해주세요."); return; }
     if (!user || user.id === "demo-user") { alert("로그인 후 이용 가능합니다."); router.push("/auth/login"); return; }
-    trackEvent("feed_upload_submit_attempt", { media_type: mediaType, request_expert: requestExpert, photo_count: mediaFiles.length });
+    trackEvent("feed_upload_submit_attempt", {
+      media_type: mediaType,
+      request_expert: requestExpert,
+      photo_count: photos.length,
+    });
 
     setLoading(true);
 
@@ -331,16 +372,13 @@ export default function FeedUploadPage() {
       let analysisImageFile: File | null = null;
       const additionalAnalysisFiles: File[] = [];
 
-      if (mediaType === "video") {
-        // 동영상: 원본 업로드 + 썸네일 추출
+      if (mediaType === "video" && videoFile) {
         setLoadingMsg("동영상 업로드 중...");
-        const videoFile = mediaFiles[0];
         const videoName = `feed-${ts}-${rand}.mp4`;
         const { error: vErr } = await storageClient.storage
           .from("feed-images").upload(videoName, videoFile, { contentType: videoFile.type, upsert: true });
         if (vErr) { alert("동영상 업로드 실패: " + vErr.message); setLoading(false); return; }
 
-        // 썸네일 추출 & 업로드
         setLoadingMsg("썸네일 생성 중...");
         try {
           const thumb = await extractVideoThumbnail(videoFile);
@@ -354,84 +392,66 @@ export default function FeedUploadPage() {
           primaryImageUrl = vUrl.publicUrl;
         }
       } else {
-        // 사진: 클라이언트 압축 + Supabase Storage 직접 업로드
-        // → Vercel 서버리스 4.5MB 한도를 완전히 우회 (Storage 한도 50MB)
-        for (let i = 0; i < mediaFiles.length; i++) {
-          const file = mediaFiles[i];
-          setLoadingMsg(`사진 ${i + 1}/${mediaFiles.length} 압축 중...`);
+        // 사진: 미리 압축돼 있으니 바로 병렬 업로드. Vercel 우회 (Storage 한도 50MB).
+        setLoadingMsg(photos.length === 1 ? "사진 업로드 중..." : `사진 ${photos.length}장 동시 업로드 중...`);
 
-          // 1) 압축 (실패하거나 결과가 너무 크면 더 작은 사이즈로 재시도)
-          let blobToUpload: Blob = file;
-          try {
-            blobToUpload = await compressImage(file, 1600);
-            if (blobToUpload.size > 4 * 1024 * 1024) {
-              // 4MB 초과면 더 작게
-              blobToUpload = await compressImage(file, 1100);
-            }
-            if (blobToUpload.size > 4 * 1024 * 1024) {
-              blobToUpload = await compressImage(file, 800);
-            }
-          } catch {
-            blobToUpload = file;
-          }
+        const uploadResults = await Promise.all(
+          photos.map(async (photo, i) => {
+            const fileName = `feed-${ts}-${rand}-${i + 1}.jpg`;
+            const { error } = await storageClient.storage
+              .from("feed-images")
+              .upload(fileName, photo.compressed, { contentType: "image/jpeg", upsert: true });
+            if (error) return { ok: false as const, error: error.message, idx: i };
+            const { data: pub } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
+            return { ok: true as const, url: pub.publicUrl, file: photo.compressed, idx: i };
+          })
+        );
 
-          const compressedFile = new File(
-            [blobToUpload],
-            `feed-${ts}-${rand}-${i + 1}.jpg`,
-            { type: "image/jpeg" }
-          );
+        const failed = uploadResults.find((r) => !r.ok);
+        if (failed && !failed.ok) {
+          alert(`이미지 ${failed.idx + 1}장 업로드 실패: ${failed.error}\n\n다시 시도하거나 카메라로 직접 촬영해주세요.`);
+          setLoading(false); return;
+        }
 
-          // 2) Supabase Storage 직접 업로드 (영상과 동일한 경로)
-          setLoadingMsg(`사진 ${i + 1}/${mediaFiles.length} 업로드 중...`);
-          const fileName = `feed-${ts}-${rand}-${i + 1}.jpg`;
-          const { error: uploadError } = await storageClient.storage
-            .from("feed-images")
-            .upload(fileName, compressedFile, {
-              contentType: "image/jpeg",
-              upsert: true,
-            });
-
-          if (uploadError) {
-            alert(`이미지 ${i + 1}장 업로드 실패: ${uploadError.message}\n\n다시 시도하거나 카메라로 직접 촬영해주세요.`);
-            setLoading(false); return;
-          }
-
-          const { data: pub } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
-          imageUrls.push(pub.publicUrl);
-          if (i === 0) {
-            primaryImageUrl = pub.publicUrl;
-            analysisImageFile = compressedFile;
+        for (const r of uploadResults) {
+          if (!r.ok) continue;
+          imageUrls.push(r.url);
+          if (r.idx === 0) {
+            primaryImageUrl = r.url;
+            analysisImageFile = r.file;
           } else {
-            additionalAnalysisFiles.push(compressedFile);
+            additionalAnalysisFiles[r.idx - 1] = r.file;
           }
         }
       }
 
-      // AI 분석
+      // AI 분석 (사진/영상 모두 병렬). 모든 사진 호출이 동시에 나가서 5장 ≈ 1장 시간.
       setLoadingMsg("AI 분석 중...");
       let analysis: any = analyzeSymptoms(description, species);
       let aiImageAnalysis = "";
       let visionAnalyzed = false;
       let forceExpertRequest = false;
 
-      if (mediaType === "image" && analysisImageFile) {
-        // 다중 사진: 각 사진을 분석 후 심각도 병합 (최대 5장)
-        const allImageFiles = [analysisImageFile, ...additionalAnalysisFiles];
-        const frameAnalyses: { severity: "normal" | "mild" | "moderate" | "urgent"; text: string; data: any }[] = [];
-
-        for (let i = 0; i < allImageFiles.length; i++) {
-          setLoadingMsg(`AI 분석 중... (${i + 1}/${allImageFiles.length})`);
-          try {
-            const aiFd = new FormData();
-            aiFd.append("file", allImageFiles[i]);
-            aiFd.append("description", description);
-            aiFd.append("species", species);
-            const aiResult = await safeJsonFetch("/api/analyze-image", { method: "POST", body: aiFd });
-            if (aiResult.ok && aiResult.data?.analysis && aiResult.data?.severity) {
-              frameAnalyses.push({ severity: aiResult.data.severity, text: aiResult.data.analysis, data: aiResult.data });
-            }
-          } catch { /* 개별 사진 분석 실패는 무시 */ }
+      const callAnalyze = async (file: File) => {
+        const aiFd = new FormData();
+        aiFd.append("file", file);
+        aiFd.append("description", description);
+        aiFd.append("species", species);
+        const aiResult = await safeJsonFetch("/api/analyze-image", { method: "POST", body: aiFd });
+        if (aiResult.ok && aiResult.data?.analysis && aiResult.data?.severity) {
+          return { severity: aiResult.data.severity as "normal" | "mild" | "moderate" | "urgent", text: aiResult.data.analysis as string, data: aiResult.data };
         }
+        return null;
+      };
+
+      if (mediaType === "image" && analysisImageFile) {
+        const allImageFiles = [analysisImageFile, ...additionalAnalysisFiles].filter(Boolean) as File[];
+        setLoadingMsg(allImageFiles.length === 1 ? "AI 분석 중..." : `AI ${allImageFiles.length}장 동시 분석 중...`);
+
+        const settled = await Promise.allSettled(allImageFiles.map(callAnalyze));
+        const frameAnalyses = settled
+          .map((s) => s.status === "fulfilled" ? s.value : null)
+          .filter((x): x is NonNullable<typeof x> => !!x);
 
         if (frameAnalyses.length > 0) {
           visionAnalyzed = true;
@@ -439,7 +459,6 @@ export default function FeedUploadPage() {
             (acc, cur) => pickHigherSeverity(acc, cur.severity),
             "normal" as "normal" | "mild" | "moderate" | "urgent"
           );
-          // 가장 심각한 프레임의 구조화 결과를 대표값으로 사용
           const worstFrame = frameAnalyses.reduce((acc, cur) =>
             SEVERITY_RANK[cur.severity] > SEVERITY_RANK[acc.severity] ? cur : acc
           , frameAnalyses[0]);
@@ -464,22 +483,15 @@ export default function FeedUploadPage() {
         }
       }
 
-      if (mediaType === "video") {
+      if (mediaType === "video" && videoFile) {
         setLoadingMsg("AI 분석 중... (5프레임 정밀 분석)");
         try {
-          const frames = await extractVideoFrames(mediaFiles[0], 5);
-          const frameAnalyses: { severity: "normal" | "mild" | "moderate" | "urgent"; text: string }[] = [];
-
-          for (const frame of frames) {
-            const aiFd = new FormData();
-            aiFd.append("file", frame);
-            aiFd.append("description", description);
-            aiFd.append("species", species);
-            const aiResult = await safeJsonFetch("/api/analyze-image", { method: "POST", body: aiFd });
-            if (aiResult.ok && aiResult.data?.analysis && aiResult.data?.severity) {
-              frameAnalyses.push({ severity: aiResult.data.severity, text: aiResult.data.analysis });
-            }
-          }
+          const frames = await extractVideoFrames(videoFile, 5);
+          // 5프레임 병렬 분석
+          const settled = await Promise.allSettled(frames.map(callAnalyze));
+          const frameAnalyses = settled
+            .map((s) => s.status === "fulfilled" ? s.value : null)
+            .filter((x): x is NonNullable<typeof x> => !!x);
 
           if (frameAnalyses.length > 0) {
             visionAnalyzed = true;
@@ -656,7 +668,7 @@ export default function FeedUploadPage() {
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} style={{ display: "none" }} />
             <input ref={videoRef} type="file" accept="video/*" capture="environment" onChange={handleFileSelect} style={{ display: "none" }} />
 
-            {previews.length === 0 ? (
+            {(photos.length === 0 && !videoPreview) ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
                 <button onClick={() => albumRef.current?.click()} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
@@ -696,11 +708,11 @@ export default function FeedUploadPage() {
               </div>
             ) : (
               <div style={{ marginBottom: 16 }}>
-                {mediaType === "video" ? (
+                {mediaType === "video" && videoPreview ? (
                   <div style={{
                     border: "1px solid #e0e0e0", borderRadius: 12, overflow: "hidden", position: "relative",
                   }}>
-                    <video src={previews[0]} controls playsInline style={{ width: "100%", maxHeight: 400, display: "block" }} />
+                    <video src={videoPreview} controls playsInline style={{ width: "100%", maxHeight: 400, display: "block" }} />
                     <span style={{
                       position: "absolute", top: 8, left: 8,
                       background: "#2563EB", color: "#fff",
@@ -717,19 +729,21 @@ export default function FeedUploadPage() {
                     {/* 사진 다중 그리드 */}
                     <div style={{
                       display: "grid",
-                      gridTemplateColumns: previews.length === 1 ? "1fr" : "repeat(auto-fill, minmax(110px, 1fr))",
+                      gridTemplateColumns: photos.length === 1 ? "1fr" : "repeat(auto-fill, minmax(110px, 1fr))",
                       gap: 6,
                     }}>
-                      {previews.map((url, idx) => (
-                        <div key={idx} style={{
+                      {photos.map((p, idx) => (
+                        <div key={p.previewUrl} style={{
                           position: "relative",
-                          paddingBottom: previews.length === 1 ? "75%" : "100%",
+                          paddingBottom: photos.length === 1 ? "75%" : "100%",
                           borderRadius: 10, overflow: "hidden", border: "1px solid #e0e0e0",
                           background: "#f9f9f9",
                         }}>
-                          <img src={url} alt={`미리보기 ${idx + 1}`} style={{
-                            position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
-                          }} />
+                          <img src={p.previewUrl} alt={`미리보기 ${idx + 1}`}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }}
+                            style={{
+                              position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+                            }} />
                           {idx === 0 && (
                             <span style={{
                               position: "absolute", top: 6, left: 6,
@@ -746,21 +760,22 @@ export default function FeedUploadPage() {
                           }}>×</button>
                         </div>
                       ))}
-                      {/* 사진 추가 버튼 (5장 미만일 때) */}
-                      {previews.length < MAX_PHOTOS && (
-                        <button onClick={() => albumRef.current?.click()} style={{
+                      {/* 사진 추가 버튼 (MAX 미만일 때) */}
+                      {photos.length < MAX_PHOTOS && (
+                        <button onClick={() => albumRef.current?.click()} disabled={preparingPreview} style={{
                           paddingBottom: "100%",
                           position: "relative",
-                          borderRadius: 10, border: "2px dashed #FDBA74", background: "#FFF7ED",
-                          cursor: "pointer", fontFamily: "inherit",
+                          borderRadius: 10, border: "2px dashed #FDBA74",
+                          background: preparingPreview ? "#FFEED5" : "#FFF7ED",
+                          cursor: preparingPreview ? "wait" : "pointer", fontFamily: "inherit",
                         }}>
                           <span style={{
                             position: "absolute", inset: 0,
                             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                             color: "#B45309", fontSize: 12, fontWeight: 600, gap: 4,
                           }}>
-                            <span style={{ fontSize: 24 }}>＋</span>
-                            <span>{previews.length}/{MAX_PHOTOS}</span>
+                            <span style={{ fontSize: 24 }}>{preparingPreview ? "⏳" : "＋"}</span>
+                            <span>{photos.length}/{MAX_PHOTOS}</span>
                           </span>
                         </button>
                       )}
@@ -769,7 +784,11 @@ export default function FeedUploadPage() {
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       marginTop: 8, fontSize: 12, color: "#6B7280",
                     }}>
-                      <span>📷 {previews.length}장 선택됨{previews.length > 1 && " · AI가 모든 사진을 분석해요"}</span>
+                      <span>
+                        {preparingPreview
+                          ? "📷 사진 준비 중..."
+                          : `📷 ${photos.length}장 선택됨${photos.length > 1 ? " · AI가 모든 사진을 동시 분석" : ""}`}
+                      </span>
                       <button onClick={resetSelection} style={{
                         background: "transparent", border: "none", color: "#FF6B35",
                         fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
@@ -820,8 +839,8 @@ export default function FeedUploadPage() {
               padding: "12px 14px", marginBottom: 12, fontSize: 12, color: "#0369A1", lineHeight: 1.6,
             }}>
               🤖 <b>AI 자동 건강 분석</b><br />
-              {mediaType === "image" && previews.length > 1
-                ? `${previews.length}장의 사진을 모두 AI가 분석해 가장 심각한 증상을 기준으로 등급을 결정합니다.`
+              {mediaType === "image" && photos.length > 1
+                ? `${photos.length}장의 사진을 모두 AI가 동시 분석해 가장 심각한 증상을 기준으로 등급을 결정합니다.`
                 : mediaType === "video"
                   ? "동영상은 5프레임을 추출해 정밀 분석하고 썸네일을 자동 생성합니다."
                   : "작성하신 설명과 사진을 AI가 함께 분석해 건강 상태를 체크합니다."}
