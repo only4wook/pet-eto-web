@@ -201,15 +201,42 @@ export async function gradeResponse(
     throw new Error(`grade ${res.status}: ${(await res.text()).slice(0, 200)}`);
   }
   const data = await res.json();
-  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-  let parsed: any;
+  const raw = (data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}").trim();
+
+  // JSON 파싱 — 3단계 fallback
+  //   1) 그대로 파싱
+  //   2) ```json ... ``` 코드블록 제거 후 파싱
+  //   3) 마지막 `}` 까지 잘라서 파싱 (truncation 대응)
+  let parsed: any = null;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error(`grade JSON parse failed: ${raw.slice(0, 200)}`);
-    parsed = JSON.parse(jsonMatch[0]);
+    // 코드블록 마커 제거
+    const stripped = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/, "")
+      .trim();
+    try {
+      parsed = JSON.parse(stripped);
+    } catch {
+      // 마지막 } 까지 잘라서 시도 (일부만 잘린 응답 대응)
+      const lastBrace = stripped.lastIndexOf("}");
+      const firstBrace = stripped.indexOf("{");
+      if (lastBrace > firstBrace) {
+        const sliced = stripped.slice(firstBrace, lastBrace + 1);
+        try {
+          parsed = JSON.parse(sliced);
+        } catch {
+          // 마지막 시도: 키 순서 깨진 경우 등 — 정규식으로 score 만이라도 추출
+          const scoreMatch = sliced.match(/"score"\s*:\s*(\d+)/);
+          if (scoreMatch) {
+            parsed = { score: parseInt(scoreMatch[1], 10), breakdown: {}, weakness: "JSON 부분 파싱" };
+          }
+        }
+      }
+    }
   }
+  if (!parsed) throw new Error(`grade JSON parse failed: ${raw.slice(0, 200)}`);
 
   // 검증·기본값
   const breakdown: ScoreBreakdown = {
