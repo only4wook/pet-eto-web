@@ -131,9 +131,10 @@ export const GENERATION_CONFIG_EN = {
 };
 
 // English image analysis config — same thresholds as Korean
+// maxOutputTokens 4000 — match Korean config for full cost section coverage
 export const IMAGE_ANALYSIS_CONFIG_EN = {
   temperature: 0.4,
   topP: 0.9,
   topK: 32,
-  maxOutputTokens: 2000,
+  maxOutputTokens: 4000,
 };

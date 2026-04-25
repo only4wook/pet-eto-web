@@ -195,9 +195,11 @@ export const GENERATION_CONFIG = {
 };
 
 // 이미지 분석 전용 (이미지 설명은 더 딱딱하게, 진단 책임 경계 명확히)
+// maxOutputTokens 4000 — 부위별 스캔 + 의심 증상 + 집에서 할 것 + 병원 기준 + 비용 까지
+//   끝까지 출력되도록 충분한 여유. 한국어는 토큰 밀도가 높아 2000 으론 비용 섹션이 종종 잘렸음.
 export const IMAGE_ANALYSIS_CONFIG = {
   temperature: 0.4,
   topP: 0.9,
   topK: 32,
-  maxOutputTokens: 2000,
+  maxOutputTokens: 4000,
 };

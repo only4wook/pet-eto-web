@@ -32,6 +32,63 @@ interface ReanalyzeOptions {
   model: string;
 }
 
+/**
+ * 응답 완전성 판정.
+ *   - 너무 짧으면 (분석 부실)
+ *   - 또는 비용/예상비/병원 섹션 미포함 (Gemini 가 중간에 끊긴 응답)
+ *   → false → 호출부에서 재시도
+ */
+function isAnalysisComplete(text: string): boolean {
+  if (text.length < 500) return false;
+  // 비용 섹션 키워드 — 한·영 둘 다 허용
+  const hasCost = /💰|예상\s*비용|예상\s*진료|예상\s*치료|expected\s*cost/i.test(text);
+  // 병원 방문 기준 키워드
+  const hasVet = /🏥|병원\s*방문|동물병원|vet\s*visit/i.test(text);
+  return hasCost && hasVet;
+}
+
+async function callGeminiOnce(
+  imageBase64: string,
+  mimeType: string,
+  systemText: string,
+  userContext: string,
+  opts: ReanalyzeOptions
+): Promise<string> {
+  const geminiRes = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:generateContent?key=${opts.geminiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemText }] },
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inlineData: { mimeType, data: imageBase64 } },
+              { text: userContext },
+            ],
+          },
+        ],
+        generationConfig: IMAGE_ANALYSIS_CONFIG,
+        safetySettings: SAFETY_SETTINGS,
+      }),
+    }
+  );
+
+  if (!geminiRes.ok) {
+    throw new Error(`gemini ${geminiRes.status}: ${(await geminiRes.text()).slice(0, 200)}`);
+  }
+
+  const data = await geminiRes.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const finishReason = data?.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== "STOP") {
+    console.warn(`[reanalyze] finishReason=${finishReason}, len=${text.length}`);
+  }
+  return text;
+}
+
 async function reanalyzeOne(
   post: { id: string; image_url: string; pet_species: string; description: string },
   opts: ReanalyzeOptions
@@ -52,41 +109,32 @@ async function reanalyzeOne(
     `\n\n## 지금 주어진 과제: 피드 이미지 재분석 (P.E.T ${TOTAL_SYMPTOMS}-증상 체크)\n` +
     `보호자가 올린 사진을 매우 꼼꼼히 분석하세요. ` +
     `눈 분비물·침 흘림·피부 이상·자세 이상·행동 이상 등 사소한 신호도 놓치지 말 것.\n` +
-    `답변 형식: 🔍 부위별 스캔 → 🩺 의심 증상 → ⚡ 심각도 (normal/mild/moderate/urgent) → 🏠 집에서 할 것 → 🏥 병원 기준 → 💰 예상 비용.` +
-    `\n반드시 "⚡ **심각도**: <enum>" 형식으로 한 줄 명시.\n` +
+    `\n## 답변 필수 섹션 (모두 포함, 순서 유지, 중간에 끊지 말 것)\n` +
+    `1) 🔍 **부위별 스캔**\n` +
+    `2) 🩺 **종합 의심 증상** (3~5가지)\n` +
+    `3) ⚡ **심각도**: normal/mild/moderate/urgent (반드시 enum 한 단어)\n` +
+    `4) 🏠 **지금 집에서 할 것** (구체 4~5단계)\n` +
+    `5) 🏥 **병원 방문 기준** (즉시/24h/3일 등 시점)\n` +
+    `6) 💰 **예상 비용** (한국 시세 — 초진/검사/입원 각각, 마지막 섹션이지만 절대 생략·축약 금지)\n` +
+    `\n위 6개 섹션 중 하나라도 빠지거나 중간에 끊기면 응답이 불완전하다고 간주됩니다. 반드시 마지막 비용 섹션까지 완성해서 출력하세요.\n\n` +
     checklist;
 
-  const userContext = `보호자가 ${animalName} 사진을 올렸습니다.\n보호자 설명: "${post.description.slice(0, 500)}"\n\n사진을 꼼꼼히 보고 이상 소견을 빠뜨리지 말고 진단해주세요.`;
+  const userContext = `보호자가 ${animalName} 사진을 올렸습니다.\n보호자 설명: "${post.description.slice(0, 500)}"\n\n사진을 꼼꼼히 보고 이상 소견을 빠뜨리지 말고 6개 섹션 모두 끝까지 진단해주세요. 특히 마지막 💰 예상 비용 섹션은 반드시 한국 시세(초진비, 검사비, 입원비 등)로 구체적으로 명시하세요.`;
 
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:generateContent?key=${opts.geminiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemText }] },
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { inlineData: { mimeType, data: base64 } },
-              { text: userContext },
-            ],
-          },
-        ],
-        generationConfig: IMAGE_ANALYSIS_CONFIG,
-        safetySettings: SAFETY_SETTINGS,
-      }),
+  // 1차 시도
+  let analysis = await callGeminiOnce(base64, mimeType, systemText, userContext, opts);
+
+  // 응답 불완전 시 1회 재시도 (Gemini 응답 길이 변동성 대응)
+  if (!isAnalysisComplete(analysis)) {
+    console.warn(`[reanalyze] incomplete response (len=${analysis.length}), retrying once...`);
+    const retryUserContext = userContext + `\n\n(이전 응답이 너무 짧거나 비용 섹션이 누락됐습니다. 이번엔 6개 섹션을 끝까지 빠짐없이 작성해주세요.)`;
+    const retry = await callGeminiOnce(base64, mimeType, systemText, retryUserContext, opts);
+    // 더 긴 쪽 채택 (재시도가 또 짧으면 1차 결과 유지)
+    if (retry.length > analysis.length) {
+      analysis = retry;
     }
-  );
-
-  if (!geminiRes.ok) {
-    throw new Error(`gemini ${geminiRes.status}: ${(await geminiRes.text()).slice(0, 200)}`);
   }
 
-  const data = await geminiRes.json();
-  const analysis =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
   if (!analysis) throw new Error("empty analysis");
 
   // severity 추출 (analyze-image/route.ts 와 동일 규칙)
