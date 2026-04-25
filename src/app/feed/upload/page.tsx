@@ -195,10 +195,14 @@ export default function FeedUploadPage() {
         // imageUrl은 위에서 이미 설정됨
       }
 
-      // AI 분석: 이미지가 있으면 Gemini Vision, 없으면 텍스트 분석
+      // AI 분석: 이미지 있으면 Gemini Vision 우선, 없으면 텍스트 키워드 매칭
+      // 주의: 과거 버그 — Gemini 실패를 조용히 삼키고 "normal" 가짜 판정 저장하던 것 수정
       setLoadingMsg("AI 분석 중...");
-      let analysis: any = analyzeSymptoms(description, species); // 텍스트 기본 분석
+      const textFallback = analyzeSymptoms(description, species);
+      let analysis: any = textFallback;
       let aiImageAnalysis = "";
+      let aiImageError: string | null = null;
+      let aiImageSeverity: "normal" | "mild" | "moderate" | "urgent" | null = null;
 
       if (mediaType === "image" && mediaFile) {
         try {
@@ -210,25 +214,50 @@ export default function FeedUploadPage() {
           const aiData = await aiRes.json();
           if (aiRes.ok && aiData.analysis) {
             aiImageAnalysis = aiData.analysis;
-            // Gemini 분석 결과로 심각도 업데이트
-            if (aiData.severity !== "normal") {
-              analysis = {
-                severity: aiData.severity,
-                symptoms: [aiData.severity === "urgent" ? "긴급" : aiData.severity === "moderate" ? "주의" : "관찰"],
-                summary: aiImageAnalysis.slice(0, 300),
-                recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
-              };
-            }
+            aiImageSeverity = (aiData.severity as typeof aiImageSeverity) || "normal";
+            // Gemini 결과가 있으면 '항상' 메인 analysis 객체로 채택 (normal 포함)
+            //   false-negative 방지: 이전엔 severity==='normal' 이면 덮어쓰지 않아
+            //   '분석 실제로 못 한 가짜 normal' 과 'AI가 판정한 normal' 이 구별 안 됐음.
+            analysis = {
+              severity: aiImageSeverity,
+              symptoms: aiImageSeverity === "normal" ? [] : [
+                aiImageSeverity === "urgent" ? "긴급" :
+                aiImageSeverity === "moderate" ? "주의" : "관찰",
+              ],
+              summary: aiImageAnalysis.slice(0, 300),
+              recommendation: "자세한 내용은 피드 상세 페이지에서 확인하세요.",
+              analysis: aiImageAnalysis, // ← 전문을 JSONB 에 직접 저장 (description 에 섞지 않음)
+              source: "gemini-vision",
+              model: aiData.model || "gemini-2.5-flash",
+              analyzedAt: new Date().toISOString(),
+            };
+          } else {
+            aiImageError = aiData.error || `AI 분석 서버 오류 (${aiRes.status})`;
           }
-        } catch { /* Gemini 실패 시 텍스트 분석 유지 */ }
+        } catch (e: any) {
+          aiImageError = e?.message || "네트워크 오류";
+        }
+      }
+
+      // AI 이미지 분석 실패 시 — 'normal' 로 위장하지 말고 '미분석' 상태로 명확히 저장
+      if (mediaType === "image" && mediaFile && !aiImageAnalysis) {
+        analysis = {
+          ...textFallback,
+          severity: "pending",      // 'normal' 대신 'pending' — UI 가 '분석 보류' 표시 가능
+          analysis: "",
+          source: "text-fallback",
+          aiImageError,
+          analyzedAt: new Date().toISOString(),
+        };
       }
 
       // DB 저장
+      // description 에는 유저 원본만 저장 (AI 분석 섞지 않음 — 재분석/표시 깔끔하게)
       setLoadingMsg("저장 중...");
       const { error: insertError } = await supabase.from("feed_posts").insert({
         author_id: user.id,
         image_url: imageUrl,
-        description: description.trim() + (aiImageAnalysis ? "\n\n---\n🤖 AI 이미지 분석:\n" + aiImageAnalysis : ""),
+        description: description.trim(),
         pet_name: petName.trim(),
         pet_species: species,
         analysis_result: analysis,
