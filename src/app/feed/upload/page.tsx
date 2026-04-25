@@ -18,34 +18,61 @@ const SPECIES = [
 
 const MAX_PHOTOS = 5; // 다중 사진 최대 개수 (영상 5프레임 분석과 동일 레벨)
 
+// 이미지 압축. 갤럭시 100MP 사진(12000x9000) 같은 대용량 대비 createImageBitmap의 native resize 옵션 우선 사용.
 function compressImage(file: File, maxWidth = 1600): Promise<Blob> {
   return new Promise((resolve) => {
-    const useCreateImageBitmap = typeof createImageBitmap === "function";
+    let resolved = false;
+    const done = (b: Blob) => { if (!resolved) { resolved = true; resolve(b); } };
+
     const drawToCanvas = (source: HTMLImageElement | ImageBitmap) => {
       try {
         const sw = "width" in source ? source.width : (source as any).naturalWidth || 1200;
         const sh = "height" in source ? source.height : (source as any).naturalHeight || 1200;
         const ratio = Math.min(maxWidth / sw, 1);
-        const w = Math.round(sw * ratio);
-        const h = Math.round(sh * ratio);
+        const w = Math.max(1, Math.round(sw * ratio));
+        const h = Math.max(1, Math.round(sh * ratio));
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
-        canvas.getContext("2d")!.drawImage(source as any, 0, 0, w, h);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { done(file); return; }
+        ctx.drawImage(source as any, 0, 0, w, h);
         canvas.toBlob(
-          (blob) => resolve(blob && blob.size > 0 ? blob : file),
+          (blob) => done(blob && blob.size > 0 ? blob : file),
           "image/jpeg", 0.82,
         );
-      } catch { resolve(file); }
+      } catch { done(file); }
     };
+
+    const useCreateImageBitmap = typeof createImageBitmap === "function";
     if (useCreateImageBitmap) {
-      createImageBitmap(file).then(drawToCanvas).catch(() => {
-        loadWithImage(file).then(drawToCanvas).catch(() => resolve(file));
-      });
+      // 1순위: createImageBitmap의 native resize — 메모리 효율적, 대용량 대응
+      (async () => {
+        try {
+          const bitmap = await createImageBitmap(file, {
+            resizeWidth: maxWidth,
+            resizeHeight: maxWidth,
+            resizeQuality: "high",
+          } as any);
+          drawToCanvas(bitmap);
+        } catch {
+          try {
+            const bitmap = await createImageBitmap(file);
+            drawToCanvas(bitmap);
+          } catch {
+            try {
+              const img = await loadWithImage(file);
+              drawToCanvas(img);
+            } catch { done(file); }
+          }
+        }
+      })();
     } else {
-      loadWithImage(file).then(drawToCanvas).catch(() => resolve(file));
+      loadWithImage(file).then(drawToCanvas).catch(() => done(file));
     }
-    setTimeout(() => resolve(file), 15000);
+
+    // 25초 안에 못 끝내면 원본 반환 (압축 실패해도 직접 업로드로 진행)
+    setTimeout(() => done(file), 25000);
   });
 }
 
@@ -327,58 +354,52 @@ export default function FeedUploadPage() {
           primaryImageUrl = vUrl.publicUrl;
         }
       } else {
-        // 사진: 모두 클라이언트에서 압축한 후 서버 업로드 (Vercel 4.5MB 한도 회피)
+        // 사진: 클라이언트 압축 + Supabase Storage 직접 업로드
+        // → Vercel 서버리스 4.5MB 한도를 완전히 우회 (Storage 한도 50MB)
         for (let i = 0; i < mediaFiles.length; i++) {
           const file = mediaFiles[i];
-          setLoadingMsg(`사진 ${i + 1}/${mediaFiles.length} 업로드 중...`);
+          setLoadingMsg(`사진 ${i + 1}/${mediaFiles.length} 압축 중...`);
 
-          // 1) 압축
-          let blobToUpload: Blob;
+          // 1) 압축 (실패하거나 결과가 너무 크면 더 작은 사이즈로 재시도)
+          let blobToUpload: Blob = file;
           try {
-            blobToUpload = await compressImage(file);
+            blobToUpload = await compressImage(file, 1600);
+            if (blobToUpload.size > 4 * 1024 * 1024) {
+              // 4MB 초과면 더 작게
+              blobToUpload = await compressImage(file, 1100);
+            }
+            if (blobToUpload.size > 4 * 1024 * 1024) {
+              blobToUpload = await compressImage(file, 800);
+            }
           } catch {
             blobToUpload = file;
           }
 
-          // 2) FormData 구성 (압축된 jpeg)
           const compressedFile = new File(
             [blobToUpload],
             `feed-${ts}-${rand}-${i + 1}.jpg`,
             { type: "image/jpeg" }
           );
-          const fd = new FormData();
-          fd.append("file", compressedFile);
 
-          // 3) 서버 업로드 (강건한 응답 처리)
-          const result = await safeJsonFetch("/api/upload-image", { method: "POST", body: fd });
-          if (!result.ok || !result.data?.url) {
-            const errMsg = result.data?.error || `HTTP ${result.status}`;
-            // 압축 실패 시 한 번 더 작은 사이즈로 재시도
-            if (result.status === 413) {
-              try {
-                const smaller = await compressImage(file, 1100);
-                const smallerFile = new File([smaller], compressedFile.name, { type: "image/jpeg" });
-                const fd2 = new FormData();
-                fd2.append("file", smallerFile);
-                const retry = await safeJsonFetch("/api/upload-image", { method: "POST", body: fd2 });
-                if (retry.ok && retry.data?.url) {
-                  imageUrls.push(retry.data.url);
-                  if (i === 0) {
-                    primaryImageUrl = retry.data.url;
-                    analysisImageFile = smallerFile;
-                  } else {
-                    additionalAnalysisFiles.push(smallerFile);
-                  }
-                  continue;
-                }
-              } catch {}
-            }
-            alert(`이미지 ${i + 1}장 업로드 실패: ${errMsg}\n\n다시 시도하거나 카메라로 직접 촬영해주세요.`);
+          // 2) Supabase Storage 직접 업로드 (영상과 동일한 경로)
+          setLoadingMsg(`사진 ${i + 1}/${mediaFiles.length} 업로드 중...`);
+          const fileName = `feed-${ts}-${rand}-${i + 1}.jpg`;
+          const { error: uploadError } = await storageClient.storage
+            .from("feed-images")
+            .upload(fileName, compressedFile, {
+              contentType: "image/jpeg",
+              upsert: true,
+            });
+
+          if (uploadError) {
+            alert(`이미지 ${i + 1}장 업로드 실패: ${uploadError.message}\n\n다시 시도하거나 카메라로 직접 촬영해주세요.`);
             setLoading(false); return;
           }
-          imageUrls.push(result.data.url);
+
+          const { data: pub } = storageClient.storage.from("feed-images").getPublicUrl(fileName);
+          imageUrls.push(pub.publicUrl);
           if (i === 0) {
-            primaryImageUrl = result.data.url;
+            primaryImageUrl = pub.publicUrl;
             analysisImageFile = compressedFile;
           } else {
             additionalAnalysisFiles.push(compressedFile);
