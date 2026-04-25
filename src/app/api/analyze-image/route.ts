@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PET_AI_PERSONA, IMAGE_ANALYSIS_CONFIG, SAFETY_SETTINGS } from "../../../lib/aiPrompts";
 
+// Vercel: 두 번의 Gemini 호출을 안전하게 끝낼 수 있도록 60초로 확장 (Pro 이상에서 적용)
+export const maxDuration = 60;
+
 // Gemini 2.0 Flash 기반 반려동물 이미지 분석
 // 공통 페르소나(PET_AI_PERSONA)를 공유해서 채팅/피드/위키 등 모든 AI 답변 품질을 통일.
 
@@ -388,23 +391,6 @@ export async function POST(req: NextRequest) {
     const animalName = species === "cat" ? "고양이" : species === "dog" ? "강아지" : "반려동물";
     const userContext = `보호자가 ${animalName} 사진을 올렸습니다.\n${description ? `보호자 설명: "${description}"` : "별도 설명 없음."}`;
 
-    const geminiRes = await callGemini({
-      apiKey,
-      mimeType,
-      base64,
-      systemText: PET_AI_PERSONA + "\n\n" + IMAGE_ANALYSIS_TASK,
-      userText: userContext,
-    });
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      return NextResponse.json({ error: `Gemini API 오류: ${geminiRes.status}`, detail: errText.slice(0, 200) }, { status: 500 });
-    }
-
-    const geminiData = await geminiRes.json();
-    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "분석 결과를 가져올 수 없습니다.";
-
-    // 2차 레드플래그 분류기 (오탐/미탐 보정용)
     type RedFlagResult = {
       drooling_hypersalivation?: boolean;
       open_mouth_breathing?: boolean;
@@ -416,24 +402,45 @@ export async function POST(req: NextRequest) {
       severity?: "normal" | "mild" | "moderate" | "urgent";
       reason?: string;
     };
-    let redFlag: RedFlagResult = {};
-    try {
-      const triageRes = await callGemini({
+
+    // 메인 분석 + 레드플래그 분류기를 병렬 호출 — 응답 시간 절반으로
+    const [geminiRes, triageResSettled] = await Promise.all([
+      callGemini({
+        apiKey,
+        mimeType,
+        base64,
+        systemText: PET_AI_PERSONA + "\n\n" + IMAGE_ANALYSIS_TASK,
+        userText: userContext,
+      }),
+      // 트리아지는 실패해도 전체를 막지 않음 → catch로 무시
+      callGemini({
         apiKey,
         mimeType,
         base64,
         systemText: RED_FLAG_TRIAGE_TASK,
         userText: userContext,
-      });
-      if (triageRes.ok) {
-        const triageData = await triageRes.json();
+      }).catch(() => null),
+    ]);
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      return NextResponse.json({ error: `Gemini API 오류: ${geminiRes.status}`, detail: errText.slice(0, 200) }, { status: 500 });
+    }
+
+    const geminiData = await geminiRes.json();
+    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "분석 결과를 가져올 수 없습니다.";
+
+    let redFlag: RedFlagResult = {};
+    if (triageResSettled && triageResSettled.ok) {
+      try {
+        const triageData = await triageResSettled.json();
         const triageText = triageData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
         const cleaned = triageText.replace(/```json|```/gi, "").trim();
         const parsed = JSON.parse(cleaned);
         if (parsed && typeof parsed === "object") redFlag = parsed;
+      } catch {
+        // 레드플래그 분류 파싱 실패 시 무시
       }
-    } catch {
-      // 레드플래그 분류 실패 시 기존 분석 유지
     }
 
     // ── 구조화 JSON 블록 파싱 (\`\`\`json ... \`\`\`) ──
