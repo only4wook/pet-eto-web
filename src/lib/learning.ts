@@ -248,7 +248,11 @@ export async function gradeResponse(
     }
   }
 
-  if (!parsed) throw new Error(`grade parse failed: ${raw.slice(0, 300)}`);
+  if (!parsed) {
+    // 디버깅: raw 전체 + 첫·마지막 200자 + 길이를 에러에 포함
+    const debug = `len=${raw.length} starts="${raw.slice(0, 100).replace(/\s+/g, " ")}" ends="${raw.slice(-100).replace(/\s+/g, " ")}"`;
+    throw new Error(`grade parse failed: ${debug}`);
+  }
 
   // 검증·기본값
   const breakdown: ScoreBreakdown = {
